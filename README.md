@@ -6,6 +6,8 @@ As of the time of writing this (2026-03-04) this is only works as intended in Vs
 
 A lightweight, "take it or leave it" (or fork it) git module you can add to your project to help you plan and implement features with an LLM. It does benefit from certain skills, see below, but you can take this concept and customise it (and the agents) to your own needs.
 
+Currently seems most stable with GPT-5.3-Codex but in theory should work with any sufficiently capable LLM that can handle the context and reasoning requirements.
+
 ## What This Is
 
 A specialized team of AI agents designed to handle complex development workflows through strategic delegation and coordination. Each agent has a focused expertise area (backend, frontend, testing, debugging, architecture, etc.), allowing complex tasks to be broken down and distributed to the most appropriate specialist. The orchestrator agent coordinates the team, ensuring work flows efficiently between agents based on their strengths.

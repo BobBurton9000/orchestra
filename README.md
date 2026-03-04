@@ -4,6 +4,8 @@
 
 As of the time of writing this (2026-03-04) this is only works as intended in VsCode Insiders. Also keep in mind a limitation of VsCode is subagents inherit the tools of their parent (but do not consume additional requests) so this means the Orchestrator needs all the tools that any of the subagents need. This is not ideal but is a limitation of the current system. The limitations are enforced by prompts only.
 
+A lightweight, "take it or leave it" (or fork it) git module you can add to your project to help you plan and implement features with an LLM. It does benefit from certain skills, see below, but you can take this concept and customise it (and the agents) to your own needs.
+
 ## What This Is
 
 A specialized team of AI agents designed to handle complex development workflows through strategic delegation and coordination. Each agent has a focused expertise area (backend, frontend, testing, debugging, architecture, etc.), allowing complex tasks to be broken down and distributed to the most appropriate specialist. The orchestrator agent coordinates the team, ensuring work flows efficiently between agents based on their strengths.

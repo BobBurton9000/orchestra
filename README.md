@@ -2,9 +2,9 @@
 
 ## Important Note
 
-As of the time of writing this (2026-03-04) this is only works as intended in VsCode Insiders. Also keep in mind a limitation of VsCode is subagents inherit the tools of their parent (but do not consume additional requests) so this means the Orchestrator needs all the tools that any of the subagents need. This is not ideal but is a limitation of the current system. The limitations are enforced by prompts only.
+As of the time of writing this (2026-03-04) **this is only works as intended in VsCode Insiders**. Also keep in mind a limitation of VsCode is subagents inherit the tools of their parent (but do not consume additional requests) so this means the Orchestrator needs all the tools that any of the subagents need. This is not ideal but is a limitation of the current system. The limitations are enforced by prompts only.
 
-A lightweight, "take it or leave it" (or fork it) git module you can add to your project to help you plan and implement features with an LLM. It does benefit from certain skills, see below, but you can take this concept and customise it (and the agents) to your own needs.
+A lightweight, "take it or leave it" (or fork it) git 'module' you can add to your project to help you plan and implement features with an LLM. It does benefit from certain skills, see below, but you can take this concept and customise it (and the agents) to your own needs.
 
 Currently seems most stable with GPT-5.3-Codex but in theory should work with any sufficiently capable LLM that can handle the context and reasoning requirements.
 
@@ -33,10 +33,17 @@ For example, implementing a new feature might involve:
 6. **manual-tester** performs exploratory testing
 7. **code-reviewer** reviews the final implementation
 
+
 ## Installation
 
 - Add your `ai` folder or the `ai/orchestra` folder to your global or `.git/info/exclude` file to avoid committing it to your repository
 - Clone or copy this directory to your `ai` folder
+- Add the `agents` folder to your VSCode configuration (file -> preferences -> settings)
+- Add the `prompts` folder to your VSCode configuration (file -> preferences -> settings)
+- Configure `config/target-branch.md` with your main branch name (e.g., `master`, `main`)
+- Optionally configure manual testing instructions in `config/manual-testing.md`
+- Adjust the frontend and backend programmer agents' allowed directories if you want to use those agents in a different codebase (currently configured for intelligentcontract)
+- Add `run-tests` and `playwright-mcp` skills to copilot (the contents of these skills will be unique to your setup)
 
 ## Agents
 
@@ -76,19 +83,12 @@ Orchestra uses configuration files in the `config/` directory (gitignored by def
 
 These files allow you to customize Orchestra's behavior for your needs at the specific time.
 
-## Installation
-
-- Add the `agents` folder to your VSCode configuration (file -> preferences -> settings)
-- Add the `prompts` folder to your VSCode configuration (file -> preferences -> settings)
-- Configure `config/target-branch.md` with your main branch name (e.g., `master`, `main`)
-- Optionally configure manual testing instructions in `config/manual-testing.md`
-
 ## External Dependencies
 
 Orchestra relies on these skills being available:
 - **playwright-mcp** - For browser automation and UI testing
 - **run-tests** - For executing automated test suites
-- (optionally) **plankit.read-project-documentation** - For context gathering (used by information-gatherer)
+- (optionally) **plankit.read-project-documentation** - For additional context gathering (used by information-gatherer)
 
 Ensure these skills are properly configured before using Orchestra agents that depend on them.
 
@@ -104,8 +104,3 @@ Ensure these skills are properly configured before using Orchestra agents that d
 /orchestra.merge-check
 ```
 The orchestrator is patient and will iterate through multiple rounds of delegation until the task is complete. Don't worry about overwhelming it with complex requests - that's exactly what it's designed for.
-
-## Known Issues
-
-- Config files are gitignored, so you'll need to set them up
-

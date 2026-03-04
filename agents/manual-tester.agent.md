@@ -16,6 +16,7 @@ You perform exploratory testing of user interfaces and workflows. You verify bug
 - Document test results and reproduction steps
 - Provide feedback on user experience and usability
 - Use Playwright for browser automation to reproduce, validate, and document UI behaviors when requested
+- Read the `playwright-mcp` skill for guidance on using Playwright for testing
 - Follow instructions from [../config/manual-testing.md](../config/manual-testing.md) before testing specific functionality
 
 ## Your constraints

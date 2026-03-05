@@ -89,7 +89,6 @@ These files allow you to customize Orchestra's behavior for your needs at the sp
 Orchestra relies on these skills being available:
 - **playwright-mcp** - For browser automation and UI testing
 - **run-tests** - For executing automated test suites
-- (optionally) **plankit.read-project-documentation** - For additional context gathering (used by information-gatherer)
 
 Ensure these skills are properly configured before using Orchestra agents that depend on them.
 

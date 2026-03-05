@@ -44,6 +44,7 @@ For example, implementing a new feature might involve:
 - Optionally configure manual testing instructions in `config/manual-testing.md`
 - Adjust the frontend and backend programmer agents' allowed directories if you want to use those agents in a different codebase (currently configured for intelligentcontract)
 - Add `run-tests` and `playwright-mcp` skills to copilot (the contents of these skills will be unique to your setup)
+- Make sure you have chat "custom agent in sub agent" enabled in VSCode: `vscode-insiders://settings/chat.customAgentInSubagent.enabled`
 
 ## Agents
 

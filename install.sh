@@ -30,9 +30,12 @@ if [ -d "$MODULE_DIR/prompts" ]; then
   cp "$MODULE_DIR/prompts/${MODULE_NAME}"* .github/prompts/ 2>/dev/null || true
 fi
 
-if [ -d ".agents/skills" ]; then
-  rm -rf .agents/skills/${MODULE_NAME}*
-  rm -rf .agents/skills/zz-${MODULE_NAME}*
+mkdir -p .agents/skills
+rm -rf .agents/skills/${MODULE_NAME}*
+rm -rf .agents/skills/zz-${MODULE_NAME}*
+
+if [ -d "$MODULE_DIR/skills" ]; then
+  cp -r "$MODULE_DIR/skills/"* .agents/skills/ 2>/dev/null || true
 fi
 
 CONFIGURE_SCRIPT="$MODULE_DIR/scripts/configure.sh"

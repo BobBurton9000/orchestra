@@ -1,12 +1,18 @@
 # Orchestra
 
+## Experimental
+
+This is one of my repositories I am using to test and share new concepts for how we can use LLM's to help us write software. This uses (you could say abuses) (subagents)[https://code.visualstudio.com/docs/copilot/agents/subagents] to get really high value out of a single copilot request and isolate context and reasoning requirements to the most appropriate agent for each chunk of work. It's a bit rough around the edges but I have found it to be very effective for complex development workflows. I hope you find it useful or at least interesting as a concept!
+
 ## Important Note
 
 As of the time of writing this (2026-03-04) **this only works as intended in VsCode Insiders**. Also keep in mind a limitation of VsCode is subagents inherit the tools of their parent (but do not consume additional requests) so this means the Orchestrator needs all the tools that any of the subagents need. This is not ideal but is a limitation of the current system. The limitations are enforced by prompts only.
 
 A lightweight, "take it or leave it" (or fork it) git 'module' you can add to your project to help you plan and implement features with an LLM. It does benefit from certain skills, see below, but you can take this concept and customise it (and the agents) to your own needs.
 
-Currently seems most stable with GPT-5.3-Codex but in theory should work with any sufficiently capable LLM that can handle the context and reasoning requirements.
+Currently seems most stable with GPT-5.3-Codex* but in theory should work with any sufficiently capable LLM that can handle the context and reasoning requirements.
+
+*I have a hunch this is because subagents cannot compact their context window yet, so they just crash if they are given too much to do and Codex has a generous 400k limit in VsCode.
 
 ## What This Is
 

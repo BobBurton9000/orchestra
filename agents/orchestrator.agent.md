@@ -2,7 +2,7 @@
 name: orchestrator
 description: Strategic workflow orchestrator that delegates tasks to specialized agents within the team
 target: vscode
-agents: ["backend-programmer", "frontend-programmer", "debugger", "scribe", "code-reviewer", "manual-tester", "ui-ux-designer", "information-gatherer", "quality-engineer", "architect"]
+agents: ["backend-programmer", "frontend-programmer", "debugger", "scribe", "code-reviewer", "manual-tester", "ui-ux-designer", "information-gatherer", "quality-engineer", "architect", "naming-reviewer"]
 ---
 
 # Orchestrator

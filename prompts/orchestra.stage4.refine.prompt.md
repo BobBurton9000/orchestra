@@ -34,6 +34,7 @@ Execute this flow in order.
 1. **Load baseline plan**
    - Load canonical plan from path, URL, or inline text.
    - Preserve original intent, scope, and constraints.
+   - Once the canonical file path is known, treat that file as authoritative over any carried notes, summaries, or prior-round findings.
 
 2. **Run audit pass**
    - Choose the subagents best suited to the plan and ensure the combined audit covers:
@@ -52,9 +53,12 @@ Execute this flow in order.
    - Update the plan directly to resolve retained findings.
    - Prefer smallest safe changes that preserve delivery speed.
    - Keep template/order consistency with `ai/orchestra/templates/implementation-plan.template.md`.
+   - After each refinement write, discard prior in-memory plan text and reload the canonical plan from disk before any further audit or delegation.
 
 5. **Recursive refinement loop (required)**
    - Re-run audit pass after each refinement.
+   - In each new round, require findings to be rebuilt from the reloaded canonical plan.
+   - Treat prior audit notes, prior subagent outputs, and earlier findings as non-authoritative unless they are explicitly revalidated against the current plan.
    - Continue until all sub-agents converge on zero Critical/High issues.
    - Maximum loops: 20 full rounds.
    - If convergence is not reached by round 20, force conservative, minimal-risk decisions and re-audit once more.

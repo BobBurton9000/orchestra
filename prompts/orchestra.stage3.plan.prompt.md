@@ -51,6 +51,8 @@ Execute this flow in order.
    - Merge specialist outputs into one draft plan aligned to the template.
    - Ensure each task has: status, intent, atomic steps, files, expected outcome.
    - Ensure module skeletons align with existing repository patterns.
+   - Treat the newly merged draft as the only authoritative plan candidate for subsequent passes.
+   - Do not carry prior-round summaries, notes, or findings forward unless they are explicitly revalidated against the current merged draft.
 
 4. **Recursive refinement loop (required)**
    - Re-run targeted sub-agents on weak sections until quality gate passes.
@@ -61,6 +63,7 @@ Execute this flow in order.
      - architecture/task mismatch,
      - incomplete testing strategy,
      - unresolved contradiction between specialists.
+    - For each new pass, delegate from the current draft state only; do not reuse earlier inline draft text as authoritative context.
    - Maximum loops: 3 full rounds.
    - If still unresolved, force conservative, minimal-risk decisions and encode them explicitly in tasks.
 
@@ -71,6 +74,7 @@ Execute this flow in order.
 
 6. **Write plan**
    - Save final plan to output path.
+   - After writing, treat the saved file as the canonical plan and ignore any earlier in-memory draft text.
 
 ## Decision Policy
 

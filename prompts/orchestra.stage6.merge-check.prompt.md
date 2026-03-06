@@ -44,10 +44,14 @@ Resolve `<base-branch>` at execution time using this order:
 3. Ensure `ai/orchestra/documents/<branch-name>/issues.md` exists.
    - If missing, copy from `ai/orchestra/templates/issues.template.md`.
    - Treat unresolved local issues as active context to avoid duplicate investigation.
+   - Treat `story.md`, `issues.md`, and the current branch state as authoritative over any carried notes or earlier subagent reports.
 
 ## Recursive Orchestrator Cycle (required)
 
 Run the following full cycle. If any code/config/doc changes are made at any point, restart from Step A and run every subagent again.
+
+At the start of each restarted cycle, reload the canonical branch artifacts from disk and rebuild findings from that fresh state only.
+Do not carry prior-cycle findings, approvals, or summaries forward unless they are explicitly revalidated against the latest HEAD state and the reloaded canonical files.
 
 ### Step A - scope mapping pass
 
@@ -107,6 +111,7 @@ Merge outputs from all subagents and keep only critical/high findings.
 Any modification to the branch invalidates prior reviews.
 
 - After each fix, rerun the entire cycle (A through E).
+- After each fix, reload the canonical story and issues files before restarting Step A.
 - Do not reuse old approvals after changes.
 - Final `Go` is valid only when all subagents have reviewed the latest HEAD state.
 

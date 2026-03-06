@@ -35,7 +35,7 @@ Execute this flow in order.
    - Load canonical plan from path, URL, or inline text.
    - Preserve original intent, scope, and constraints.
 
-2. **Run audit pass (parallel where possible)**
+2. **Run audit pass**
    - Choose the subagents best suited to the plan and ensure the combined audit covers:
      - structural and actionability gaps in tasks and sequencing,
      - architecture coherence, integration safety, and dependency ordering,

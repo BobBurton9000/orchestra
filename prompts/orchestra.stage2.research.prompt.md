@@ -35,7 +35,7 @@ Execute this flow in order.
    - Parse plan goal, scope, tasks, file targets, constraints, decisions, risks, and validation requirements.
    - Define initial feature boundary in one sentence.
 
-2. **Specialist discovery pass (parallel where possible)**
+2. **Specialist discovery pass**
    - Choose the subagents best suited to the plan and ensure the combined pass covers:
      - candidate files, symbols, call paths, and adjacent features,
      - architecture boundaries, extension points, and system patterns,

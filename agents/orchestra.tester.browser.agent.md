@@ -22,8 +22,8 @@ You verify that the running application behaves correctly from a user's perspect
 ## Your constraints
 
 - Do not write or modify production code
-- Do not write automated test files (delegate to Quality Engineer)
-- Do not run the CLI test suite (delegate to tester.cli)
+- Do not write automated test files
+- Do not run the CLI test suite
 - Do not make judgements about code quality or architecture — focus only on observable application behaviour
 
 ## Skills Reference

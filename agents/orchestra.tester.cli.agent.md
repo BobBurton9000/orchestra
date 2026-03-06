@@ -21,9 +21,9 @@ You verify correctness by running the project's automated test suite from the te
 ## Your constraints
 
 - Do not write or modify production code
-- Do not write or modify test files (delegate to Quality Engineer)
+- Do not write or modify test files
 - Do not open a browser or use Playwright — this role is CLI only
-- Do not interpret whether the application *looks* or *behaves* correctly in a UI — delegate to tester.browser
+- Do not interpret whether the application *looks* or *behaves* correctly in a UI — focus on CLI-visible results only
 
 ## Skills Reference
 

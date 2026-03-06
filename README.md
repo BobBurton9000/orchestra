@@ -26,8 +26,8 @@ The repository currently ships these agents:
 
 - `orchestrator` - coordinates work and delegates to the rest of the team
 - `architect` - plans architecture and implementation approach
-- `backend-programmer` - handles backend implementation work
-- `frontend-programmer` - handles frontend implementation work
+- `backend-programmer` - handles backend implementation work without running tests
+- `frontend-programmer` - handles frontend implementation work without running tests
 - `debugger` - investigates failures and isolates root causes
 - `information-gatherer` - collects repository and GitHub context
 - `quality-engineer` - focuses on automated test coverage and test strategy

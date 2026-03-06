@@ -56,8 +56,8 @@ Execute this flow in order.
 5. **Recursive refinement loop (required)**
    - Re-run audit pass after each refinement.
    - Continue until all sub-agents converge on zero Critical/High issues.
-   - Maximum loops: 50 full rounds.
-   - If convergence is not reached by round 50, force conservative, minimal-risk decisions and re-audit once more.
+   - Maximum loops: 20 full rounds.
+   - If convergence is not reached by round 20, force conservative, minimal-risk decisions and re-audit once more.
 
 6. **Finalize**
    - Overwrite the canonical plan file with the refined result.

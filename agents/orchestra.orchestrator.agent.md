@@ -1,7 +1,7 @@
 ---
 name: orchestrator
 description: Strategic workflow orchestrator that delegates tasks to specialized agents within the team
-agents: ["backend-programmer", "frontend-programmer", "debugger", "scribe", "code-review.simplify", "code-review.dry", "code-review.solid", "code-review.yagni", "code-review.self-documenting", "code-review.naming", "code-review.bugs", "tester.cli", "tester.browser", "information-gatherer", "quality-engineer", "architect", "security-expert", "product-manager", "ux-designer"]
+agents: ["backend-programmer", "frontend-programmer", "debugger", "scribe", "code-review.simplify", "code-review.dry", "code-review.recycle", "code-review.solid", "code-review.yagni", "code-review.self-documenting", "code-review.naming", "code-review.bugs", "tester.cli", "tester.browser", "information-gatherer", "quality-engineer", "architect", "security-expert", "product-manager", "ux-designer"]
 model: ${GENERIC_MODEL}
 ---
 

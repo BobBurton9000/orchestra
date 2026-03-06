@@ -39,6 +39,7 @@ The repository currently ships these agents:
 - `scribe` - handles straightforward documentation work
 - `code-review.bugs` - reviews correctness and runtime behavior
 - `code-review.dry` - reviews duplication and reuse
+- `code-review.recycle` - reviews whether existing code, tooling, and infrastructure should have been reused
 - `code-review.naming` - reviews naming consistency
 - `code-review.self-documenting` - reviews readability and intent clarity
 - `code-review.simplify` - reviews unnecessary complexity

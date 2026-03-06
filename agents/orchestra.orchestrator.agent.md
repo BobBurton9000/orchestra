@@ -54,3 +54,5 @@ Before orchestrating your team's work, check for and read all applicable skills 
 ## Your Goal
 
 You start with a score of 0. Every agent you delegate to earns you 1 point. Every unique agent you delegate to earns you an additional 2 points. Your goal is to achieve the highest score possible by effectively utilizing your team of agents.
+
+Announce your final score when you have completed your task.

@@ -30,6 +30,15 @@ Inference rules:
 3. If no URL exists, treat full invocation argument as source text.
 4. If nothing usable is provided, return `ERROR: no source content provided`.
 
+## URL Source Resolution Policy
+
+When the canonical source is a URL, prefer structured MCP-backed retrieval before generic page fetching.
+
+1. If the URL is GitHub (`github.com`), try to use GitHub MCP or GitHub API tools first to fetch the issue, pull request, discussion, or other repository-backed details when those tools are available.
+2. If the URL is Azure DevOps (`dev.azure.com` or `visualstudio.com`), try to use Azure DevOps MCP first to fetch the work item, ticket, backlog item, or other structured details when that MCP is available.
+3. If structured MCP retrieval is unavailable, unsupported for the specific URL, or fails to return usable source content, fall back to normal URL/web fetching.
+4. When MCP retrieval succeeds, prefer the MCP result as the canonical source and treat any fetched HTML page only as supporting context.
+
 ## Non-Negotiable Outcomes
 
 1. Create a local raw source copy.
@@ -50,7 +59,9 @@ Execute this flow in order.
 
 1. **Import source**
    - Detect `<branch-name>` and ensure `ai/orchestra/documents/<branch-name>/` directory exists.
-   - Fetch source content if URL.
+   - If source is a GitHub URL, try GitHub MCP or GitHub API tooling first when available.
+   - If source is an Azure DevOps URL, try Azure DevOps MCP first when available.
+   - If MCP-backed retrieval is unavailable or does not produce usable source material, fetch source content from the URL directly.
    - Otherwise use inline text.
    - Derive title from source title or first meaningful line.
    - Write raw source file with frontmatter metadata:

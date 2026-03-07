@@ -64,6 +64,9 @@ Operations:
   - `path/to/other-file.ext`: Explain the modification.
 - Expected outcome:
   - List measurable results that should be true after the task is completed.
+- Review checkpoints:
+  - List the review lenses required for this task, such as correctness, simplicity, reuse, abstraction opportunity, naming, self-documentation, SOLID, or YAGNI.
+  - State what must be true for the task to clear review and proceed.
 
 ## Final Operations
 - Always end with these sections in the following order.

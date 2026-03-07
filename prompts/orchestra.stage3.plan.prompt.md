@@ -21,8 +21,9 @@ Load `ai/orchestra/documents/<branch-name>/story.md` as canonical story source. 
 2. Include at least one architecture diagram.
 3. Provide skeletons for added/changed modules.
 4. Produce a comprehensive ordered task list with explicit files and measurable outcomes.
-5. End with `Final Operations` in template order: `Integration Testing` then `Manual Testing`.
-6. Resolve plan ambiguities through recursive agent passes before finalizing.
+5. Embed explicit task-level code review checkpoints that promote technical excellence throughout implementation.
+6. End with `Final Operations` in template order: `Integration Testing` then `Manual Testing`.
+7. Resolve plan ambiguities through recursive agent passes before finalizing.
 
 ## Output File
 
@@ -39,37 +40,41 @@ Execute this flow in order.
    - Build a planning brief from extracted context.
 
 2. **Specialist planning pass**
-   - Choose the subagents best suited to the story and ensure the combined pass covers:
-     - affected modules, files, and relevant repository patterns,
-     - architecture flow, boundaries, integration points, and migration concerns,
-     - concrete implementation steps and file-level changes for each relevant surface,
-     - integration and manual testing derived from acceptance criteria,
-     - auth, validation, data, and abuse-case safeguards when relevant,
-     - challenge on sequencing, dependencies, and task actionability.
+    - Choose the subagents best suited to the story and ensure the combined pass covers:
+       - affected modules, files, and relevant repository patterns,
+       - architecture flow, boundaries, integration points, and migration concerns,
+       - concrete implementation steps and file-level changes for each relevant surface,
+      - code review expectations for correctness, simplicity, reuse, abstraction opportunity, naming, readability, and design integrity where relevant,
+       - integration and manual testing derived from acceptance criteria,
+       - auth, validation, data, and abuse-case safeguards when relevant,
+       - challenge on sequencing, dependencies, and task actionability.
 
 3. **Merge draft plan**
    - Merge specialist outputs into one draft plan aligned to the template.
-   - Ensure each task has: status, intent, atomic steps, files, expected outcome.
+   - Ensure each task has: status, intent, atomic steps, files, expected outcome, review checkpoints.
    - Ensure module skeletons align with existing repository patterns.
+   - Ensure review checkpoints name the specific lenses needed for the task and the minimum bar to pass review before the task can be considered complete.
    - Treat the newly merged draft as the only authoritative plan candidate for subsequent passes.
    - Do not carry prior-round summaries, notes, or findings forward unless they are explicitly revalidated against the current merged draft.
 
 4. **Recursive refinement loop (required)**
-   - Re-run targeted sub-agents on weak sections until quality gate passes.
-   - Trigger loop if any of the following is found:
-     - vague or non-testable acceptance mapping,
-     - missing file references,
-     - missing dependency sequencing,
-     - architecture/task mismatch,
-     - incomplete testing strategy,
-     - unresolved contradiction between specialists.
+    - Re-run targeted sub-agents on weak sections until quality gate passes.
+    - Trigger loop if any of the following is found:
+       - vague or non-testable acceptance mapping,
+       - missing file references,
+       - missing dependency sequencing,
+       - architecture/task mismatch,
+       - missing or vague review checkpoints for implementation tasks,
+       - incomplete testing strategy,
+       - unresolved contradiction between specialists.
     - For each new pass, delegate from the current draft state only; do not reuse earlier inline draft text as authoritative context.
-   - Maximum loops: 3 full rounds.
-   - If still unresolved, force conservative, minimal-risk decisions and encode them explicitly in tasks.
+    - Maximum loops: 15 full rounds.
+    - If still unresolved, force conservative, minimal-risk decisions and encode them explicitly in tasks.
 
 5. **Final quality and template compliance pass**
    - Verify exact section order from `ai/orchestra/templates/implementation-plan.template.md`.
    - Remove generic research tasks and speculative placeholders.
+   - Ensure review checkpoints are concrete, proportionate to the task risk, and strong enough to drive technical excellence during execution.
    - Ensure `User Inputs Required` is `None` unless truly blocked by missing external fact.
 
 6. **Write plan**
@@ -95,6 +100,7 @@ Do not finalize unless all checks pass:
 - At least one architecture diagram is present.
 - Module skeletons are present for all introduced/changed modules.
 - Every major task includes concrete file paths and measurable expected outcomes.
+- Every implementation task includes concrete review checkpoints aligned to the task's technical risks.
 - Task list is dependency-aware and executable in order.
 - Testing plan maps to acceptance criteria and includes both integration and manual validation.
 - `User Inputs Required` is `None` unless blocked by a required external fact.

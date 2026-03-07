@@ -54,8 +54,8 @@ Execute this flow in order.
      - architecture flow not traceable across real files,
      - unclear system pattern recommendation,
      - contradiction between specialist findings.
-   - Maximum loops: 4 full rounds.
-   - If still incomplete after 4 rounds, use conservative conclusions and explicitly mark confidence and evidence limits.
+   - Maximum loops: 15 full rounds.
+   - If still incomplete after 15 rounds, use conservative conclusions and explicitly mark confidence and evidence limits.
 
 5. **Topic decomposition (required)**
    - Partition findings into distinct documentation topics.

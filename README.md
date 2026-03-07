@@ -39,6 +39,7 @@ The repository currently ships these agents:
 - `scribe` - handles straightforward documentation work
 - `code-review.bugs` - reviews correctness and runtime behavior
 - `code-review.dry` - reviews duplication and reuse
+- `code-review.opportunity` - reviews whether introduced and existing code should be unified into a reusable abstraction
 - `code-review.recycle` - reviews whether existing code, tooling, and infrastructure should have been reused
 - `code-review.naming` - reviews naming consistency
 - `code-review.self-documenting` - reviews readability and intent clarity
@@ -56,10 +57,11 @@ The prompt set is built around both one-off utilities and a staged delivery pipe
 - `orchestra.stage0.refresh` - refresh existing Orchestra-generated skills
 - `orchestra.stage1.import-spec` - turn a URL or freeform requirements into a normalized story
 - `orchestra.stage2.research` - produce repository-grounded research documents for the story
-- `orchestra.stage3.plan` - convert the story into an implementation plan
-- `orchestra.stage4.refine` - refine the plan until critical and high issues are removed
-- `orchestra.stage5.execute` - implement the refined plan and validate it
-- `orchestra.stage6.merge-check` - run a recursive merge-readiness gate until the branch reaches `Go`
+- `orchestra.stage3.plan` - convert the story into an implementation plan with explicit task-level code review checkpoints
+- `orchestra.stage4.refine` - refine the plan until critical and high issues are removed and review gates are strong enough to enforce technical excellence
+- `orchestra.stage5.execute` - implement the refined plan while rerunning code review and validation throughout execution
+- `orchestra.stage6.code-review` - run a recursive full-suite code review on the branch diff until every Orchestra code review agent returns `Go`
+- `orchestra.stage7.merge-check` - run a recursive merge-readiness gate after stage 6 until the branch reaches `Go`
 
 ## Delivery Flow
 
@@ -70,9 +72,10 @@ Typical flow:
 1. `orchestra.stage1.import-spec` writes `story.source.md` and `story.md`
 2. `orchestra.stage2.research` writes one or more files under `research/`
 3. `orchestra.stage3.plan` writes `plan.md`
-4. `orchestra.stage4.refine` updates `plan.md` in place
-5. `orchestra.stage5.execute` writes `execution-report.md`
-6. `orchestra.stage6.merge-check` creates or updates `issues.md`
+4. `orchestra.stage4.refine` updates `plan.md` in place and hardens its review checkpoints
+5. `orchestra.stage5.execute` writes `execution-report.md` with implementation, validation, and code review evidence
+6. `orchestra.stage6.code-review` creates or updates `issues.md` while iterating until the full code review suite is `Go` on the latest diff
+7. `orchestra.stage7.merge-check` uses the same diff-base discovery to run the final merge-blocking test and acceptance gate
 
 This keeps planning, research, execution, and release validation in a predictable per-branch workspace.
 
@@ -152,7 +155,8 @@ Example progression for a new piece of work:
 /orchestra.stage3.plan
 /orchestra.stage4.refine
 /orchestra.stage5.execute
-/orchestra.stage6.merge-check
+/orchestra.stage6.code-review
+/orchestra.stage7.merge-check
 ```
 
 ### Utility Prompts
@@ -187,5 +191,5 @@ Generated outputs belong under `documents/<branch-name>/`. The repository curren
 ## Notes
 
 - The orchestrator is intentionally strict about delegation. Its prompt explicitly forbids doing implementation or exploration work directly.
-- The staged prompts are opinionated. They are meant to force explicit documents, bounded scope, and recursive refinement rather than one-shot execution.
+- The staged prompts are opinionated. They are meant to force explicit documents, bounded scope, recursive refinement, and repeated code review rather than one-shot execution.
 - The repository is a working framework, not a polished product. Expect to tune agents, prompt wording, model lists, and supporting skills for your environment.

@@ -19,7 +19,7 @@ Load `ai/orchestra/documents/<branch-name>/plan.md` as canonical plan. If the fi
 
 1. Implement all in-scope tasks from the plan.
 2. Keep execution aligned to plan intent and scope boundaries.
-3. Run thorough code reviews and validation continuously, fixing medium or higher findings recursively before proceeding.
+3. Run thorough code reviews and validation continuously, fixing findings recursively before proceeding.
 4. Finish with passing integration checks and manual browser testing when feasible.
 5. Produce an execution report with completed work and evidence.
 6. Do not allow technically weak code to advance just because tests pass.

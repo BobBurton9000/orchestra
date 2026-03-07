@@ -20,6 +20,7 @@ You verify correctness by running the project's automated test suite from the te
 
 ## Your constraints
 
+- If the prompt is not a good fit for this role, reject it and advise choosing a different agent
 - Do not write or modify production code
 - Do not write or modify test files
 - Do not open a browser or use Playwright — this role is CLI only

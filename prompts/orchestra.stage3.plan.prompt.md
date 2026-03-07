@@ -1,120 +1,78 @@
 ---
 agent: orchestrator
-description: Orchestrate recursive multi-agent planning from a story into an implementation plan
+description: Produce an implementation plan from a story and research documents
 ---
+# Goal
+Convert a finalised story into an implementation plan by coordinating and consulting specialist agents until the plan is concrete, coherent and execution-ready.
 
-# Factory - Orchestrated Implementation Plan
+# Variables
+`<branch-name>` = [branch-name](wiki/branch-name.md)
 
-You are the orchestrator agent for implementation planning.
+# Required Outcomes
+1. Produce one implementation plan file at `ai/orchestra/documents/<branch-name>/plan.md` using the [implementation-plan.template](../templates/implementation-plan.template.md).
+2. At least 1 architecture diagram must be included.
+3. Skeletons must be provided for all added or changed modules.
+4. Include a concrete [risk](wiki/risk.md) assessment grounded in the story, repository evidence and implementation approach.
+5. Ensure the risk assessment is validated by all applicable sub agents consulted during planning.
+6. Break the implementation into explicit [chunks](wiki/chunk.md).
+7. Produce a comprehensive ordered task list with explicit files and measurable outcomes, grouped under the relevant chunk.
+8. Every implementation task must contain explicit code review checkpoints aligned to its technical risk.
+9. The `Final Operations` section must end in template order with `Integration Testing` then `Manual Testing`.
+10. Resolve all plan ambiguities into explicit decisions before finalising.
+11. `Open Questions` must be `None` unless blocked by a required external fact.
 
-Your job is to convert a finalized story into an implementation plan by recursively coordinating specialist sub-agents until the plan is concrete, coherent, and execution-ready.
+# Steps
+1. **Load and normalise story context**: Read `ai/orchestra/documents/<branch-name>/story.md` as the canonical source. If the file does not exist, return `ERROR: no story found for branch <branch-name>`. If research documents exist in `ai/orchestra/documents/<branch-name>/research/`, load them as supplemental context. Extract the goal, scope, acceptance criteria, constraints, decisions and risks.
+2. **Load the template**: Read [implementation-plan.template](../templates/implementation-plan.template.md) to determine what information is required and the exact section order to follow.
+3. **Specialist sub agent planning pass**:
+	1. Choose all sub agents applicable to the story and ensure the combined pass covers:
+		1. Affected modules, files and relevant repository patterns
+		2. Architecture flow, boundaries, integration points and migration concerns
+		3. Concrete implementation chunks, their sequencing and the measurable validation surface for each chunk
+		4. Concrete [risk](wiki/risk.md) identification, safeguards and residual concerns across the relevant delivery surfaces
+		5. Code review expectations for correctness, simplicity, reuse, abstraction opportunity, naming, readability and design integrity where relevant
+		6. Integration and manual testing derived from the acceptance criteria
+		7. Auth, validation, data and abuse-case safeguards when relevant
+		8. Challenge on sequencing, dependencies and task actionability
+4. **Merge draft plan**:
+	1. Merge specialist outputs into one draft aligned to the template.
+	2. Ensure the draft contains a [risk](wiki/risk.md) assessment with concrete risks, likely impact, expected safeguards, and the applicable sub agents that validated each entry.
+	3. Ensure the risk assessment is aligned with the chunking, architecture, testing plan and review checkpoints.
+	4. Ensure the plan is decomposed into chunks where each chunk represents a measurable increment of delivery.
+	5. Ensure each chunk defines the manual user journeys, integration tests, and where appropriate for sufficiently small chunks, unit tests that prove the chunk is complete.
+	6. Ensure each task contains status, intent, atomic steps, files, expected outcome and review checkpoints.
+	7. Ensure every task belongs to exactly one chunk.
+	8. Ensure module skeletons align with existing repository patterns.
+	9. Treat the newly merged draft as the only authoritative plan candidate for subsequent passes.
+5. **Recursive refinement loop**:
+	1. Return to step 3 (Specialist sub agent planning pass) when any of the following exists:
+		- Missing risk assessment or risk entries that are vague, generic or not validated by the applicable sub agents
+		- Missing chunk boundaries or unclear chunk purpose
+		- A chunk cannot be validated through manual user journeys, integration tests, or, where appropriate for sufficiently small chunks, unit tests
+		- Vague or non-testable acceptance mapping
+		- Missing file references
+		- Missing dependency sequencing
+		- Architecture and task mismatch
+		- Missing or vague review checkpoints for implementation tasks
+		- Incomplete testing strategy
+		- Unresolved contradiction between sub agent findings
+	2. The maximum number of times you can (and must, if required) loop is specified in [loop-count](../config/loop-count.md).
+	3. If still incomplete after the maximum loop count has been exhausted, refer to [orchestrator-decision-policy](wiki/orchestrator-decision-policy.md) and encode conservative minimal-risk decisions explicitly in the plan.
+6. **Final quality and template compliance pass**:
+	1. Verify the exact section order from [implementation-plan.template](../templates/implementation-plan.template.md).
+	2. Remove generic research tasks and speculative placeholders.
+	3. Ensure the risk assessment is concrete, implementation-relevant and validated by all applicable sub agents consulted.
+	4. Ensure chunk ordering is dependency-aware and that each chunk is independently measurable.
+	5. Ensure review checkpoints are concrete and proportionate to the risk of each task.
+	6. Ensure the testing plan maps to the story acceptance criteria.
+	7. Ensure `Open Questions` is `None` unless truly blocked by a missing external fact.
+7. **Submit completion to judge sub agent**: Follow [submit-to-judge](wiki/submit-to-judge.md)
 
-## Branch Detection
-
-Run `git rev-parse --abbrev-ref HEAD` to detect `<branch-name>`. This value determines all file paths.
-
-Load `ai/orchestra/documents/<branch-name>/story.md` as canonical story source. If the file does not exist, return `ERROR: no story found for branch <branch-name>`.
-
-## Non-Negotiable Outcomes
-
-1. Produce one implementation plan file following `ai/orchestra/templates/implementation-plan.template.md` exactly.
-2. Include at least one architecture diagram.
-3. Provide skeletons for added/changed modules.
-4. Produce a comprehensive ordered task list with explicit files and measurable outcomes.
-5. Embed explicit task-level code review checkpoints that promote technical excellence throughout implementation.
-6. End with `Final Operations` in template order: `Integration Testing` then `Manual Testing`.
-7. Resolve plan ambiguities through recursive agent passes before finalizing.
-
-## Output File
-
-- `ai/orchestra/documents/<branch-name>/plan.md`
-
-## Orchestrator Workflow
-
-Execute this flow in order.
-
-1. **Load and normalize story context**
-   - Detect `<branch-name>` and load `ai/orchestra/documents/<branch-name>/story.md` as canonical story source.
-   - If research documents exist in `ai/orchestra/documents/<branch-name>/research/`, load them as supplemental context.
-   - Extract: goal, scope, acceptance criteria, constraints, decisions, risks.
-   - Build a planning brief from extracted context.
-
-2. **Specialist planning pass**
-    - Choose the subagents best suited to the story and ensure the combined pass covers:
-       - affected modules, files, and relevant repository patterns,
-       - architecture flow, boundaries, integration points, and migration concerns,
-       - concrete implementation steps and file-level changes for each relevant surface,
-      - code review expectations for correctness, simplicity, reuse, abstraction opportunity, naming, readability, and design integrity where relevant,
-       - integration and manual testing derived from acceptance criteria,
-       - auth, validation, data, and abuse-case safeguards when relevant,
-       - challenge on sequencing, dependencies, and task actionability.
-
-3. **Merge draft plan**
-   - Merge specialist outputs into one draft plan aligned to the template.
-   - Ensure each task has: status, intent, atomic steps, files, expected outcome, review checkpoints.
-   - Ensure module skeletons align with existing repository patterns.
-   - Ensure review checkpoints name the specific lenses needed for the task and the minimum bar to pass review before the task can be considered complete.
-   - Treat the newly merged draft as the only authoritative plan candidate for subsequent passes.
-   - Do not carry prior-round summaries, notes, or findings forward unless they are explicitly revalidated against the current merged draft.
-
-4. **Recursive refinement loop (required)**
-    - Re-run targeted sub-agents on weak sections until quality gate passes.
-    - Trigger loop if any of the following is found:
-       - vague or non-testable acceptance mapping,
-       - missing file references,
-       - missing dependency sequencing,
-       - architecture/task mismatch,
-       - missing or vague review checkpoints for implementation tasks,
-       - incomplete testing strategy,
-       - unresolved contradiction between specialists.
-    - For each new pass, delegate from the current draft state only; do not reuse earlier inline draft text as authoritative context.
-    - Maximum loops: 15 full rounds.
-    - If still unresolved, force conservative, minimal-risk decisions and encode them explicitly in tasks.
-
-5. **Final quality and template compliance pass**
-   - Verify exact section order from `ai/orchestra/templates/implementation-plan.template.md`.
-   - Remove generic research tasks and speculative placeholders.
-   - Ensure review checkpoints are concrete, proportionate to the task risk, and strong enough to drive technical excellence during execution.
-   - Ensure `User Inputs Required` is `None` unless truly blocked by missing external fact.
-
-6. **Write plan**
-   - Save final plan to output path.
-   - After writing, treat the saved file as the canonical plan and ignore any earlier in-memory draft text.
-
-## Decision Policy
-
-Use this precedence for conflicts:
-
-1. Story source and explicit user constraints
-2. Repository conventions and existing architecture
-3. Safety/reliability requirements
-4. Conservative minimal-scope default
-
-Every forced decision must be reflected in architecture, task steps, or testing.
-
-## Quality Gate
-
-Do not finalize unless all checks pass:
-
-- Template section order exactly matches `ai/orchestra/templates/implementation-plan.template.md`.
-- At least one architecture diagram is present.
-- Module skeletons are present for all introduced/changed modules.
-- Every major task includes concrete file paths and measurable expected outcomes.
-- Every implementation task includes concrete review checkpoints aligned to the task's technical risks.
-- Task list is dependency-aware and executable in order.
-- Testing plan maps to acceptance criteria and includes both integration and manual validation.
-- `User Inputs Required` is `None` unless blocked by a required external fact.
-
-## Final Response Contract
-
-Return only:
-
-1. `Branch:` `<branch-name>`
-2. `Story source:` `<path>`
-3. `Generated plan:` `<path>`
-4. `Task count:` `<number>`
-5. `User inputs required:` `<None|count>`
-
-If blocked, return:
-
-`ERROR: <reason>`
+# Response To User
+```
+Branch: <branch-name>
+Story source: <path>
+Generated plan: <path>
+Task count: <number>
+Open questions: <None|count>
+```

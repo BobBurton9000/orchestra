@@ -30,6 +30,7 @@ The repository currently ships these agents:
 - `frontend-programmer` - handles frontend implementation work without running tests
 - `debugger` - investigates failures and isolates root causes
 - `information-gatherer` - collects repository and GitHub context
+- `judge` - determines whether a claim is true, false, or not established from submitted evidence and independent research
 - `quality-engineer` - focuses on automated test coverage and test strategy
 - `tester.cli` - runs CLI-based validation and interprets failures
 - `tester.browser` - performs browser-based validation with Playwright
@@ -38,14 +39,10 @@ The repository currently ships these agents:
 - `ux-designer` - reviews user-facing changes for clarity and usability
 - `scribe` - handles straightforward documentation work
 - `code-review.bugs` - reviews correctness and runtime behavior
-- `code-review.dry` - reviews duplication and reuse
-- `code-review.opportunity` - reviews whether introduced and existing code should be unified into a reusable abstraction
-- `code-review.recycle` - reviews whether existing code, tooling, and infrastructure should have been reused
 - `code-review.naming` - reviews naming consistency
 - `code-review.self-documenting` - reviews readability and intent clarity
-- `code-review.simplify` - reviews unnecessary complexity
+- `code-review.simplify` - reviews unnecessary complexity, duplication, missed reuse, abstraction opportunities, and YAGNI risks
 - `code-review.solid` - reviews SOLID design risks
-- `code-review.yagni` - reviews speculative or premature abstractions
 
 ### Prompts
 

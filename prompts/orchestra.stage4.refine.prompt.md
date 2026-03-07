@@ -1,116 +1,95 @@
 ---
 agent: orchestrator
-description: Orchestrate recursive multi-agent refinement in-place until an implementation plan has no critical or high issues
+description: Refine an implementation plan in place until no critical or high issues remain
 ---
+# Goal
+Recursively coordinate specialist agents to audit and refine an implementation plan until it is shippable with no Critical or High issues.
 
-# Factory - Orchestrated Plan Refinement
+# Variables
+`<branch-name>` = [branch-name](wiki/branch-name.md)
 
-You are the orchestrator agent for plan refinement.
+# Required Outcomes
+1. Refine the existing plan in place at `ai/orchestra/documents/<branch-name>/plan.md`.
+2. Identify all Critical and High plan issues that affect delivery or release safety.
+3. Resolve retained issues by refining the plan directly rather than deferring or hand-waving them away.
+4. Preserve valid [chunk](wiki/chunk.md) structure, boundaries and sequencing throughout refinement.
+5. Ensure every [chunk](wiki/chunk.md) remains independently measurable through manual user journeys, integration tests, or for sufficiently small chunks, unit tests.
+6. Preserve a concrete [risk](wiki/risk.md) assessment that remains aligned with the implementation plan and validated by the applicable sub agents.
+7. Ensure the plan retains explicit code review checkpoints strong enough to enforce technical excellence during execution.
+8. Repeat review and refinement cycles until there are zero Critical issues and zero High issues.
+9. Preserve template consistency with the [implementation-plan.template](../templates/implementation-plan.template.md).
+10. Produce a final shipping verdict.
 
-Your job is to recursively coordinate specialist sub-agents to audit and refine an implementation plan until it is shippable with no Critical or High issues.
+# Severity Rules
+- `Critical`: must be fixed before implementation starts.
+- `High`: must be fixed before release.
+- Ignore `Medium` and `Low` unless there is clear evidence they escalate to `High` or `Critical` before release.
 
-## Branch Detection
+# Audit Response Required
+When delegating an audit to a specialist sub agent, include the `Severity Rules` from this prompt in the delegated instructions and require the sub agent to classify every finding using exactly one of: `Critical`, `High`, `Medium`, `Low`.
 
-Run `git rev-parse --abbrev-ref HEAD` to detect `<branch-name>`. This value determines all file paths.
+Require each sub agent response to return findings in this structure:
+```md
+- Severity: <Critical|High|Medium|Low>
+	Issue: <problem>
+	Risk: <delivery or release impact>
+	Minimal Fix: <smallest safe refinement>
+```
 
-Load `ai/orchestra/documents/<branch-name>/plan.md` as canonical plan. If the file does not exist, return `ERROR: no plan found for branch <branch-name>`.
+If a sub agent does not provide severity or uses a different scale, treat that response as incomplete and re-prompt the sub agent with the required format.
 
-## Non-Negotiable Outcomes
+# Steps
+1. **Load baseline plan**: Read `ai/orchestra/documents/<branch-name>/plan.md` as the canonical plan. If the file does not exist, return `ERROR: no plan found for branch <branch-name>`. Preserve the original intent, scope and constraints.
+2. **Load the template**: Read [implementation-plan.template](../templates/implementation-plan.template.md) to preserve section order and template consistency while refining the plan.
+3. **Run specialist sub agent audit pass**:
+	1. Choose all sub agents applicable to the plan and ensure the combined audit covers:
+		1. Structural and actionability gaps in chunks, tasks and sequencing
+		2. Architecture coherence, integration safety and dependency ordering
+		3. Chunk boundary quality, dependency ordering and whether each chunk remains a coherent measurable increment
+		4. Risk assessment quality, completeness, mitigation strength and whether risk entries are still validated by the applicable sub agents
+		5. Technical excellence coverage across correctness, simplicity, reuse, abstraction opportunity, naming, readability and design integrity
+		6. Test strategy coverage against acceptance criteria, chunk validation, and release confidence
+		7. Auth, validation, data and abuse-case controls when relevant
+		8. Scope discipline and the fastest path to a shippable outcome
+	2. Provide each sub agent with the `Severity Rules` and the `Audit Response Required` from this prompt.
+	3. Require each sub agent to classify findings against release risk, not stylistic preference.
+4. **Merge findings with severity**:
+	1. Keep only `Critical` and `High` findings.
+	2. For each retained finding, capture the issue, risk and minimal fix.
+	3. Treat missing, weak or non-actionable review checkpoints as valid findings when they would allow technically poor code to pass through execution unchecked.
+	4. Treat broken chunk boundaries, missing chunk validation, or tasks that do not belong to a coherent measurable chunk as valid findings when they weaken delivery confidence or release safety.
+	5. Treat missing, generic, stale, or unvalidated risk assessment entries as valid findings when they weaken implementation safety, delivery confidence or release readiness.
+	6. Reclassify findings using the `Severity Rules` when a sub agent's rationale is sound but the chosen severity does not match this prompt's thresholds.
+5. **Apply minimal fixes to the plan**:
+	1. Update the plan directly to resolve retained findings.
+	2. Prefer the smallest safe changes that preserve delivery speed.
+	3. Preserve chunk intent and split or re-scope chunks when measurability or boundary clarity is weak.
+	4. Refresh risk entries, mitigations and validating sub agents whenever the plan changes invalidate or weaken the existing risk assessment.
+	5. Strengthen or add task-level review checkpoints whenever the audit shows technical excellence would otherwise be under-enforced.
+	6. After each refinement write, reload the canonical plan and treat it as the only authoritative plan for subsequent passes.
+6. **Recursive refinement loop**:
+	1. Return to step 3 (Run specialist sub agent audit pass) after each refinement.
+	2. Require each new round of findings to be rebuilt from the reloaded canonical plan.
+	3. Continue until all sub agents converge on zero `Critical` and zero `High` issues.
+	4. The maximum number of times you can (and must, if required) loop is specified in [loop-count](../config/loop-count.md).
+	5. If convergence is not reached after the maximum loop count has been exhausted, refer to [orchestrator-decision-policy](wiki/orchestrator-decision-policy.md) and apply conservative minimal-risk refinements before auditing once more.
+7. **Final quality pass**:
+	1. Ensure every chunk still satisfies the [chunk](wiki/chunk.md) definition.
+	2. Ensure every chunk is independently measurable and has valid manual, integration, or appropriately scoped unit-test validation.
+	3. Ensure the [risk](wiki/risk.md) assessment remains concrete, implementation-relevant and validated by the applicable sub agents.
+	4. Ensure every implementation task still includes review checkpoints appropriate to its technical risk.
+	5. Ensure chunk and task sequencing remains executable end-to-end.
+	6. Ensure testing sections still support release confidence.
+	7. Ensure no speculative redesign or nice-to-have scope was introduced.
+8. **Submit completion to judge sub agent**: Follow [submit-to-judge](wiki/submit-to-judge.md)
 
-1. Identify all Critical and High plan issues affecting delivery or release safety.
-2. Resolve issues by refining the plan, not by hand-waving or deferral.
-3. Ensure the plan carries explicit code review checkpoints strong enough to enforce technical excellence during execution.
-4. Repeat review-refine cycles until there are no Critical/High issues.
-5. Refine the existing plan document in place and produce a final shipping verdict.
-
-## File Outputs
-
-- In-place update target:
-   - `ai/orchestra/documents/<branch-name>/plan.md`
-
-## Orchestrator Workflow
-
-Execute this flow in order.
-
-1. **Load baseline plan**
-   - Load canonical plan from path, URL, or inline text.
-   - Preserve original intent, scope, and constraints.
-   - Once the canonical file path is known, treat that file as authoritative over any carried notes, summaries, or prior-round findings.
-
-2. **Run audit pass**
-    - Choose the subagents best suited to the plan and ensure the combined audit covers:
-       - structural and actionability gaps in tasks and sequencing,
-       - architecture coherence, integration safety, and dependency ordering,
-      - technical excellence coverage across correctness, simplicity, reuse, abstraction opportunity, naming, readability, and design integrity,
-       - test strategy coverage against acceptance criteria and release confidence,
-       - auth, validation, data, and abuse-case controls when relevant,
-       - scope discipline and the fastest path to a shippable outcome.
-
-3. **Merge findings with severity**
-   - Keep only `Critical` and `High` findings.
-   - Drop Medium/Low unless clear evidence they escalate to High/Critical before release.
-   - For each retained finding, capture: `issue`, `risk`, `minimal fix`.
-   - Missing, weak, or non-actionable review checkpoints are valid findings when they would allow technically poor code to pass through execution unchecked.
-
-4. **Apply minimal fixes to plan**
-   - Update the plan directly to resolve retained findings.
-   - Prefer smallest safe changes that preserve delivery speed.
-   - Keep template/order consistency with `ai/orchestra/templates/implementation-plan.template.md`.
-   - Strengthen or add task-level review checkpoints whenever the audit shows technical excellence would otherwise be under-enforced.
-   - After each refinement write, discard prior in-memory plan text and reload the canonical plan from disk before any further audit or delegation.
-
-5. **Recursive refinement loop (required)**
-   - Re-run audit pass after each refinement.
-   - In each new round, require findings to be rebuilt from the reloaded canonical plan.
-   - Treat prior audit notes, prior subagent outputs, and earlier findings as non-authoritative unless they are explicitly revalidated against the current plan.
-   - Continue until all sub-agents converge on zero Critical/High issues.
-   - Maximum loops: 15 full rounds.
-   - If convergence is not reached by round 15, force conservative, minimal-risk decisions and re-audit once more.
-
-6. **Finalize**
-   - Overwrite the canonical plan file with the refined result.
-   - Produce final shipping verdict from latest audit state.
-
-## Decision Policy
-
-When sub-agents conflict, use this precedence:
-
-1. Direct evidence in plan and source story
-2. Repository conventions and existing architecture
-3. Release safety and operability constraints
-4. Conservative minimal-scope default
-
-Never add speculative redesigns or nice-to-have work.
-
-## Severity Rules
-
-- **Critical:** must be fixed before implementation starts.
-- **High:** must be fixed before release.
-- Ignore Medium/Low unless they can become High/Critical pre-release.
-
-## Quality Gate
-
-Do not finalize unless all checks pass:
-
-- Latest audit has zero Critical issues.
-- Latest audit has zero High issues.
-- Every implementation task still includes review checkpoints appropriate to its technical risk.
-- Task sequence remains executable end-to-end.
-- Testing sections still map to release confidence requirements.
-- No speculative redesign scope was introduced.
-
-## Final Response Contract
-
-Return only:
-
-1. `Branch:` `<branch-name>`
-2. `Plan source:` `<path>`
-3. `Updated plan:` `<path>`
-4. `Refinement rounds:` `<number>`
-5. `Final verdict:` `<Go|No-Go>`
-6. `Critical issues:` `0`
-7. `High issues:` `0`
-
-If blocked, return:
-
-`ERROR: <reason>`
+# Response To User
+```
+Branch: <branch-name>
+Plan source: <path>
+Updated plan: <path>
+Refinement rounds: <number>
+Final verdict: <Go|No-Go>
+Critical issues: 0
+High issues: 0
+```

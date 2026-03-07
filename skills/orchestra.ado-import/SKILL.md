@@ -2,7 +2,6 @@
 name: orchestra.ado-import
 description: 'Fetch and parse Azure DevOps work items through the ADO MCP tools. Use when asked to import a PBI, bug, task, or work item from an Azure DevOps URL, extract the work item ID or project, map work item fields, convert HTML fields to plain text or markdown, or summarise related items from work item relations.'
 ---
-
 # Orchestra ADO Import
 
 Use this skill when you need to turn an Azure DevOps work item URL or ID into structured data that can be consumed in a document, summary, plan, or implementation workflow.

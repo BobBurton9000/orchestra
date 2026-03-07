@@ -4,7 +4,6 @@ description: Extract a learning from the current chat session and compile it int
 name: orchestra.learn
 argument-hint: "describe the learning or pattern discovered in this session"
 ---
-
 # Extract Session Learning into a Skill
 
 Review the current chat session and extract a reusable, generalised piece of knowledge — a pattern, convention, gotcha, or technique — and compile it into an Orchestra skill document that a future LLM agent can use directly.

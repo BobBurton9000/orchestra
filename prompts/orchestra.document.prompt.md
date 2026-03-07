@@ -3,13 +3,10 @@ description: Create an Orchestra-style feature document that explains behavior, 
 name: orchestra.document
 argument-hint: "describe the existing feature you want documented"
 ---
-
-# Create Orchestra Feature Documentation
-
+# Prompt Goal: Create Orchestra Feature Documentation
 Document an existing feature so that a future LLM agent can read this file alone and immediately know: what the feature does, which files implement it, what the key symbols are, what decisions were already made, and what to avoid. Ground every claim in real code — no abstract descriptions of things you haven't read.
 
 ## Discovery process (do this before writing)
-
 Work through these steps sequentially. Do not start writing the document until all four are done.
 
 1. **Identify the feature boundary.** Re-read the user request. Write a one-sentence definition of the feature that names at least one concrete class or file.
@@ -27,7 +24,7 @@ Work through these steps sequentially. Do not start writing the document until a
 
 3. **Goals and Non-Goals** — explicit scope boundary. The non-goals section must name specific things that _look_ related but are out of scope, so a future LLM does not over-apply this context.
 
-4. **Architecture diagram** — a Mermaid or ASCII diagram showing data flow between real named components. Use actual class or method names, not generic boxes.
+4. **Architecture diagram** — a Mermaid diagram showing data flow between real named components. Use actual class or method names, not generic boxes.
 
 5. **Data and API surface** — document every public interface, constructor signature, method, config key, or database column that defines the contract for this feature. Use the exact names from the code. Prefer tables over prose.
 
@@ -38,7 +35,6 @@ Work through these steps sequentially. Do not start writing the document until a
 8. **Anti-patterns** — a dedicated section listing what NOT to do and why. This is as valuable as positive guidance for preventing LLM mistakes.
 
 ## Output
-
 - Write the primary document to `.agents/skills/zz-orchestra.<name>/SKILL.md`.
 - Required frontmatter:
   ```yaml

@@ -2,15 +2,11 @@
 agent: orchestrator
 description: Review every Orchestra skill for accuracy and update its content
 ---
-
-# Refresh All Orchestra Skills
-
+# Goal: Refresh All Orchestra Skills
 Keep every skill document accurate and useful by reviewing each one against the current state of the codebase.
 
 ## Steps
-
 1. List the contents of `.agents/skills/` to find all Orchestra skill folders prefixed with `zz-orchestra.`. Ignore `.gitkeep` and any non-directory entries.
-
 2. For each skill folder discovered, launch a **separate subagent** with the following instruction:
 
    > Read the SKILL.md file at `.agents/skills/zz-orchestra.<name>/SKILL.md`.
@@ -28,6 +24,6 @@ Keep every skill document accurate and useful by reviewing each one against the 
 
 3. After all subagents have completed, print a final summary table:
 
-   | Skill | Outcome |
-   |-------|---------|
-   | (one row per skill, using the summary line returned by each subagent) |
+| Skill       | Outcome       |
+| ----------- | ------------- |
+| {{ skill }} | {{ outcome }} |

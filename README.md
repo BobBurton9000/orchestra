@@ -17,8 +17,8 @@ It is built for work that is too broad or too context-heavy for a single prompt.
 
 The default model lists currently live in:
 
-- `config/code-models.txt` for technical agents
-- `config/generic-models.txt` for coordination and strategy agents
+- `prompts/orchestra.config/code-models.txt` for technical agents
+- `prompts/orchestra.config/generic-models.txt` for coordination and strategy agents
 
 ## What You Get
 
@@ -92,12 +92,12 @@ This keeps planning, research, execution, and release validation in a predictabl
 
 - `agents/` - custom agent definitions copied into `.github/agents`
 - `prompts/` - reusable prompt files copied into `.github/prompts`
+- `prompts/orchestra.config/` - workflow configuration copied into `.github/prompts/orchestra.config`
 - `prompts/orchestra.templates/` - staged workflow templates copied into `.github/prompts/orchestra.templates`
 - `documents/` - generated per-branch output, with `.gitkeep` committed and generated contents gitignored
-- `config/` - source configuration copied into `.github/config` for installed agents and prompts
 - `scripts/` - support scripts, including model placeholder substitution
 - `install.sh` - installs Orchestra into the current repository's `.github` directory
-- `uninstall.sh` - removes installed Orchestra agents, prompts, and config files
+- `uninstall.sh` - removes installed Orchestra agents, prompts, and skills
 
 ## Installation
 
@@ -116,8 +116,8 @@ You also need the supporting skills expected by the agents and prompts. At minim
 ### Install Steps
 
 1. Place this repository at `ai/orchestra` inside your project.
-2. Review the available models in `config/code-models.txt` and `config/generic-models.txt`.
-3. Optionally add environment-specific notes to `config/manual-testing-instructions.md`.
+2. Review the available models in `prompts/orchestra.config/code-models.txt` and `prompts/orchestra.config/generic-models.txt`.
+3. Optionally add environment-specific notes to `prompts/orchestra.config/manual-testing-instructions.md`.
 4. From the project root, run:
 
 ```bash
@@ -128,8 +128,8 @@ The installer will:
 
 - copy `agents/` into `.github/agents/`
 - copy `prompts/` into `.github/prompts/`
-- copy `config/` into `.github/config/`
 - copy `prompts/orchestra.templates/` into `.github/prompts/orchestra.templates/`
+- copy `prompts/orchestra.config/` into `.github/prompts/orchestra.config/`
 - remove any previously installed Orchestra agent and prompt files first
 - prompt you to choose models for technical and coordination agents
 - replace `${CODE_MODEL}` and `${GENERIC_MODEL}` placeholders in the installed agent files
@@ -142,7 +142,7 @@ From the project root, run:
 ./ai/orchestra/uninstall.sh
 ```
 
-This removes installed Orchestra files from `.github/agents`, `.github/prompts`, `.github/config`, and any Orchestra-prefixed skill directories under `.agents/skills` if that folder exists.
+This removes installed Orchestra files from `.github/agents`, `.github/prompts`, and any Orchestra-prefixed skill directories under `.agents/skills` if that folder exists.
 
 ## Usage
 
@@ -188,14 +188,14 @@ Useful one-off prompts outside the full staged flow:
 
 Technical and coordination agents use separate model pools during installation:
 
-- `config/code-models.txt` feeds agents such as programmers, debugger, testers, and reviewers during install and is also copied to `.github/config/code-models.txt`
-- `config/generic-models.txt` feeds agents such as orchestrator and product-manager during install and is also copied to `.github/config/generic-models.txt`
+- `prompts/orchestra.config/code-models.txt` feeds agents such as programmers, debugger, testers, and reviewers during install
+- `prompts/orchestra.config/generic-models.txt` feeds agents such as orchestrator and product-manager during install
 
 The selected values are written into the installed copies in `.github/agents/`.
 
 ### Manual Testing Instructions
 
-`config/manual-testing-instructions.md` is an optional note file for browser and manual validation guidance. It is copied to `.github/config/manual-testing-instructions.md`, which is the path the installed tester agents reference.
+`prompts/orchestra.config/manual-testing-instructions.md` is an optional note file for browser and manual validation guidance. It is copied to `.github/prompts/orchestra.config/manual-testing-instructions.md`, which is the path the installed tester agents reference.
 
 ### Documents
 

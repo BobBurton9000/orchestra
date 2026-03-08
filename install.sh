@@ -38,12 +38,6 @@ for prompt_dir in "$MODULE_DIR"/prompts/"${MODULE_NAME}".*; do
   fi
 done
 
-mkdir -p .github/config
-
-if [ -d "$MODULE_DIR/config" ]; then
-  cp -r "$MODULE_DIR/config"/. .github/config/ 2>/dev/null || true
-fi
-
 mkdir -p .agents/skills
 rm -rf .agents/skills/${MODULE_NAME}*
 rm -rf .agents/skills/zz-${MODULE_NAME}*

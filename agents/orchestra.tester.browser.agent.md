@@ -17,7 +17,7 @@ You verify that the running application behaves correctly from a user's perspect
 - Check that UI flows complete without errors (forms submit, navigation works, data displays correctly)
 - Document what you did, what you expected, and what actually happened
 - Capture any console errors, network failures, or unexpected states observed during testing
-- Follow environment-specific instructions from [../config/manual-testing-instructions.md](../config/manual-testing-instructions.md) before testing
+- Follow environment-specific instructions from [../config/manual-testing-instructions.md](../prompts/orchestra.config/manual-testing-instructions.md) before testing
 
 ## Your constraints
 

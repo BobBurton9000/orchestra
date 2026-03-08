@@ -71,7 +71,7 @@ If a sub agent does not provide severity or uses a different scale, treat that r
 	1. Return to step 3 (Run specialist sub agent audit pass) after each refinement.
 	2. Require each new round of findings to be rebuilt from the reloaded canonical plan.
 	3. Continue until all sub agents converge on zero `Critical` and zero `High` issues.
-	4. The maximum number of times you can (and must, if required) loop is specified in [loop-count](../config/loop-count.md).
+	4. The maximum number of times you can (and must, if required) loop is specified in [loop-count](orchestra.config/loop-count.md).
 	5. If convergence is not reached after the maximum loop count has been exhausted, refer to [orchestrator-decision-policy](orchestra.snippets/orchestrator-decision-policy.md) and apply conservative minimal-risk refinements before auditing once more.
 7. **Final quality pass**:
 	1. Ensure every chunk still satisfies the [chunk](orchestra.snippets/chunk.md) definition.

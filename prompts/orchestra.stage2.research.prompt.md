@@ -38,7 +38,7 @@ Research the repository for related features, architecture and system patterns, 
 		- Architecture flow not traceable across real files
 		- Unclear system pattern recommendation
 		- Contradiction between sub agent finding
-	2. The maximum number of times you can (and must, if required) loop is specified in [loop-count](../config/loop-count.md).
+	2. The maximum number of times you can (and must, if required) loop is specified in [loop-count](orchestra.config/loop-count.md).
 	3. If still incomplete after the maximum loop count has been exhausted, refer to [orchestrator-decision-policy](orchestra.snippets/orchestrator-decision-policy.md)
 6. **Topic decomposition**:
 	1. Partition findings into distinct documentation topics

@@ -44,7 +44,7 @@ When the canonical source is a URL, prefer structured MCP-backed retrieval befor
 2. **Import Source**: Ensure `ai/orchestra/documents/<branch-name>/` directory exists
 3. **Consult specialist sub agents**: Use all available applicable sub agents to acquire information needed to complete the document
 4. **Merge and resolve sub agents input**: Merge specialist outputs into one coherent story
-5. **Recursive gap-closure loop (required)**: Return to step 3 in this step plan repeatedly until all ambiguities are resolved into explicit decisions. The maximum number of times you can (and must, if required) loop is specified in [loop-count](../config/loop-count.md).
+5. **Recursive gap-closure loop (required)**: Return to step 3 in this step plan repeatedly until all ambiguities are resolved into explicit decisions. The maximum number of times you can (and must, if required) loop is specified in [loop-count](orchestra.config/loop-count.md).
 6. **Apply decision policy**: Use the [decision policy](orchestra.snippets/orchestrator-decision-policy.md) whenever evidence is incomplete or specialist inputs still conflict
 7. **Submit completion to judge sub agent**: Follow [submit-to-judge](orchestra.snippets/submit-to-judge.md)
 

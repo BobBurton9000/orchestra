@@ -56,7 +56,7 @@ Convert a finalised story into an implementation plan by coordinating and consul
 		- Missing or vague review checkpoints for implementation tasks
 		- Incomplete testing strategy
 		- Unresolved contradiction between sub agent findings
-	2. The maximum number of times you can (and must, if required) loop is specified in [loop-count](../config/loop-count.md).
+	2. The maximum number of times you can (and must, if required) loop is specified in [loop-count](orchestra.config/loop-count.md).
 	3. If still incomplete after the maximum loop count has been exhausted, refer to [orchestrator-decision-policy](orchestra.snippets/orchestrator-decision-policy.md) and encode conservative minimal-risk decisions explicitly in the plan.
 6. **Final quality and template compliance pass**:
 	1. Verify the exact section order from [implementation-plan.template](orchestra.templates/implementation-plan.template.md).

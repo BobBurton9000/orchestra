@@ -35,7 +35,9 @@ Work through these steps sequentially. Do not start writing the document until a
 8. **Anti-patterns** — a dedicated section listing what NOT to do and why. This is as valuable as positive guidance for preventing LLM mistakes.
 
 ## Output
-- Write the primary document to `.agents/skills/zz-orchestra.<name>/SKILL.md`.
+- Write the primary document draft to `.agents/skills/zz-orchestra.<name>/WIP.md`.
+- Do not create or overwrite `SKILL.md` while the document is still in draft; agents may load it prematurely.
+- As the very last final action, once the document is complete, rename `WIP.md` to `SKILL.md`.
 - Required frontmatter:
   ```yaml
   ---
@@ -52,7 +54,7 @@ Work through these steps sequentially. Do not start writing the document until a
   6. Design Decisions
   7. Anti-Patterns
 
-- If the topic warrants it, split large sections into supporting files (e.g. `data-model.md`, `flows.md`). SKILL.md must link to each file with a one-sentence description of what it covers.
+- If the topic warrants it, split large sections into supporting files (e.g. `data-model.md`, `flows.md`). The final `SKILL.md` must link to each file with a one-sentence description of what it covers.
 - Every code block must reference a real file path in a comment or caption. Do not write hypothetical code.
 - Use tables over prose wherever structure is possible.
 - Do not include implementation task lists, checklists of coding steps, or status-tracked work items.

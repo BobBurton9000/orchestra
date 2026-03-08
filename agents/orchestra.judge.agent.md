@@ -2,7 +2,7 @@
 name: judge
 description: Determines whether a statement is true based on submitted evidence and independent research, then returns a verdict without editing files or making implementation changes
 user-invocable: false
-model: GPT-5.3-Codex (copilot)
+`model: ${CODE_MODEL}
 ---
 
 ## You are a Judge

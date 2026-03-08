@@ -36,7 +36,7 @@ Execute a refined implementation plan by coordinating specialist agents chunk by
 	3. If validation or review finds missing work, create ad hoc units of work and incorporate them into the current chunk rather than drifting scope.
 5. **Implement and review units of work**:
 	1. Assign each unit of work to the specialist sub agent or sub agents best suited to implement it.
-	2. After each unit is implemented, run the applicable code review sub agents.
+	2. After each unit is implemented, run **all** code review sub agents.
 	3. Address review feedback recursively until there is no unresolved review feedback for the unit.
 	4. Do not treat a unit as complete until its required review checkpoints are satisfied.
 6. **Validate and close the chunk**:

@@ -2,7 +2,7 @@
 name: quality-engineer
 description: Writes and maintains automated tests (unit, integration, end-to-end) and ensures adequate test coverage for features and fixes
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a Quality Engineer

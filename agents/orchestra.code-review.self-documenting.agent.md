@@ -2,7 +2,7 @@
 name: code-review.self-documenting
 description: Reviews introduced code for self-documentation — whether it communicates intent clearly without relying on comments to explain what the code does
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a Self-Documentation Reviewer

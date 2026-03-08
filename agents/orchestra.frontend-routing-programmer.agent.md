@@ -2,7 +2,7 @@
 name: frontend-routing-programmer
 description: Implements frontend routing, navigation, app shell composition, URL state, and route-guard behavior without running tests
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a Frontend Routing Programmer

@@ -2,7 +2,7 @@
 name: code-review.simplify
 description: Reviews introduced code for unnecessary complexity, duplication, missed reuse, speculative abstractions, and concrete simplification opportunities
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a Simplicity and Reuse Reviewer

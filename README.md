@@ -1,4 +1,4 @@
-README NEEDS UPDATING
+**LLM produced README I need to update it**
 
 # Orchestra
 
@@ -17,8 +17,8 @@ It is built for work that is too broad or too context-heavy for a single prompt.
 
 The default model lists currently live in:
 
-- `code-models.txt` for technical agents
-- `generic-models.txt` for coordination and strategy agents
+- `subagent-models.txt` for all specialist agents
+- `orchestrator-models.txt` for the orchestrator agent
 
 ## What You Get
 
@@ -116,7 +116,7 @@ You also need the supporting skills expected by the agents and prompts. At minim
 ### Install Steps
 
 1. Place this repository at `ai/orchestra` inside your project.
-2. Review the available models in `code-models.txt` and `generic-models.txt`.
+2. Review the available models in `subagent-models.txt` and `orchestrator-models.txt`.
 3. Optionally add environment-specific notes to `prompts/orchestra.config/manual-testing-instructions.md`.
 4. From the project root, run:
 
@@ -131,8 +131,8 @@ The installer will:
 - copy `prompts/orchestra.templates/` into `.github/prompts/orchestra.templates/`
 - copy `prompts/orchestra.config/` into `.github/prompts/orchestra.config/`
 - remove any previously installed Orchestra agent and prompt files first
-- prompt you to choose models for technical and coordination agents
-- replace `${CODE_MODEL}` and `${GENERIC_MODEL}` placeholders in the installed agent files
+- prompt you to choose models for subagents and the orchestrator
+- replace `${SUBAGENT_MODEL}` and `${ORCHESTRATOR_MODEL}` placeholders in the installed agent files
 
 ### Uninstall
 
@@ -186,10 +186,10 @@ Useful one-off prompts outside the full staged flow:
 
 ### Model Selection
 
-Technical and coordination agents use separate model pools during installation:
+Subagents and the orchestrator use separate model pools during installation:
 
-- `code-models.txt` feeds agents such as programmers, debugger, testers, and reviewers during install
-- `generic-models.txt` feeds agents such as orchestrator and product-manager during install
+- `subagent-models.txt` feeds all specialist agents, including programmers, reviewers, testers, product-manager, and ux-designer
+- `orchestrator-models.txt` feeds only the orchestrator agent during install
 
 The selected values are written into the installed copies in `.github/agents/`.
 

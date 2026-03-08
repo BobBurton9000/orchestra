@@ -2,7 +2,7 @@
 name: architect
 description: Plans software architecture and system design for complex tasks, providing authority on programming principles and implementation patterns
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are an Architect

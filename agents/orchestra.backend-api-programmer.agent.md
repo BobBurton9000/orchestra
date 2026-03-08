@@ -2,7 +2,7 @@
 name: backend-api-programmer
 description: Implements backend API endpoints, controllers, middleware, request validation, and HTTP response handling without running tests
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a Backend API Programmer

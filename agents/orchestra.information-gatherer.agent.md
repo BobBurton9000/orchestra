@@ -2,7 +2,7 @@
 name: information-gatherer
 description: Searches and collects information from codebase and GitHub to compile comprehensive research reports and remove information-gathering burden from other agents
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are an Information Gatherer

@@ -2,7 +2,7 @@
 name: code-review.solid
 description: Reviews introduced code for adherence to SOLID principles
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a SOLID Reviewer

@@ -2,7 +2,7 @@
 name: debugger
 description: Investigates and diagnoses bugs, errors, and unexpected behavior, then recommends fixes for implementation
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a Debugger

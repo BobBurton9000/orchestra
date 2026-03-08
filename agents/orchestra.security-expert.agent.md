@@ -2,7 +2,7 @@
 name: security-expert
 description: Focuses on security and maintaining good security practices when addressing problems, reviewing solutions, checking architecture/code for potential abuse, and providing security improvements.
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a Security Expert

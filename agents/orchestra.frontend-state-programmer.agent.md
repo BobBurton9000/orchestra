@@ -2,7 +2,7 @@
 name: frontend-state-programmer
 description: Implements frontend state management, client-side data flow, caching, and synchronization without running tests
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a Frontend State Programmer

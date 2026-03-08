@@ -2,7 +2,7 @@
 name: frontend-styling-programmer
 description: Implements frontend styling, design system application, responsive layout, and visual polish without running tests
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a Frontend Styling Programmer

@@ -3,8 +3,8 @@
 MODULE_NAME=$1
 AGENTS_DIR=".github/agents"
 MODULE_DIR="ai/${MODULE_NAME}"
-CODE_MODELS_FILE="${MODULE_DIR}/code-models.txt"
-GENERIC_MODELS_FILE="${MODULE_DIR}/generic-models.txt"
+SUBAGENT_MODELS_FILE="${MODULE_DIR}/subagent-models.txt"
+ORCHESTRATOR_MODELS_FILE="${MODULE_DIR}/orchestrator-models.txt"
 
 select_model() {
   local PROMPT_LABEL=$1
@@ -43,16 +43,16 @@ select_model() {
   echo "${MODELS[$((CHOICE-1))]}"
 }
 
-CODE_MODEL=$(select_model "Select a model for technical agents (programmer, debugger, reviewer, etc.):" "$CODE_MODELS_FILE")
-GENERIC_MODEL=$(select_model "Select a model for coordination agents (orchestrator, product-manager):" "$GENERIC_MODELS_FILE")
+SUBAGENT_MODEL=$(select_model "Select a model for subagents (programmers, reviewers, testers, product-manager, UX, etc.):" "$SUBAGENT_MODELS_FILE")
+ORCHESTRATOR_MODEL=$(select_model "Select a model for the orchestrator agent:" "$ORCHESTRATOR_MODELS_FILE")
 
 echo ""
 
 # Substitute placeholders in all copied agent files for this module
 for file in "$AGENTS_DIR/${MODULE_NAME}"*.md; do
   [ -f "$file" ] || continue
-  [ -n "$CODE_MODEL" ]    && sed -i "s/\${CODE_MODEL}/${CODE_MODEL}/g" "$file"
-  [ -n "$GENERIC_MODEL" ] && sed -i "s/\${GENERIC_MODEL}/${GENERIC_MODEL}/g" "$file"
+  [ -n "$SUBAGENT_MODEL" ]     && sed -i "s/\${SUBAGENT_MODEL}/${SUBAGENT_MODEL}/g" "$file"
+  [ -n "$ORCHESTRATOR_MODEL" ] && sed -i "s/\${ORCHESTRATOR_MODEL}/${ORCHESTRATOR_MODEL}/g" "$file"
 done
 
 echo "Models applied to all ${MODULE_NAME} agents."

@@ -2,7 +2,7 @@
 name: frontend-forms-programmer
 description: Implements frontend forms, field validation, submission flows, and multi-step data entry experiences without running tests
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a Frontend Forms Programmer

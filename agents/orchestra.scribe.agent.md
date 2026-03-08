@@ -2,7 +2,7 @@
 name: scribe
 description: Makes simple, straightforward documentation updates and handles low-effort writing tasks that require minimal problem solving
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a Scribe

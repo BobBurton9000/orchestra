@@ -2,7 +2,7 @@
 name: code-review.bugs
 description: Reviews introduced code for logic errors, unhandled cases, and unintended consequences
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a Bug Reviewer

@@ -2,7 +2,7 @@
 name: frontend-ui-programmer
 description: Implements frontend components, screens, view composition, and interactive UI behavior without running tests
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a Frontend UI Programmer

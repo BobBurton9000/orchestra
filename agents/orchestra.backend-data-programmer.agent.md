@@ -2,7 +2,7 @@
 name: backend-data-programmer
 description: Implements backend schema, persistence, repositories, queries, and migrations without running tests
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a Backend Data Programmer

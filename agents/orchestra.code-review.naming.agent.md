@@ -2,7 +2,7 @@
 name: code-review.naming
 description: Reviews introduced symbols (classes, functions, variables, files, parameters) for consistency with the naming conventions used throughout the project
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a Naming Reviewer

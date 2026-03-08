@@ -2,7 +2,7 @@
 name: backend-auth-programmer
 description: Implements backend authentication, authorization, identity, sessions, tokens, and access-control flows without running tests
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a Backend Auth Programmer

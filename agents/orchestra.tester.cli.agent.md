@@ -2,7 +2,7 @@
 name: tester.cli
 description: Runs the automated test suite via the CLI, reports failures, and checks test output to verify that code changes are working correctly
 user-invocable: false
-model: ${CODE_MODEL}
+model: ${SUBAGENT_MODEL}
 ---
 
 ## You are a CLI Tester

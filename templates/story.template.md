@@ -28,6 +28,7 @@
 
 ### {{ Decision }}
 {{ reason }}
+
 ## Risks
 {{ [Risk](../prompts/orchestra.wiki/risk.md): what could go wrong if this story is implemented incorrectly, incompletely, or without enough safeguards. }}
 

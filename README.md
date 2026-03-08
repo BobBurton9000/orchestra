@@ -1,3 +1,5 @@
+README NEEDS UPDATING
+
 # Orchestra
 
 Orchestra is a VS Code Copilot multi-agent workflow kit for planning, researching, implementing, refining, and validating software changes through coordinated specialist agents.

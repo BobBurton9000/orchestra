@@ -1,2 +1,2 @@
-config/*
-!config/.gitkeep
+documents/*
+!documents/.gitkeep

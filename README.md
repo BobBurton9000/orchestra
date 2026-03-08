@@ -17,8 +17,8 @@ It is built for work that is too broad or too context-heavy for a single prompt.
 
 The default model lists currently live in:
 
-- `prompts/orchestra.config/code-models.txt` for technical agents
-- `prompts/orchestra.config/generic-models.txt` for coordination and strategy agents
+- `code-models.txt` for technical agents
+- `generic-models.txt` for coordination and strategy agents
 
 ## What You Get
 
@@ -116,7 +116,7 @@ You also need the supporting skills expected by the agents and prompts. At minim
 ### Install Steps
 
 1. Place this repository at `ai/orchestra` inside your project.
-2. Review the available models in `prompts/orchestra.config/code-models.txt` and `prompts/orchestra.config/generic-models.txt`.
+2. Review the available models in `code-models.txt` and `generic-models.txt`.
 3. Optionally add environment-specific notes to `prompts/orchestra.config/manual-testing-instructions.md`.
 4. From the project root, run:
 
@@ -188,8 +188,8 @@ Useful one-off prompts outside the full staged flow:
 
 Technical and coordination agents use separate model pools during installation:
 
-- `prompts/orchestra.config/code-models.txt` feeds agents such as programmers, debugger, testers, and reviewers during install
-- `prompts/orchestra.config/generic-models.txt` feeds agents such as orchestrator and product-manager during install
+- `code-models.txt` feeds agents such as programmers, debugger, testers, and reviewers during install
+- `generic-models.txt` feeds agents such as orchestrator and product-manager during install
 
 The selected values are written into the installed copies in `.github/agents/`.
 

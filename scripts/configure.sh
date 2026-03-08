@@ -2,9 +2,9 @@
 
 MODULE_NAME=$1
 AGENTS_DIR=".github/agents"
-PROMPTS_DIR="ai/${MODULE_NAME}/prompts"
-CODE_MODELS_FILE="${PROMPTS_DIR}/${MODULE_NAME}.config/code-models.txt"
-GENERIC_MODELS_FILE="${PROMPTS_DIR}/${MODULE_NAME}.config/generic-models.txt"
+MODULE_DIR="ai/${MODULE_NAME}"
+CODE_MODELS_FILE="${MODULE_DIR}/code-models.txt"
+GENERIC_MODELS_FILE="${MODULE_DIR}/generic-models.txt"
 
 select_model() {
   local PROMPT_LABEL=$1

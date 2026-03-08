@@ -92,12 +92,12 @@ This keeps planning, research, execution, and release validation in a predictabl
 
 - `agents/` - custom agent definitions copied into `.github/agents`
 - `prompts/` - reusable prompt files copied into `.github/prompts`
-- `templates/` - staged workflow templates copied into `.github/templates`
+- `prompts/orchestra.templates/` - staged workflow templates copied into `.github/prompts/orchestra.templates`
 - `documents/` - generated per-branch output, with `.gitkeep` committed and generated contents gitignored
-- `config/` - local configuration such as model lists and optional manual testing notes
+- `config/` - source configuration copied into `.github/config` for installed agents and prompts
 - `scripts/` - support scripts, including model placeholder substitution
 - `install.sh` - installs Orchestra into the current repository's `.github` directory
-- `uninstall.sh` - removes installed Orchestra agents, prompts, and templates
+- `uninstall.sh` - removes installed Orchestra agents, prompts, and config files
 
 ## Installation
 
@@ -128,7 +128,8 @@ The installer will:
 
 - copy `agents/` into `.github/agents/`
 - copy `prompts/` into `.github/prompts/`
-- copy `templates/` into `.github/templates/`
+- copy `config/` into `.github/config/`
+- copy `prompts/orchestra.templates/` into `.github/prompts/orchestra.templates/`
 - remove any previously installed Orchestra agent and prompt files first
 - prompt you to choose models for technical and coordination agents
 - replace `${CODE_MODEL}` and `${GENERIC_MODEL}` placeholders in the installed agent files
@@ -141,7 +142,7 @@ From the project root, run:
 ./ai/orchestra/uninstall.sh
 ```
 
-This removes installed Orchestra files from `.github/agents`, `.github/prompts`, `.github/templates`, and any Orchestra-prefixed skill directories under `.agents/skills` if that folder exists.
+This removes installed Orchestra files from `.github/agents`, `.github/prompts`, `.github/config`, and any Orchestra-prefixed skill directories under `.agents/skills` if that folder exists.
 
 ## Usage
 
@@ -187,14 +188,14 @@ Useful one-off prompts outside the full staged flow:
 
 Technical and coordination agents use separate model pools during installation:
 
-- `config/code-models.txt` feeds agents such as programmers, debugger, testers, and reviewers
-- `config/generic-models.txt` feeds agents such as orchestrator and product-manager
+- `config/code-models.txt` feeds agents such as programmers, debugger, testers, and reviewers during install and is also copied to `.github/config/code-models.txt`
+- `config/generic-models.txt` feeds agents such as orchestrator and product-manager during install and is also copied to `.github/config/generic-models.txt`
 
 The selected values are written into the installed copies in `.github/agents/`.
 
 ### Manual Testing Instructions
 
-`config/manual-testing-instructions.md` is an optional local note file for browser and manual validation guidance. The tester agents reference it when present.
+`config/manual-testing-instructions.md` is an optional note file for browser and manual validation guidance. It is copied to `.github/config/manual-testing-instructions.md`, which is the path the installed tester agents reference.
 
 ### Documents
 

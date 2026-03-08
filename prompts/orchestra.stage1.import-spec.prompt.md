@@ -4,7 +4,7 @@ description: Convert a source document to a normalised story
 argument-hint: "Paste a url, attach a document to the chat or add some text"
 ---
 # Variables
-`<branch-name>` = [branch-name](orchestra.wiki/branch-name.md)
+`<branch-name>` = [branch-name](orchestra.snippets/branch-name.md)
 
 # Goal
 Turn a raw feature source (URL, requirement text, PBI, user story, or bug report) into a high-clarity, testable story document by coordinating and consulting specialist agents, then producing one final merged story.
@@ -32,7 +32,7 @@ When the canonical source is a URL, prefer structured MCP-backed retrieval befor
 
 # Required Outcomes
 1. Create a local raw copy of the source at `ai/orchestra/documents/<branch-name/story.source.md`.
-2. Produce one normalised story file at `ai/orchestra/documents/<branch-name>/story.md` using the [story.template](../templates/story.template.md).
+2. Produce one normalised story file at `ai/orchestra/documents/<branch-name>/story.md` using the [story.template](orchestra.templates/story.template.md).
 3. Define at least 3 acceptance criteria that are explicit and testable.
 4. Define at least 1 failure
 5. Resolve all uncertainties into explicit decisions before finalising.
@@ -40,13 +40,13 @@ When the canonical source is a URL, prefer structured MCP-backed retrieval befor
 7. All sections of the template have been populated
 
 # Steps
-1. **Read** the [story.template](../templates/story.template.md) and determine what information you need to acquire to create a comprehensive story document. 
+1. **Read** the [story.template](orchestra.templates/story.template.md) and determine what information you need to acquire to create a comprehensive story document. 
 2. **Import Source**: Ensure `ai/orchestra/documents/<branch-name>/` directory exists
 3. **Consult specialist sub agents**: Use all available applicable sub agents to acquire information needed to complete the document
 4. **Merge and resolve sub agents input**: Merge specialist outputs into one coherent story
 5. **Recursive gap-closure loop (required)**: Return to step 3 in this step plan repeatedly until all ambiguities are resolved into explicit decisions. The maximum number of times you can (and must, if required) loop is specified in [loop-count](../config/loop-count.md).
-6. **Apply decision policy**: Use the [decision policy](orchestra.wiki/orchestrator-decision-policy.md) whenever evidence is incomplete or specialist inputs still conflict
-7. **Submit completion to judge sub agent**: Follow [submit-to-judge](orchestra.wiki/submit-to-judge.md)
+6. **Apply decision policy**: Use the [decision policy](orchestra.snippets/orchestrator-decision-policy.md) whenever evidence is incomplete or specialist inputs still conflict
+7. **Submit completion to judge sub agent**: Follow [submit-to-judge](orchestra.snippets/submit-to-judge.md)
 
 
 # Response To User

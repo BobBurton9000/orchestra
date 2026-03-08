@@ -6,7 +6,7 @@ description: Retrieve unresolved GitHub reviewer comments, address critical or h
 Use GitHub MCP tooling to retrieve unresolved pull request reviewer comments, address critical or high feedback that should be fixed before merge, commit and push the resulting changes, and reply to the addressed comments as Orchestra so the automation is clearly differentiated from the user.
 
 # Variables
-`<branch-name>` = [branch-name](orchestra.wiki/branch-name.md)
+`<branch-name>` = [branch-name](orchestra.snippets/branch-name.md)
 
 # Required Outcomes
 1. The active or current pull request for `<branch-name>` is identified, or a concrete error is returned if no pull request can be resolved.
@@ -48,7 +48,7 @@ Use GitHub MCP tooling to retrieve unresolved pull request reviewer comments, ad
 	3. Run the relevant code review and validation sub agents for each fix unit.
 	4. Repeat until each in-scope comment is either addressed with evidence or determined to be concretely blocked.
 5. **Judge addressed feedback before publication**:
-	1. Before creating any commit, submit the addressed in-scope comments to the judge sub agent using [submit-to-judge](orchestra.wiki/submit-to-judge.md).
+	1. Before creating any commit, submit the addressed in-scope comments to the judge sub agent using [submit-to-judge](orchestra.snippets/submit-to-judge.md).
 	2. Ask the judge to determine whether the targeted `Critical` and `High` comments were correctly addressed based on the implemented changes and validation evidence.
 	3. If the judge does not establish that the feedback was correctly addressed, return to step 4 and continue fixing before attempting to commit.
 6. **Commit and push changes**:

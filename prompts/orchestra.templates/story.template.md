@@ -30,11 +30,11 @@
 {{ reason }}
 
 ## Risks
-{{ [Risk](../prompts/orchestra.wiki/risk.md): what could go wrong if this story is implemented incorrectly, incompletely, or without enough safeguards. }}
+{{ [Risk](../orchestra.snippets/risk.md): what could go wrong if this story is implemented incorrectly, incompletely, or without enough safeguards. }}
 
 {{ Impact: what the consequence would be if that risk happens, in terms of users, data, security, operations, cost, or delivery. }}
 
-## Acceptance Criteria [(Gherkin)](../prompts/orchestra.wiki/gherkin.md)
+## Acceptance Criteria [(Gherkin)](../orchestra.snippets/gherkin.md)
 ### Scenario 1: {{ scenario  name }}
 Given {{ context }}
 When {{ action }}

@@ -7,7 +7,7 @@ argument-hint: "Optional: specify the target branch if it should not default to 
 Commit the completed branch changes and open a GitHub pull request using the execution artifacts as source evidence, targeting an explicit branch inferred from the prompt when provided, otherwise `master`, or if that does not exist, `main`.
 
 # Variables
-`<branch-name>` = [branch-name](orchestra.wiki/branch-name.md)
+`<branch-name>` = [branch-name](orchestra.snippets/branch-name.md)
 
 # Invocation Pattern
 This prompt may be executed with an optional target branch hint in the invocation text.

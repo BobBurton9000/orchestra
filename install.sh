@@ -24,20 +24,24 @@ if [ -d "$MODULE_DIR/agents" ]; then
 fi
 
 mkdir -p .github/prompts
-rm -f .github/prompts/${MODULE_NAME}*
+rm -rf .github/prompts/${MODULE_NAME}*
 
 if [ -d "$MODULE_DIR/prompts" ]; then
   cp "$MODULE_DIR/prompts/${MODULE_NAME}"* .github/prompts/ 2>/dev/null || true
 fi
 
-if [ -d "$MODULE_DIR/prompts/orchestra.wiki" ]; then
-  mkdir -p .github/prompts/orchestra.wiki
-  cp "$MODULE_DIR/prompts/orchestra.wiki/"* .github/prompts/orchestra.wiki/ 2>/dev/null || true
-fi
+for prompt_dir in "$MODULE_DIR"/prompts/"${MODULE_NAME}".*; do
+  if [ -d "$prompt_dir" ]; then
+    target_dir=".github/prompts/$(basename "$prompt_dir")"
+    mkdir -p "$target_dir"
+    cp -r "$prompt_dir"/. "$target_dir"/ 2>/dev/null || true
+  fi
+done
 
-if [ -d "$MODULE_DIR/templates" ]; then
-  mkdir -p .github/templates
-  cp "$MODULE_DIR/templates/"* .github/templates/ 2>/dev/null || true
+mkdir -p .github/config
+
+if [ -d "$MODULE_DIR/config" ]; then
+  cp -r "$MODULE_DIR/config"/. .github/config/ 2>/dev/null || true
 fi
 
 mkdir -p .agents/skills

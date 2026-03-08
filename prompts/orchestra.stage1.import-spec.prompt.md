@@ -4,7 +4,7 @@ description: Convert a source document to a normalised story
 argument-hint: "Paste a url, attach a document to the chat or add some text"
 ---
 # Variables
-`<branch-name>` = [branch-name](wiki/branch-name.md)
+`<branch-name>` = [branch-name](orchestra.wiki/branch-name.md)
 
 # Goal
 Turn a raw feature source (URL, requirement text, PBI, user story, or bug report) into a high-clarity, testable story document by coordinating and consulting specialist agents, then producing one final merged story.
@@ -45,8 +45,8 @@ When the canonical source is a URL, prefer structured MCP-backed retrieval befor
 3. **Consult specialist sub agents**: Use all available applicable sub agents to acquire information needed to complete the document
 4. **Merge and resolve sub agents input**: Merge specialist outputs into one coherent story
 5. **Recursive gap-closure loop (required)**: Return to step 3 in this step plan repeatedly until all ambiguities are resolved into explicit decisions. The maximum number of times you can (and must, if required) loop is specified in [loop-count](../config/loop-count.md).
-6. **Apply decision policy**: Use the [decision policy](wiki/orchestrator-decision-policy.md#story-import) whenever evidence is incomplete or specialist inputs still conflict
-7. **Submit completion to judge sub agent**: Follow [submit-to-judge](wiki/submit-to-judge.md)
+6. **Apply decision policy**: Use the [decision policy](orchestra.wiki/orchestrator-decision-policy.md) whenever evidence is incomplete or specialist inputs still conflict
+7. **Submit completion to judge sub agent**: Follow [submit-to-judge](orchestra.wiki/submit-to-judge.md)
 
 
 # Response To User

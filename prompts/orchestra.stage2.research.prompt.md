@@ -6,7 +6,7 @@ description: Produce contextual research documents to support story refinement
 Research the repository for related features, architecture and system patterns, then produce documentation optimised as context for downstream LLM agents.
 
 # Variables
-`<branch-name>` = [branch-name](wiki/branch-name.md)
+`<branch-name>` = [branch-name](orchestra.wiki/branch-name.md)
 
 # Required Outcomes
 1. Produce one document per distinct research topic discovered using the file path: `ai/orchestra/documents/<branch-name>/research/<topic-name>.md`.
@@ -39,13 +39,13 @@ Research the repository for related features, architecture and system patterns, 
 		- Unclear system pattern recommendation
 		- Contradiction between sub agent finding
 	2. The maximum number of times you can (and must, if required) loop is specified in [loop-count](../config/loop-count.md).
-	3. If still incomplete after the maximum loop count has been exhausted, refer to [orchestrator-decision-policy](wiki/orchestrator-decision-policy.md)
+	3. If still incomplete after the maximum loop count has been exhausted, refer to [orchestrator-decision-policy](orchestra.wiki/orchestrator-decision-policy.md)
 6. **Topic decomposition**:
 	1. Partition findings into distinct documentation topics
 	2. Topic split rule: create separate topics when concerns differ by capability boundary, subsystem boundary, or life-cycle responsibility.
 	3. If uncertain, prefer more granular topics over one large mixed topic.
 7. **Write research documents**: For each topic, create a separate research document using the Required Document Structure in this prompt.
-8. **Submit completion to judge sub agent**: Follow [submit-to-judge](wiki/submit-to-judge.md)
+8. **Submit completion to judge sub agent**: Follow [submit-to-judge](orchestra.wiki/submit-to-judge.md)
 
 # Response To User
 ```

@@ -30,6 +30,16 @@ if [ -d "$MODULE_DIR/prompts" ]; then
   cp "$MODULE_DIR/prompts/${MODULE_NAME}"* .github/prompts/ 2>/dev/null || true
 fi
 
+if [ -d "$MODULE_DIR/prompts/orchestra.wiki" ]; then
+  mkdir -p .github/prompts/orchestra.wiki
+  cp "$MODULE_DIR/prompts/orchestra.wiki/"* .github/prompts/orchestra.wiki/ 2>/dev/null || true
+fi
+
+if [ -d "$MODULE_DIR/templates" ]; then
+  mkdir -p .github/templates
+  cp "$MODULE_DIR/templates/"* .github/templates/ 2>/dev/null || true
+fi
+
 mkdir -p .agents/skills
 rm -rf .agents/skills/${MODULE_NAME}*
 rm -rf .agents/skills/zz-${MODULE_NAME}*

@@ -26,8 +26,18 @@ The repository currently ships these agents:
 
 - `orchestrator` - coordinates work and delegates to the rest of the team
 - `architect` - plans architecture and implementation approach
-- `backend-programmer` - handles backend implementation work without running tests
-- `frontend-programmer` - handles frontend implementation work without running tests
+- `backend-api-programmer` - handles backend endpoints, controllers, middleware, request validation, and boundary response handling without running tests
+- `backend-domain-programmer` - handles backend business logic, workflows, and server-side rules without running tests
+- `backend-data-programmer` - handles schema, persistence, repositories, queries, and migrations without running tests
+- `backend-integration-programmer` - handles external service integrations, jobs, adapters, and infrastructure-facing server code without running tests
+- `backend-auth-programmer` - handles authentication, authorization, identity, sessions, tokens, and access-control flows without running tests
+- `backend-platform-programmer` - handles application bootstrap, runtime configuration, feature flags, and observability or infrastructure wiring without running tests
+- `frontend-ui-programmer` - handles components, screens, view composition, and interactive UI behavior without running tests
+- `frontend-state-programmer` - handles client-side state, caching, synchronization, and data flow without running tests
+- `frontend-forms-programmer` - handles forms, validation, submission flows, and multi-step data entry without running tests
+- `frontend-styling-programmer` - handles styling, responsive layout, design system application, and visual polish without running tests
+- `frontend-routing-programmer` - handles routing, navigation, app shell composition, URL state, and route guards without running tests
+- `frontend-platform-programmer` - handles frontend bootstrap, runtime configuration, provider wiring, and platform setup without running tests
 - `debugger` - investigates failures and isolates root causes
 - `information-gatherer` - collects repository and GitHub context
 - `judge` - determines whether a claim is true, false, or not established from submitted evidence and independent research
@@ -80,12 +90,12 @@ This keeps planning, research, execution, and release validation in a predictabl
 
 - `agents/` - custom agent definitions copied into `.github/agents`
 - `prompts/` - reusable prompt files copied into `.github/prompts`
+- `templates/` - staged workflow templates copied into `.github/templates`
 - `documents/` - generated per-branch output, with `.gitkeep` committed and generated contents gitignored
 - `config/` - local configuration such as model lists and optional manual testing notes
 - `scripts/` - support scripts, including model placeholder substitution
-- `templates/` - templates used by the staged prompts
 - `install.sh` - installs Orchestra into the current repository's `.github` directory
-- `uninstall.sh` - removes installed Orchestra agents and prompts
+- `uninstall.sh` - removes installed Orchestra agents, prompts, and templates
 
 ## Installation
 
@@ -116,6 +126,7 @@ The installer will:
 
 - copy `agents/` into `.github/agents/`
 - copy `prompts/` into `.github/prompts/`
+- copy `templates/` into `.github/templates/`
 - remove any previously installed Orchestra agent and prompt files first
 - prompt you to choose models for technical and coordination agents
 - replace `${CODE_MODEL}` and `${GENERIC_MODEL}` placeholders in the installed agent files
@@ -128,7 +139,7 @@ From the project root, run:
 ./ai/orchestra/uninstall.sh
 ```
 
-This removes installed Orchestra files from `.github/agents`, `.github/prompts`, and any Orchestra-prefixed skill directories under `.agents/skills` if that folder exists.
+This removes installed Orchestra files from `.github/agents`, `.github/prompts`, `.github/templates`, and any Orchestra-prefixed skill directories under `.agents/skills` if that folder exists.
 
 ## Usage
 
@@ -141,6 +152,8 @@ Use the orchestrator agent as the main entry point for multi-step work:
 ```
 
 Use it when the work needs delegation, multiple specialist passes, or iterative review and validation.
+
+For implementation routing, the orchestrator should pick the narrowest matching programmer by default and split cross-cutting work into explicit specialist-owned tasks. The dotted-family fan-out rule remains appropriate for review and tester families such as `code-review.*` and `tester.*`, but implementation specialists are intentionally shipped as singleton hyphenated agents so backend and frontend coding work stays segregated by lane rather than collapsing into a generalist path.
 
 ### Staged Factory Workflow
 

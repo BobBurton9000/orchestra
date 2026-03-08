@@ -1,0 +1,1 @@
+Run `git rev-parse --abbrev-ref HEAD` to detect `<branch-name>`.

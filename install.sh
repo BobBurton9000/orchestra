@@ -41,6 +41,8 @@ done
 mkdir -p .agents/skills
 rm -rf .agents/skills/${MODULE_NAME}*
 
+mkdir -p .agents/orchestra
+
 if [ -d "$MODULE_DIR/skills" ]; then
   cp -r "$MODULE_DIR/skills/"* .agents/skills/ 2>/dev/null || true
 fi

@@ -31,28 +31,38 @@ When the canonical source is a URL, prefer structured MCP-backed retrieval befor
 4. When MCP retrieval succeeds, prefer the MCP result as the canonical source and treat any fetched HTML page only as supporting context.
 
 # Required Outcomes
-1. Create a local raw copy of the source at `ai/orchestra/documents/<branch-name/story.source.md`.
-2. Produce one normalised story file at `ai/orchestra/documents/<branch-name>/story.md` using the [story.template](orchestra.templates/story.template.md).
-3. Define at least 3 acceptance criteria that are explicit and testable.
-4. Define at least 1 failure
-5. Resolve all uncertainties into explicit decisions before finalising.
-6. No vague terms (`fast`, `simple`, `robust`, `user-friendly`) are contained within the template without measurable meaning
-7. All sections of the template have been populated
+1. A local raw copy of the source was created at `.agents/orchestra/<branch-name>/story.source.md`.
+2. One normalised story file was produced at `.agents/orchestra/<branch-name>/story.md` using the [story.template](orchestra.templates/story.template.md).
+3. The stage marker file at `.agents/orchestra/<branch-name>/current-stage.md` was created to identify stage 1 as the current branch stage.
+4. At least 3 acceptance criteria that were explicit and testable were defined.
+5. At least 1 failure mode was defined.
+6. All uncertainties were resolved into explicit decisions before finalising.
+7. No vague terms (`fast`, `simple`, `robust`, `user-friendly`) were contained within the template without measurable meaning.
+8. All sections of the template were populated.
 
 # Steps
 1. **Read** the [story.template](orchestra.templates/story.template.md) and determine what information you need to acquire to create a comprehensive story document. 
-2. **Import Source**: Ensure `ai/orchestra/documents/<branch-name>/` directory exists
-3. **Consult specialist sub agents**: Use all available applicable sub agents to acquire information needed to complete the document
-4. **Merge and resolve sub agents input**: Merge specialist outputs into one coherent story
-5. **Recursive gap-closure loop (required)**: Return to step 3 in this step plan repeatedly until all ambiguities are resolved into explicit decisions. The maximum number of times you can (and must, if required) loop is specified in [loop-count](orchestra.config/loop-count.md).
-6. **Apply decision policy**: Use the [decision policy](orchestra.snippets/orchestrator-decision-policy.md) whenever evidence is incomplete or specialist inputs still conflict
-7. **Submit completion to judge sub agent**: Follow [submit-to-judge](orchestra.snippets/submit-to-judge.md)
+2. **Import Source**: Ensure `.agents/orchestra/<branch-name>/` directory exists
+3. **Create current stage marker**: Create `.agents/orchestra/<branch-name>/current-stage.md` with exactly the following content:
+
+	```md
+	# Current Stage
+
+	Stage: 1
+	Prompt: orchestra.stage1.import-spec
+	Name: Import Spec
+	```
+4. **Consult specialist sub agents**: Use all available applicable sub agents to acquire information needed to complete the document
+5. **Merge and resolve sub agents input**: Merge specialist outputs into one coherent story
+6. **Recursive gap-closure loop (required)**: Return to step 4 in this step plan repeatedly until all ambiguities are resolved into explicit decisions. The maximum number of times you can (and must, if required) loop is specified in [loop-count](orchestra.config/loop-count.md).
+7. **Apply decision policy**: Use the [decision policy](orchestra.snippets/orchestrator-decision-policy.md) whenever evidence is incomplete or specialist inputs still conflict
+8. **Submit completion to judge sub agent**: Follow [submit-to-judge](orchestra.snippets/submit-to-judge.md)
 
 
 # Response To User
 ```
 Branch: <branch-name>
-Imported Source: ai/orchestra/documents/<branch-name/story.source.md
-Generated Story: ai/orchestra/documents/<branch-name>/story.md
+Imported Source: .agents/orchestra/<branch-name>/story.source.md
+Generated Story: .agents/orchestra/<branch-name>/story.md
 Acceptance Criteria: <number of acceptance criteria>
 ```

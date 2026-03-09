@@ -28,4 +28,8 @@ if [ -d ".agents/skills" ]; then
   rm -rf .agents/skills/zz-${MODULE_NAME}*
 fi
 
+if [ -d ".agents/orchestra" ]; then
+  rm -rf .agents/orchestra
+fi
+
 echo "Done."

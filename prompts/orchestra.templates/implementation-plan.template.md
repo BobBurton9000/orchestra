@@ -55,6 +55,7 @@ Operations:
 ## Delivery Chunks
 
 ### Chunk {{ n }}: {{ Chunk name }}
+- Status: `pending`
 - Goal:
   - {{ measurable delivery increment this chunk completes }}
 - Scope:

@@ -69,12 +69,12 @@ The prompt set is built around both one-off utilities and a staged delivery pipe
 - `orchestra.stage3.plan` - convert the story into an implementation plan with explicit task-level code review checkpoints
 - `orchestra.stage4.refine` - refine the plan until critical and high issues are removed and review gates are strong enough to enforce technical excellence
 - `orchestra.stage5.execute` - implement the refined plan while rerunning code review and validation throughout execution
-- `orchestra.stage6.code-review` - run a recursive full-suite code review on the branch diff until every Orchestra code review agent returns `Go`
-- `orchestra.stage7.merge-check` - run a recursive merge-readiness gate after stage 6 until the branch reaches `Go`
+- `orchestra.stage6.review-feedback` - retrieve unresolved PR feedback, address critical or high comments, and reply on GitHub as Orchestra
+- `orchestra.stage7.cleanup` - delete the temporary Orchestra branch workspace after the branch is ready to merge
 
 ## Delivery Flow
 
-The staged prompts are intended to build documents under `documents/<branch-name>/`.
+The staged prompts are intended to build documents under `.agents/orchestra/<branch-name>/`.
 
 Typical flow:
 
@@ -83,8 +83,8 @@ Typical flow:
 3. `orchestra.stage3.plan` writes `plan.md`
 4. `orchestra.stage4.refine` updates `plan.md` in place and hardens its review checkpoints
 5. `orchestra.stage5.execute` writes `execution-report.md` with implementation, validation, and code review evidence
-6. `orchestra.stage6.code-review` creates or updates `issues.md` while iterating until the full code review suite is `Go` on the latest diff
-7. `orchestra.stage7.merge-check` uses the same diff-base discovery to run the final merge-blocking test and acceptance gate
+6. `orchestra.stage6.review-feedback` uses the active pull request to address unresolved critical or high reviewer feedback and records the resulting commit work
+7. `orchestra.stage7.cleanup` removes the temporary branch workspace once the branch is ready to merge
 
 This keeps planning, research, execution, and release validation in a predictable per-branch workspace.
 
@@ -94,7 +94,7 @@ This keeps planning, research, execution, and release validation in a predictabl
 - `prompts/` - reusable prompt files copied into `.github/prompts`
 - `prompts/orchestra.config/` - workflow configuration copied into `.github/prompts/orchestra.config`
 - `prompts/orchestra.templates/` - staged workflow templates copied into `.github/prompts/orchestra.templates`
-- `documents/` - generated per-branch output, with `.gitkeep` committed and generated contents gitignored
+- `.agents/orchestra/` - generated per-branch output created by the installer for staged workflow artefacts
 - `scripts/` - support scripts, including model placeholder substitution
 - `install.sh` - installs Orchestra into the current repository's `.github` directory
 - `uninstall.sh` - removes installed Orchestra agents, prompts, and skills
@@ -130,6 +130,7 @@ The installer will:
 - copy `prompts/` into `.github/prompts/`
 - copy `prompts/orchestra.templates/` into `.github/prompts/orchestra.templates/`
 - copy `prompts/orchestra.config/` into `.github/prompts/orchestra.config/`
+- create `.agents/orchestra/` when it does not already exist
 - remove any previously installed Orchestra agent and prompt files first
 - prompt you to choose models for subagents and the orchestrator
 - replace `${SUBAGENT_MODEL}` and `${ORCHESTRATOR_MODEL}` placeholders in the installed agent files
@@ -168,8 +169,8 @@ Example progression for a new piece of work:
 /orchestra.stage3.plan
 /orchestra.stage4.refine
 /orchestra.stage5.execute
-/orchestra.stage6.code-review
-/orchestra.stage7.merge-check
+/orchestra.stage6.review-feedback
+/orchestra.stage7.cleanup
 ```
 
 ### Utility Prompts
@@ -199,7 +200,7 @@ The selected values are written into the installed copies in `.github/agents/`.
 
 ### Documents
 
-Generated outputs belong under `documents/<branch-name>/`. The repository currently gitignores generated document contents while keeping the directory itself tracked.
+Generated outputs belong under `.agents/orchestra/<branch-name>/`. The installer creates `.agents/orchestra/` when needed, and generated artefacts should remain out of version control.
 
 ## Notes
 

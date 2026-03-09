@@ -27,7 +27,7 @@ Research the repository for related features, architecture and system patterns, 
    # Current Stage
 
    Stage: 2
-   Prompt: orchestra.stage2.research
+	Prompt: orchestra.slow.stage2.research
    Name: Research
    ```
 3. **Load the template**: Read [research.template](orchestra.templates/research.template.md) to determine what information you need to acquire per research topic. 

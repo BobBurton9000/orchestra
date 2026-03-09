@@ -47,7 +47,7 @@ If a sub agent does not provide severity or uses a different scale, treat that r
 	# Current Stage
 
 	Stage: 4
-	Prompt: orchestra.stage4.refine
+	Prompt: orchestra.slow.stage4.refine
 	Name: Refine
 	```
 3. **Load the template**: Read [implementation-plan.template](orchestra.templates/implementation-plan.template.md) to preserve section order and template consistency while refining the plan.

@@ -49,7 +49,7 @@ When the canonical source is a URL, prefer structured MCP-backed retrieval befor
 	# Current Stage
 
 	Stage: 1
-	Prompt: orchestra.stage1.import-spec
+	Prompt: orchestra.slow.stage1.import-spec
 	Name: Import Spec
 	```
 4. **Consult specialist sub agents**: Use all available applicable sub agents to acquire information needed to complete the document

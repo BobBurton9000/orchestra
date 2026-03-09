@@ -30,7 +30,7 @@ Convert a finalised story into an implementation plan by coordinating and consul
 	# Current Stage
 
 	Stage: 3
-	Prompt: orchestra.stage3.plan
+	Prompt: orchestra.slow.stage3.plan
 	Name: Plan
 	```
 3. **Load the template**: Read [implementation-plan.template](orchestra.templates/implementation-plan.template.md) to determine what information is required and the exact section order to follow.

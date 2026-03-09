@@ -41,7 +41,7 @@ Use GitHub MCP tooling to retrieve unresolved pull request reviewer comments, ad
    # Current Stage
 
    Stage: 6
-   Prompt: orchestra.stage6.review-feedback
+	Prompt: orchestra.slow.stage6.review-feedback
    Name: Review Feedback
    ```
 3. **Retrieve unresolved reviewer comments**:

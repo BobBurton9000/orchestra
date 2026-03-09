@@ -1,8 +1,8 @@
 ---
 agent: orchestrator
-description: Review every Orchestra skill for accuracy and update its content
+description: Refresh Orchestra-generated skills by reviewing each one for accuracy and updating its content
 ---
-# Goal: Refresh All Orchestra Skills
+# Goal: Refresh Skills
 Keep every skill document accurate and useful by reviewing each one against the current state of the codebase.
 
 ## Steps

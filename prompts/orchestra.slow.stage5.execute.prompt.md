@@ -30,7 +30,7 @@ Execute a refined implementation plan by coordinating specialist agents chunk by
    # Current Stage
 
    Stage: 5
-   Prompt: orchestra.stage5.execute
+	Prompt: orchestra.slow.stage5.execute
    Name: Execute
    ```
 3. **Prepare chunk execution map**:

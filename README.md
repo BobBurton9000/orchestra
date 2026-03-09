@@ -1,7 +1,7 @@
 # Quick notes from Bob:
 
 - There's an install/uninstall bash script now - I only recommend using GPT-5.3 codex as the subagent model for now because other models for me occassionally hang, but you can modify the txt files to add your own if you want. GPT 5.4 is good for the orchestrator model if it is available to you.
-- I wouldn't use the stage 1-X prompts this is for almost completely unattended development flows, they take an exceptionally long time to complete and I test them within 4 or more virtualbox environments.
+- I wouldn't use the slow stage 1-X prompts this is for almost completely unattended development flows, they take an exceptionally long time to complete and I test them within 4 or more virtualbox environments.
 - Simply switch your agent to orchestrator to try out a more complex task being worked on by a large team of these designated agents. Be aware that it will take more time, but the experiment here is we're trying to trade this time for higher technical excellence and consisted standards.
 - Try the learn prompt or document prompt it converts information to agent skills - i like the learn especially but i'm not sure the ouput formats for these are quite right yet
 - You might ask how much of this markdown was LLM-generated. The answer is a good amount, but a lot of manual revision and hours has gone into writing certain prompts again from scratch and basically I slowly replace things with hand crafted markdown as I see the proof of concept from the LLM generated. Then I have the LLM make edits/improvements for me and eventually I need to do this pruning again. The product manager agent for example is a complete "vibe".
@@ -64,33 +64,39 @@ The repository currently ships these agents:
 
 ### Prompts
 
-The prompt set is built around both one-off utilities and a staged delivery pipeline:
+The prompt set is built around one-off utilities plus two staged delivery tracks:
 
 - `orchestra.critique` - critique an attached file using the available review agents
 - `orchestra.document` - generate a feature document grounded in real code
 - `orchestra.learn` - extract a reusable lesson from the current chat into a skill
-- `orchestra.stage0.refresh` - refresh existing Orchestra-generated skills
-- `orchestra.stage1.import-spec` - turn a URL or freeform requirements into a normalized story
-- `orchestra.stage2.research` - produce repository-grounded research documents for the story
-- `orchestra.stage3.plan` - convert the story into an implementation plan with explicit task-level code review checkpoints
-- `orchestra.stage4.refine` - refine the plan until critical and high issues are removed and review gates are strong enough to enforce technical excellence
-- `orchestra.stage5.execute` - implement the refined plan while rerunning code review and validation throughout execution
-- `orchestra.stage6.review-feedback` - retrieve unresolved PR feedback, address critical or high comments, and reply on GitHub as Orchestra
-- `orchestra.stage7.cleanup` - delete the temporary Orchestra branch workspace after the branch is ready to merge
+- `orchestra.refresh-skills` - refresh existing Orchestra-generated skills
+- `orchestra.fast.oneshot` - run a condensed fast flow from source import through execution in one prompt
+- `orchestra.fast.stage1.import-spec` through `orchestra.fast.stage7.cleanup` - streamlined staged prompts for faster planning and execution
+- `orchestra.slow.stage1.import-spec` through `orchestra.slow.stage7.cleanup` - the original, more prescriptive unattended-delivery pipeline
 
 ## Delivery Flow
 
-The staged prompts are intended to build documents under `.agents/orchestra/<branch-name>/`.
+The staged prompts build documents under `.agents/orchestra/<branch-name>/`.
 
-Typical flow:
+Fast flow:
 
-1. `orchestra.stage1.import-spec` writes `story.source.md` and `story.md`
-2. `orchestra.stage2.research` writes one or more files under `research/`
-3. `orchestra.stage3.plan` writes `plan.md`
-4. `orchestra.stage4.refine` updates `plan.md` in place and hardens its review checkpoints
-5. `orchestra.stage5.execute` writes `execution-report.md` with implementation, validation, and code review evidence
-6. `orchestra.stage6.review-feedback` uses the active pull request to address unresolved critical or high reviewer feedback and records the resulting commit work
-7. `orchestra.stage7.cleanup` removes the temporary branch workspace once the branch is ready to merge
+1. `orchestra.fast.stage1.import-spec` writes `story.source.md` and `story.md`
+2. `orchestra.fast.stage2.research` writes one or more files under `research/`
+3. `orchestra.fast.stage3.plan` writes `plan.md`
+4. `orchestra.fast.stage4.refine` refines `plan.md` in place
+5. `orchestra.fast.stage5.execute` writes `execution-report.md` while executing the plan
+6. `orchestra.fast.stage6.review-feedback` addresses qualifying review feedback
+7. `orchestra.fast.stage7.cleanup` removes the temporary branch workspace
+
+Slow flow:
+
+1. `orchestra.slow.stage1.import-spec` writes `story.source.md` and `story.md`
+2. `orchestra.slow.stage2.research` writes one or more files under `research/`
+3. `orchestra.slow.stage3.plan` writes `plan.md`
+4. `orchestra.slow.stage4.refine` updates `plan.md` in place and hardens its review checkpoints
+5. `orchestra.slow.stage5.execute` writes `execution-report.md` with implementation, validation, and code review evidence
+6. `orchestra.slow.stage6.review-feedback` uses the active pull request to address unresolved critical or high reviewer feedback and records the resulting commit work
+7. `orchestra.slow.stage7.cleanup` removes the temporary branch workspace once the branch is ready to merge
 
 This keeps planning, research, execution, and release validation in a predictable per-branch workspace.
 
@@ -167,16 +173,34 @@ For implementation routing, the orchestrator should pick the narrowest matching 
 
 ### Staged Factory Workflow
 
-Example progression for a new piece of work:
+Fast example progression:
 
 ```text
-/orchestra.stage1.import-spec https://example.com/ticket/123
-/orchestra.stage2.research
-/orchestra.stage3.plan
-/orchestra.stage4.refine
-/orchestra.stage5.execute
-/orchestra.stage6.review-feedback
-/orchestra.stage7.cleanup
+/orchestra.fast.stage1.import-spec https://example.com/ticket/123
+/orchestra.fast.stage2.research
+/orchestra.fast.stage3.plan
+/orchestra.fast.stage4.refine
+/orchestra.fast.stage5.execute
+/orchestra.fast.stage6.review-feedback
+/orchestra.fast.stage7.cleanup
+```
+
+Fast one-shot alternative:
+
+```text
+/orchestra.fast.oneshot https://example.com/ticket/123
+```
+
+Slow example progression:
+
+```text
+/orchestra.slow.stage1.import-spec https://example.com/ticket/123
+/orchestra.slow.stage2.research
+/orchestra.slow.stage3.plan
+/orchestra.slow.stage4.refine
+/orchestra.slow.stage5.execute
+/orchestra.slow.stage6.review-feedback
+/orchestra.slow.stage7.cleanup
 ```
 
 ### Utility Prompts
@@ -185,6 +209,8 @@ Useful one-off prompts outside the full staged flow:
 
 ```text
 /orchestra.critique
+/orchestra.fast.oneshot https://example.com/ticket/123
+/orchestra.refresh-skills
 /orchestra.document describe the existing auth flow
 /orchestra.learn capture the pattern we discovered in this session
 ```

@@ -14,8 +14,6 @@ Orchestra is a VS Code Copilot multi-agent workflow kit for planning, researchin
 
 It is built for work that is too broad or too context-heavy for a single prompt. Instead of asking one agent to do everything, Orchestra gives you an orchestrator plus focused specialists for architecture, implementation, research, testing, review, UX, security, and product thinking.
 
-![Example flow](example.png)
-
 ## Current State
 
 - Built around custom agents and prompt files installed into `.github/agents` and `.github/prompts`

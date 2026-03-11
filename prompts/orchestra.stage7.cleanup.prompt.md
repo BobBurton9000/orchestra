@@ -1,6 +1,8 @@
 ---
 agent: agent
-description: Delete the temporary Orchestra branch workspace with a lightweight stage 7 flow
+description: Delete the temporary Orchestra branch workspace for the gherkin-driven stage 7 flow
+name: orchestra.stage7.cleanup
+model: Claude Haiku 4.5 (copilot)
 ---
 # Goal
 Delete the completed branch workspace under `.agents/orchestra/<branch-name>/` and verify that nothing outside that directory was touched.
@@ -24,7 +26,7 @@ Delete the completed branch workspace under `.agents/orchestra/<branch-name>/` a
 	# Current Stage
 
 	Stage: 7
-	Prompt: orchestra.fast.stage7.cleanup
+	Prompt: orchestra.stage7.cleanup
 	Name: Cleanup
 	```
 

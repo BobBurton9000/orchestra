@@ -1,9 +1,12 @@
 ---
 agent: orchestrator
-description: Address qualifying pull request review feedback with a lightweight stage 6 flow
+description: Address qualifying pull request review feedback with the gherkin-driven stage 6 flow
+name: orchestra.stage6.review-feedback
 ---
 # Goal
 Resolve unresolved pull request review feedback that should block merge, make only the necessary fixes, and reply on GitHub as Orchestra.
+
+Treat `.agents/orchestra/<branch-name>/gherkin.md` as immutable supporting context and do not modify it.
 
 # Variables
 `<branch-name>` = [branch-name](orchestra.snippets/branch-name.md)
@@ -15,6 +18,7 @@ Resolve unresolved pull request review feedback that should block merge, make on
 4. Addressed qualifying comments were fixed, validated, and replied to as `Orchestra`.
 5. Any required code changes were committed and pushed.
 6. Unfixable qualifying comments were reported as blocked with a concrete reason.
+7. `.agents/orchestra/<branch-name>/gherkin.md` remained unchanged.
 
 # Steps
 1. Resolve the active or current pull request for `<branch-name>` and gather relevant branch context.
@@ -24,14 +28,15 @@ Resolve unresolved pull request review feedback that should block merge, make on
 	# Current Stage
 
 	Stage: 6
-	Prompt: orchestra.fast.stage6.review-feedback
+	Prompt: orchestra.stage6.review-feedback
 	Name: Review Feedback
 	```
 3. Retrieve unresolved reviewer comments using GitHub tooling.
 4. Focus only on comments that are serious enough to require action before merge. Consult specialist agents when helpful.
 5. Implement the smallest safe fixes, validate them, and confirm they are ready before publishing.
-6. Commit and push only the required changes.
-7. Reply to each addressed or blocked qualifying comment as `Orchestra`, using [reviewer-comment-reply.template](orchestra.templates/reviewer-comment-reply.template.md) for structure.
+6. Do not modify `.agents/orchestra/<branch-name>/gherkin.md`.
+7. Commit and push only the required changes.
+8. Reply to each addressed or blocked qualifying comment as `Orchestra`, using [reviewer-comment-reply.template](orchestra.templates/reviewer-comment-reply.template.md) for structure.
 
 # Response To User
 ```

@@ -3,8 +3,8 @@
 ## Plan Source
 - Plan:
   - {{ link or path to the canonical plan document }}
-- Story:
-  - {{ link or path to the canonical story document }}
+- Gherkin:
+  - {{ link or path to the canonical gherkin document }}
 
 ## Execution Summary
 - {{ concise summary of what was implemented }}
@@ -38,6 +38,25 @@
   - {{ validating sub agent }}
   - {{ validating sub agent }}
 
+## Gherkin Verification Coverage
+
+- Coverage target:
+  - 100% of statements in `.agents/orchestra/<branch-name>/gherkin.md`, including `Related Gherkin`
+- Verified statements:
+  - {{ verified_count }}/{{ total_count }}
+- Coverage status:
+  - {{ pass | fail }}
+
+| Source section | File path | Scenario | Statement | Manual testing agent | Verification result | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| {{ Changed Files or Related Gherkin }} | {{ .gherkin/path.feature }} | {{ scenario name }} | {{ exact Given/When/Then/And/But statement }} | {{ tester.browser or other manual testing agent }} | {{ true | false | blocked }} | {{ concise proof or observation }} |
+
+## Gherkin Blocker Resolution
+
+| Statement | Initial failure or block | Resolution work | Final evidence |
+| --- | --- | --- | --- |
+| {{ exact statement text }} | {{ why it initially failed or was blocked }} | {{ fix, environment change, or follow-up verification performed }} | {{ proof that it is now true }} |
+
 ## Risk Reconciliation
 
 | Risk | Planned mitigation | Execution outcome | Residual risk | Verified by |
@@ -58,9 +77,15 @@
 - Result:
   - {{ pass/fail and relevant evidence }}
 
+### Gherkin Truth Status
+- Result:
+  - {{ all statements true }}
+- Resolved blockers:
+  - {{ none or exact statements that initially failed/blocked and were later resolved }}
+
 ## Deviations and Decisions
 - {{ decision or deviation }}
 - {{ reason }}
 
 ## Final Status
-- {{ Go | No-Go }}
+- {{ Go }}

@@ -3,7 +3,7 @@
 ## Source
 {{ Link to the local story source file }}
 ## Problem
-{{ 1-3 concise paragraphs describing the problem that needs to be solved
+{{ 1-3 concise paragraphs describing the problem that needs to be solved }}
 ## Outcome
 {{ The expected result }}
 ## Actors
@@ -34,7 +34,7 @@
 
 {{ Impact: what the consequence would be if that risk happens, in terms of users, data, security, operations, cost, or delivery. }}
 
-## Acceptance Criteria [(Gherkin)](../orchestra.snippets/gherkin.md)
+## Acceptance Criteria (use skill: `orchestra.writing-gherkin`)
 ### Scenario 1: {{ scenario  name }}
 Given {{ context }}
 When {{ action }}

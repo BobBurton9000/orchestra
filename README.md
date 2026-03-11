@@ -68,6 +68,8 @@ The prompt set is built around one-off utilities plus two staged delivery tracks
 
 - `orchestra.critique` - critique an attached file using the available review agents
 - `orchestra.document` - generate a feature document grounded in real code
+- `orchestra.verify-features` - inventory `.feature` scenarios with information-gatherer and verify them in batches with tester agents
+- `orchestra.stage0.import-spec` through `orchestra.stage7.cleanup` - gherkin-driven staged prompts that start from imported source material, translate it into `.gherkin/` changes, then treat those uncommitted `.gherkin/` changes as the implementation source of truth
 - `orchestra.learn` - extract a reusable lesson from the current chat into a skill
 - `orchestra.refresh-skills` - refresh existing Orchestra-generated skills
 - `orchestra.fast.oneshot` - run a condensed fast flow from source import through execution in one prompt
@@ -77,6 +79,17 @@ The prompt set is built around one-off utilities plus two staged delivery tracks
 ## Delivery Flow
 
 The staged prompts build documents under `.agents/orchestra/<branch-name>/`.
+
+Gherkin-driven flow:
+
+1. `orchestra.stage0.import-spec` imports a ticket, bug report, requirement, or document, records the raw source, and creates or adjusts the working `.gherkin/` files to reflect the intended target state
+2. `orchestra.stage1.prep` reads the uncommitted diff under `.gherkin/` only and writes `.agents/orchestra/<branch-name>/gherkin.md` using the shared branch gherkin template
+3. `orchestra.stage2.research` searches the project-root `.gherkin/` tree for existing scenarios that share a boundary, dependency, workflow, or regression surface with the changed work, appends them as `Related Gherkin` to `.agents/orchestra/<branch-name>/gherkin.md`, and writes one or more files under `research/`
+4. `orchestra.stage3.plan` writes `plan.md` using `gherkin.md` as the canonical source context
+5. `orchestra.stage4.refine` updates `plan.md` only in response to explicit user feedback while preserving template shape
+6. `orchestra.stage5.execute` writes `execution-report.md` while executing the plan and does not finish until manual testing agents have independently verified 100% of the statements in `gherkin.md`, including `Related Gherkin`, and any blockers found during that verification have been resolved
+7. `orchestra.stage6.review-feedback` addresses qualifying review feedback
+8. `orchestra.stage7.cleanup` removes the temporary branch workspace
 
 Fast flow:
 
@@ -173,6 +186,19 @@ For implementation routing, the orchestrator should pick the narrowest matching 
 
 ### Staged Factory Workflow
 
+Gherkin-driven example progression:
+
+```text
+/orchestra.stage0.import-spec https://example.com/ticket/123
+/orchestra.stage1.prep
+/orchestra.stage2.research
+/orchestra.stage3.plan
+/orchestra.stage4.refine split chunk 2 into backend and frontend work
+/orchestra.stage5.execute
+/orchestra.stage6.review-feedback
+/orchestra.stage7.cleanup
+```
+
 Fast example progression:
 
 ```text
@@ -210,6 +236,7 @@ Useful one-off prompts outside the full staged flow:
 ```text
 /orchestra.critique
 /orchestra.fast.oneshot https://example.com/ticket/123
+/orchestra.verify-features
 /orchestra.refresh-skills
 /orchestra.document describe the existing auth flow
 /orchestra.learn capture the pattern we discovered in this session

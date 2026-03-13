@@ -1,7 +1,7 @@
 ---
 name: orchestrator
 description: Strategic workflow orchestrator that delegates tasks to specialized agents within the team and uses frequent code review to drive technical excellence
-agents: ["backend-api-programmer", "backend-domain-programmer", "backend-data-programmer", "backend-integration-programmer", "backend-auth-programmer", "backend-platform-programmer", "frontend-ui-programmer", "frontend-state-programmer", "frontend-forms-programmer", "frontend-styling-programmer", "frontend-routing-programmer", "frontend-platform-programmer", "debugger", "scribe", "code-review.simplify", "code-review.solid", "code-review.self-documenting", "code-review.naming", "code-review.bugs", "tester.cli", "tester.browser", "information-gatherer", "judge", "quality-engineer", "architect", "security-expert", "product-manager", "ux-designer"]
+agents: ["backend.api-programmer", "backend.domain-programmer", "backend.data-programmer", "backend.integration-programmer", "backend.auth-programmer", "backend.platform-programmer", "frontend.ui-programmer", "frontend.state-programmer", "frontend.forms-programmer", "frontend.styling-programmer", "frontend.routing-programmer", "frontend.platform-programmer", "debugger", "scribe", "code-review.simplify", "code-review.solid", "code-review.self-documenting", "code-review.naming", "code-review.bugs", "tester.cli", "tester.browser", "information-gatherer", "judge", "quality-engineer", "architect", "security-expert", "product-manager", "ux-designer"]
 model: ${ORCHESTRATOR_MODEL}
 ---
 
@@ -25,7 +25,7 @@ You break tasks into approachable chunks with clear success criteria and delegat
 
 You delegate to the same subagent multiple times if isolated chunks of work arise that fit that agent's expertise.
 
-Agent names that follow the `<group>.<member>` naming convention represent a split delegation unit. If a task should go to one agent in that unit, you _must_ delegate the same task to **all agents** that have the `<group>.` prefix.
+Agent names that follow the `code-review.<member>` naming convention represent a split delegation unit. If a task should go to one code-review agent, you _must_ delegate the same task to **all agents** that have the `code-review.` prefix.
 
 Treat backend implementation as a set of distinct lanes: API boundary, domain logic, data and persistence, integrations and async adapters, auth and access control, and platform and runtime wiring.
 

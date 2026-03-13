@@ -1,5 +1,5 @@
 ---
-name: backend-integration-programmer
+name: backend.integration-programmer
 description: Implements backend external service integrations, background jobs, adapters, and infrastructure-facing server code without running tests
 user-invocable: false
 model: ${SUBAGENT_MODEL}

@@ -1,10 +1,10 @@
 ---
 agent: orchestrator
-description: Automatically resolve pull request merge conflicts against the target branch, validate the result, and push the updated source branch
+description: Automatically resolve pull request merge conflicts against the target branch and validate the result without committing or pushing changes
 argument-hint: "Optional: specify the target branch if it should not be inferred from the pull request or default branch"
 ---
 # Goal
-Automatically resolve merge conflicts on the current working branch or active pull request by reconciling the source branch with the correct target branch, validating the result, and pushing the updated branch when the conflict resolution is safe.
+Automatically resolve merge conflicts on the current working branch or active pull request by reconciling the source branch with the correct target branch and validating the result without committing or pushing changes automatically.
 
 # Variables
 `<branch-name>` = [branch-name](orchestra.snippets/branch-name.md)
@@ -26,9 +26,9 @@ Inference rules:
 4. Every resolvable conflict is addressed automatically using repository evidence and the plan or execution artifacts when available.
 5. No conflict marker (`<<<<<<<`, `=======`, `>>>>>>>`) remains in the working tree after resolution.
 6. No file remains in an unmerged git state before validation begins.
-7. Relevant validation, code review, and judge confirmation are completed before any resolved branch is pushed.
-8. If changes were required, a non-empty conflict-resolution commit is created and pushed on the source branch.
-9. No unrelated local changes are mixed into the conflict-resolution commit.
+7. Relevant validation, code review, and judge confirmation are completed before the resolution is presented as ready.
+8. If changes were required, the resolved files remain staged or unstaged locally and are not committed or pushed automatically.
+9. No unrelated local changes are mixed into the conflict-resolution work.
 10. If a conflict cannot be resolved safely, the response returns a concrete blocker rather than leaving the branch half-resolved.
 
 # Resolution Rules
@@ -67,13 +67,13 @@ Inference rules:
 	1. Submit the resolved conflict set to the judge sub agent using [submit-to-judge](orchestra.snippets/submit-to-judge.md).
 	2. Ask the judge to determine whether the conflict resolution preserves the intended branch behaviour, correctly incorporates required target-branch changes, and is established by the available evidence.
 	3. If the judge does not establish that the conflicts were resolved correctly, return to step 4 and continue until the result is established or concretely blocked.
-7. **Commit and push the resolution**:
-	1. Stage only the files required for conflict resolution and any validation-generated updates that are required to keep the branch consistent.
-	2. Create a non-empty commit using a non-interactive git command.
-	3. Push the updated source branch without rewriting history unless repository evidence clearly requires a rebase workflow.
-	4. Capture the commit SHA and pull request URL when available.
+7. **Prepare the resolution for user review**:
+	1. Stage only the files required for conflict resolution and any validation-generated updates that are required to keep the branch consistent when staging helps make the resulting diff clearer for review.
+	2. Do not create a commit automatically.
+	3. Do not push the source branch automatically.
+	4. Capture the pull request URL when available.
 8. **Finalize response**:
-	1. Report the source branch, target branch, number of conflicted files resolved, number blocked, commit SHA, and pull request URL when available.
+	1. Report the source branch, target branch, number of conflicted files resolved, number blocked, working tree state, and pull request URL when available.
 	2. Return only the response contract from this prompt.
 
 # Response To User
@@ -83,6 +83,6 @@ Target branch: <target-branch>
 Pull request: <url|None>
 Resolved files: <number>
 Blocked files: <number>
-Commit: <sha|None>
-Final status: <Resolved|No conflicts|Blocked|ERROR>
+Working tree: <Clean|Staged changes|Unstaged changes|Mixed>
+Final status: <Resolved locally|No conflicts|Blocked|ERROR>
 ```

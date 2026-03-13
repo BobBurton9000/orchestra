@@ -1,5 +1,5 @@
 ---
-name: frontend-styling-programmer
+name: frontend.styling-programmer
 description: Implements frontend styling, design system application, responsive layout, and visual polish without running tests
 user-invocable: false
 model: ${SUBAGENT_MODEL}

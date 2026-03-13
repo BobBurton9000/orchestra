@@ -1,5 +1,5 @@
 ---
-name: backend-api-programmer
+name: backend.api-programmer
 description: Implements backend API endpoints, controllers, middleware, request validation, and HTTP response handling without running tests
 user-invocable: false
 model: ${SUBAGENT_MODEL}

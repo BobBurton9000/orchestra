@@ -1,5 +1,5 @@
 ---
-name: frontend-platform-programmer
+name: frontend.platform-programmer
 description: Implements frontend bootstrap, runtime configuration, provider wiring, client platform setup, and build-adjacent application code without running tests
 user-invocable: false
 model: ${SUBAGENT_MODEL}

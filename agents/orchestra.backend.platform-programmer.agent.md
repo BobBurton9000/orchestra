@@ -1,5 +1,5 @@
 ---
-name: backend-platform-programmer
+name: backend.platform-programmer
 description: Implements backend application bootstrap, runtime configuration, server infrastructure wiring, feature flags, and observability hooks without running tests
 user-invocable: false
 model: ${SUBAGENT_MODEL}

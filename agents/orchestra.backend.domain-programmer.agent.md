@@ -1,5 +1,5 @@
 ---
-name: backend-domain-programmer
+name: backend.domain-programmer
 description: Implements backend business logic, domain services, workflows, and server-side rules without running tests
 user-invocable: false
 model: ${SUBAGENT_MODEL}

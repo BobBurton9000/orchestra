@@ -34,18 +34,18 @@ The repository currently ships these agents:
 
 - `orchestrator` - coordinates work and delegates to the rest of the team
 - `architect` - plans architecture and implementation approach
-- `backend-api-programmer` - handles backend endpoints, controllers, middleware, request validation, and boundary response handling without running tests
-- `backend-domain-programmer` - handles backend business logic, workflows, and server-side rules without running tests
-- `backend-data-programmer` - handles schema, persistence, repositories, queries, and migrations without running tests
-- `backend-integration-programmer` - handles external service integrations, jobs, adapters, and infrastructure-facing server code without running tests
-- `backend-auth-programmer` - handles authentication, authorization, identity, sessions, tokens, and access-control flows without running tests
-- `backend-platform-programmer` - handles application bootstrap, runtime configuration, feature flags, and observability or infrastructure wiring without running tests
-- `frontend-ui-programmer` - handles components, screens, view composition, and interactive UI behavior without running tests
-- `frontend-state-programmer` - handles client-side state, caching, synchronization, and data flow without running tests
-- `frontend-forms-programmer` - handles forms, validation, submission flows, and multi-step data entry without running tests
-- `frontend-styling-programmer` - handles styling, responsive layout, design system application, and visual polish without running tests
-- `frontend-routing-programmer` - handles routing, navigation, app shell composition, URL state, and route guards without running tests
-- `frontend-platform-programmer` - handles frontend bootstrap, runtime configuration, provider wiring, and platform setup without running tests
+- `backend.api-programmer` - handles backend endpoints, controllers, middleware, request validation, and boundary response handling without running tests
+- `backend.domain-programmer` - handles backend business logic, workflows, and server-side rules without running tests
+- `backend.data-programmer` - handles schema, persistence, repositories, queries, and migrations without running tests
+- `backend.integration-programmer` - handles external service integrations, jobs, adapters, and infrastructure-facing server code without running tests
+- `backend.auth-programmer` - handles authentication, authorization, identity, sessions, tokens, and access-control flows without running tests
+- `backend.platform-programmer` - handles application bootstrap, runtime configuration, feature flags, and observability or infrastructure wiring without running tests
+- `frontend.ui-programmer` - handles components, screens, view composition, and interactive UI behavior without running tests
+- `frontend.state-programmer` - handles client-side state, caching, synchronization, and data flow without running tests
+- `frontend.forms-programmer` - handles forms, validation, submission flows, and multi-step data entry without running tests
+- `frontend.styling-programmer` - handles styling, responsive layout, design system application, and visual polish without running tests
+- `frontend.routing-programmer` - handles routing, navigation, app shell composition, URL state, and route guards without running tests
+- `frontend.platform-programmer` - handles frontend bootstrap, runtime configuration, provider wiring, and platform setup without running tests
 - `debugger` - investigates failures and isolates root causes
 - `information-gatherer` - collects repository and GitHub context
 - `judge` - determines whether a claim is true, false, or not established from submitted evidence and independent research
@@ -64,62 +64,45 @@ The repository currently ships these agents:
 
 ### Prompts
 
-The prompt set is built around one-off utilities plus two staged delivery tracks:
-
-- `orchestra.critique` - critique an attached file using the available review agents
-- `orchestra.document` - generate a feature document grounded in real code
-- `orchestra.verify-features` - inventory `.feature` scenarios with information-gatherer and verify them in batches with tester agents
-- `orchestra.stage0.import-spec` through `orchestra.stage7.cleanup` - gherkin-driven staged prompts that start from imported source material, translate it into `.gherkin/` changes, then treat those uncommitted `.gherkin/` changes as the implementation source of truth
-- `orchestra.learn` - extract a reusable lesson from the current chat into a skill
-- `orchestra.refresh-skills` - refresh existing Orchestra-generated skills
-- `orchestra.fast.oneshot` - run a condensed fast flow from source import through execution in one prompt
-- `orchestra.fast.stage1.import-spec` through `orchestra.fast.stage7.cleanup` - streamlined staged prompts for faster planning and execution
-- `orchestra.slow.stage1.import-spec` through `orchestra.slow.stage7.cleanup` - the original, more prescriptive unattended-delivery pipeline
+- `orchestra.critique` - critique attached files using the available review agents
+- `orchestra.document` - generate a code-grounded feature document and save it as an Orchestra skill draft
+- `orchestra.experimental.resolve-conflicts` - resolve merge conflicts against the correct target branch and validate the result locally
+- `orchestra.gherkinify` - convert source material into a focused `Feature:` plus supported Gherkin scenarios
+- `orchestra.learn` - extract a reusable lesson from the current chat and compile it into an Orchestra skill
+- `orchestra.plan.create` - create a branch implementation plan from inline text or a GitHub/Azure DevOps URL
+- `orchestra.plan.execute` - execute the current branch plan, enforce review and QA loops, and write an execution report
+- `orchestra.refresh-skills` - refresh existing Orchestra-generated skills against the current codebase
+- `orchestra.review-feedback` - address actionable reviewer feedback on the current pull request
+- `orchestra.review.pr-to-file` - review a pull request diff and write findings to a new markdown file at project root
 
 ## Delivery Flow
 
-The staged prompts build documents under `.agents/orchestra/<branch-name>/`.
+The plan and execution prompts build branch-scoped artifacts under `.agents/orchestra/<branch-name>/`.
 
-Gherkin-driven flow:
+Primary implementation flow:
 
-1. `orchestra.stage0.import-spec` imports a ticket, bug report, requirement, or document, records the raw source, and creates or adjusts the working `.gherkin/` files to reflect the intended target state
-2. `orchestra.stage1.prep` reads the uncommitted diff under `.gherkin/` only and writes `.agents/orchestra/<branch-name>/gherkin.md` using the shared branch gherkin template
-3. `orchestra.stage2.research` searches the project-root `.gherkin/` tree for existing scenarios that share a boundary, dependency, workflow, or regression surface with the changed work, appends them as `Related Gherkin` to `.agents/orchestra/<branch-name>/gherkin.md`, and writes one or more files under `research/`
-4. `orchestra.stage3.plan` writes `plan.md` using `gherkin.md` as the canonical source context
-5. `orchestra.stage4.refine` updates `plan.md` only in response to explicit user feedback while preserving template shape
-6. `orchestra.stage5.execute` writes `execution-report.md` while executing the plan and does not finish until manual testing agents have independently verified 100% of the statements in `gherkin.md`, including `Related Gherkin`, and any blockers found during that verification have been resolved
-7. `orchestra.stage6.review-feedback` addresses qualifying review feedback
-8. `orchestra.stage7.cleanup` removes the temporary branch workspace
+1. `orchestra.plan.create` turns the request into `.agents/orchestra/<branch-name>/plan.md` using the implementation plan template
+2. Optional: `orchestra.gherkinify` converts source material into Gherkin that you can save as `.agents/orchestra/<branch-name>/gherkin.feature` or use as planning input
+3. `orchestra.plan.execute` implements the plan, runs review and validation loops, and writes `.agents/orchestra/<branch-name>/execution-report.md`
+4. `orchestra.review-feedback` addresses actionable reviewer feedback on the current pull request
 
-Fast flow:
+Supporting prompt flows:
 
-1. `orchestra.fast.stage1.import-spec` writes `story.source.md` and `story.md`
-2. `orchestra.fast.stage2.research` writes one or more files under `research/`
-3. `orchestra.fast.stage3.plan` writes `plan.md`
-4. `orchestra.fast.stage4.refine` refines `plan.md` in place
-5. `orchestra.fast.stage5.execute` writes `execution-report.md` while executing the plan
-6. `orchestra.fast.stage6.review-feedback` addresses qualifying review feedback
-7. `orchestra.fast.stage7.cleanup` removes the temporary branch workspace
+1. `orchestra.document` turns an existing feature into a reusable Orchestra skill document under `.agents/skills/`
+2. `orchestra.learn` extracts a reusable lesson from the current session into `.agents/skills/`
+3. `orchestra.refresh-skills` reviews existing Orchestra-generated skills and updates them against the current codebase
+4. `orchestra.review.pr-to-file` performs an offline PR review and writes findings into a new root-level markdown file
+5. `orchestra.experimental.resolve-conflicts` resolves merge conflicts locally without committing or pushing automatically
 
-Slow flow:
-
-1. `orchestra.slow.stage1.import-spec` writes `story.source.md` and `story.md`
-2. `orchestra.slow.stage2.research` writes one or more files under `research/`
-3. `orchestra.slow.stage3.plan` writes `plan.md`
-4. `orchestra.slow.stage4.refine` updates `plan.md` in place and hardens its review checkpoints
-5. `orchestra.slow.stage5.execute` writes `execution-report.md` with implementation, validation, and code review evidence
-6. `orchestra.slow.stage6.review-feedback` uses the active pull request to address unresolved critical or high reviewer feedback and records the resulting commit work
-7. `orchestra.slow.stage7.cleanup` removes the temporary branch workspace once the branch is ready to merge
-
-This keeps planning, research, execution, and release validation in a predictable per-branch workspace.
+This keeps planning, execution, review follow-up, and generated documentation in a predictable per-branch workspace.
 
 ## Repository Layout
 
 - `agents/` - custom agent definitions copied into `.github/agents`
 - `prompts/` - reusable prompt files copied into `.github/prompts`
 - `prompts/orchestra.config/` - workflow configuration copied into `.github/prompts/orchestra.config`
-- `prompts/orchestra.templates/` - staged workflow templates copied into `.github/prompts/orchestra.templates`
-- `.agents/orchestra/` - generated per-branch output created by the installer for staged workflow artefacts
+- `prompts/orchestra.templates/` - shared templates copied into `.github/prompts/orchestra.templates`
+- `.agents/orchestra/` - generated per-branch output created by the installer for plan and execution artefacts
 - `scripts/` - support scripts, including model placeholder substitution
 - `install.sh` - installs Orchestra into the current repository's `.github` directory
 - `uninstall.sh` - removes installed Orchestra agents, prompts, and skills
@@ -184,62 +167,47 @@ Use it when the work needs delegation, multiple specialist passes, or iterative 
 
 For implementation routing, the orchestrator should pick the narrowest matching programmer by default and split cross-cutting work into explicit specialist-owned tasks. The dotted-family fan-out rule remains appropriate for review and tester families such as `code-review.*` and `tester.*`, but implementation specialists are intentionally shipped as singleton hyphenated agents so backend and frontend coding work stays segregated by lane rather than collapsing into a generalist path.
 
-### Staged Factory Workflow
+### Prompt Workflows
 
-Gherkin-driven example progression:
+Plan-driven example progression:
 
 ```text
-/orchestra.stage0.import-spec https://example.com/ticket/123
-/orchestra.stage1.prep
-/orchestra.stage2.research
-/orchestra.stage3.plan
-/orchestra.stage4.refine split chunk 2 into backend and frontend work
-/orchestra.stage5.execute
-/orchestra.stage6.review-feedback
-/orchestra.stage7.cleanup
+/orchestra.plan.create https://example.com/ticket/123
+/orchestra.plan.execute
+/orchestra.review-feedback
 ```
 
-Fast example progression:
+`/orchestra.review-feedback` is the concise deterministic command for the common request "address all reviewer feedback on the current PR". It resolves the active pull request first, falls back to the currently open pull request if needed, then builds a normalised feedback backlog from review comments, review submissions, and actionable PR discussion comments.
+
+Optional Gherkin-first variant:
 
 ```text
-/orchestra.fast.stage1.import-spec https://example.com/ticket/123
-/orchestra.fast.stage2.research
-/orchestra.fast.stage3.plan
-/orchestra.fast.stage4.refine
-/orchestra.fast.stage5.execute
-/orchestra.fast.stage6.review-feedback
-/orchestra.fast.stage7.cleanup
+/orchestra.gherkinify auth session timeout rules
+/orchestra.plan.create implement the attached gherkin feature
+/orchestra.plan.execute
+/orchestra.review-feedback
 ```
 
-Fast one-shot alternative:
+Documentation and review utilities:
 
 ```text
-/orchestra.fast.oneshot https://example.com/ticket/123
-```
-
-Slow example progression:
-
-```text
-/orchestra.slow.stage1.import-spec https://example.com/ticket/123
-/orchestra.slow.stage2.research
-/orchestra.slow.stage3.plan
-/orchestra.slow.stage4.refine
-/orchestra.slow.stage5.execute
-/orchestra.slow.stage6.review-feedback
-/orchestra.slow.stage7.cleanup
+/orchestra.document describe the existing auth flow
+/orchestra.review.pr-to-file https://github.com/example/repo/pull/123 example repo review-notes.md
+/orchestra.experimental.resolve-conflicts
 ```
 
 ### Utility Prompts
 
-Useful one-off prompts outside the full staged flow:
+Useful one-off prompts outside the main plan/execute flow:
 
 ```text
 /orchestra.critique
-/orchestra.fast.oneshot https://example.com/ticket/123
-/orchestra.verify-features
+/orchestra.gherkinify password reset behaviour
 /orchestra.refresh-skills
 /orchestra.document describe the existing auth flow
 /orchestra.learn capture the pattern we discovered in this session
+/orchestra.review.pr-to-file https://github.com/example/repo/pull/123 example repo review-notes.md
+/orchestra.experimental.resolve-conflicts
 ```
 
 ## Configuration
@@ -264,5 +232,5 @@ Generated outputs belong under `.agents/orchestra/<branch-name>/`. The installer
 ## Notes
 
 - The orchestrator is intentionally strict about delegation. Its prompt explicitly forbids doing implementation or exploration work directly.
-- The staged prompts are opinionated. They are meant to force explicit documents, bounded scope, recursive refinement, and repeated code review rather than one-shot execution.
+- The prompt workflows are opinionated. They are meant to force explicit planning, bounded scope, repeated review, and evidence-backed execution rather than one-shot implementation.
 - The repository is a working framework, not a polished product. Expect to tune agents, prompt wording, model lists, and supporting skills for your environment.

@@ -1,5 +1,5 @@
 ---
-name: backend-data-programmer
+name: backend.data-programmer
 description: Implements backend schema, persistence, repositories, queries, and migrations without running tests
 user-invocable: false
 model: ${SUBAGENT_MODEL}

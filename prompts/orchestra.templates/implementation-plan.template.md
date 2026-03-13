@@ -25,26 +25,6 @@ flowchart LR
 | --- | --- | --- | --- |
 | {{ boundary name }} | {{ upstream component }} | {{ downstream component }} | {{ what changes here }} |
 
-## Symbol Skeletons
-
-### Symbol: {{ Name }}
-```text
-Symbol type: {{ class | module | service | controller | workflow | function | repository | other }}
-Purpose: {{ one-sentence responsibility }}
-Depends on:
-- {{ dependency or collaborator }}
-
-Inputs:
-- {{ input name }}: {{ description }}
-
-Outputs:
-- {{ output name }}: {{ description }}
-
-Operations:
-- {{ operation name }}: {{ what it does }}
-- {{ operation name }}: {{ what it does }}
-```
-- Interaction notes: {{ callers, collaborators, downstream systems, and how data or control flows through the symbol }}
 
 ## Risk Assessment
 
@@ -112,3 +92,24 @@ Operations:
 - {{ pointed actionable question }}
 - If no additional input is needed, write:
   - None
+
+## Symbol Skeletons
+
+### Symbol: {{ Name }}
+```text
+Symbol type: {{ class | module | service | controller | workflow | function | repository | other }}
+Purpose: {{ one-sentence responsibility }}
+Depends on:
+- {{ dependency or collaborator }}
+
+Inputs:
+- {{ input name }}: {{ description }}
+
+Outputs:
+- {{ output name }}: {{ description }}
+
+Operations:
+- {{ operation name }}: {{ what it does }}
+- {{ operation name }}: {{ what it does }}
+```
+- Interaction notes: {{ callers, collaborators, downstream systems, and how data or control flows through the symbol }}

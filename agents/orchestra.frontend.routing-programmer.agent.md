@@ -1,5 +1,5 @@
 ---
-name: frontend-routing-programmer
+name: frontend.routing-programmer
 description: Implements frontend routing, navigation, app shell composition, URL state, and route-guard behavior without running tests
 user-invocable: false
 model: ${SUBAGENT_MODEL}

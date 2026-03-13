@@ -6,7 +6,7 @@ argument-hint: "describe the implementation request to plan"
 ---
 
 # Goal
-Create one implementation plan for the developer request and save it to `.agents/orchestra/<branch-name>/plan.md` using the canonical Orchestra template at [prompts/orchestra.templates/implementation-plan.template.md](prompts/orchestra.templates/implementation-plan.template.md).
+Create one implementation plan for the developer request and save it to `.agents/orchestra/<branch-name>/plan.md` using the canonical Orchestra template at [implementation-plan.template.md](orchestra.templates/implementation-plan.template.md).
 
 The plan must contain only implementation work. Do not add investigative or exploratory tasks.
 

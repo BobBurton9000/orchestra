@@ -6,7 +6,7 @@ argument-hint: "optional: specific chunk/task focus or execution constraint"
 ---
 
 # Goal
-Implement the branch plan at `.agents/orchestra/<branch-name>/plan.md` with high technical excellence and complete quality assurance evidence, then write `.agents/orchestra/<branch-name>/execution-report.md` using [execution-report.template.md](orchestra.templates/execution-report.template.md).
+Implement the branch plan at `.agents/orchestra/<branch-name>/plan.md` with high technical excellence, keep the chunk/task status fields in that plan updated as execution progresses, and then write `.agents/orchestra/<branch-name>/execution-report.md` using [execution-report.template.md](orchestra.templates/execution-report.template.md).
 
 Execution is complete only when all required quality gates pass, there are no unresolved blockers/issues, and the execution report is fully populated with evidence.
 
@@ -33,15 +33,18 @@ Inference rules:
 # Required Outcomes
 1. `<plan-path>` is read and treated as the canonical implementation source.
 2. All relevant plan chunks/tasks within scope are implemented in code with production-quality changes.
-3. Frequent code-review loops are run using code-review agents, and critical/high findings are resolved before completion.
-4. Automated validation from the plan is executed (or explicitly marked `not applicable` or `not practical` with reasons) and evidence is captured.
-5. Manual QA is executed with manual testing agents and evidence is captured for all required scenarios.
-6. If `<gherkin-path>` exists, 100% of `Given/When/Then/And/But` statements are independently verified true, or the run remains `Blocked`.
-7. Any initial false/blocked Gherkin statements are resolved and documented in blocker resolution evidence before final `Go`.
-8. **Self-resolution loop (required)**: All detected blockers, failures, defects, or quality gate violations automatically trigger immediate resolution attempts and full re-validation; repeat until the issue set is empty.
-9. `<execution-report-path>` is written using [execution-report.template.md](orchestra.templates/execution-report.template.md) structure.
-10. `Blocked` is allowed only for hard-stop constraints that cannot be self-resolved in-session (for example: missing required external credentials/access, unavailable mandatory dependency/service, or explicit user hold). These constraints must be evidenced in the report with attempted mitigations.
-11. Final status is not `Go` if unresolved critical/high defects, failing quality gates, unverified required statements, or any open blocker/issue remains.
+3. `<plan-path>` remains a live execution source of truth: relevant chunk and task `Status` fields are updated in place as work progresses, using `pending`, `in_progress`, `completed`, or `blocked`.
+4. Task statuses are updated as execution advances: mark a task `in_progress` before active implementation, `completed` only after its implementation and required validations/review checkpoints are satisfied, and `blocked` only for hard-stop constraints that cannot be self-resolved in-session.
+5. Chunk statuses are kept in sync with their child tasks: mark a chunk `in_progress` when scoped work starts, `completed` only when its scoped tasks are completed and its chunk-level validation passes, and `blocked` only when a hard-stop constraint prevents completion.
+6. Frequent code-review loops are run using code-review agents, and critical/high findings are resolved before completion.
+7. Automated validation from the plan is executed (or explicitly marked `not applicable` or `not practical` with reasons) and evidence is captured.
+8. Manual QA is executed with manual testing agents and evidence is captured for all required scenarios.
+9. If `<gherkin-path>` exists, 100% of `Given/When/Then/And/But` statements are independently verified true, or the run remains `Blocked`.
+10. Any initial false/blocked Gherkin statements are resolved and documented in blocker resolution evidence before final `Go`.
+11. **Self-resolution loop (required)**: All detected blockers, failures, defects, or quality gate violations automatically trigger immediate resolution attempts and full re-validation; repeat until the issue set is empty.
+12. `<execution-report-path>` is written using [execution-report.template.md](orchestra.templates/execution-report.template.md) structure.
+13. `Blocked` is allowed only for hard-stop constraints that cannot be self-resolved in-session (for example: missing required external credentials/access, unavailable mandatory dependency/service, or explicit user hold). These constraints must be evidenced in the report with attempted mitigations.
+14. Final status is not `Go` if unresolved critical/high defects, failing quality gates, unverified required statements, any open blocker/issue remains, or plan statuses are out of sync with actual execution state.
 
 # Steps
 1. Resolve `<branch-name>` using [branch-name](orchestra.snippets/branch-name.md).
@@ -52,26 +55,34 @@ Inference rules:
    - Read [execution-report.template.md](orchestra.templates/execution-report.template.md).
    - Read [manual-testing-instructions.md](orchestra.config/manual-testing-instructions.md) when `<gherkin-path>` is present.
 4. Build an execution backlog from plan chunks/tasks, constrained by `{{ execution-scope }}` when provided.
-5. Execute implementation iteratively by delegating to the appropriate specialist programmer agents.
-6. After each meaningful code increment, delegate review to relevant code-review agents and route any serious findings back to implementation/debugging agents until resolved.
-7. Run required automated validation from the plan:
+5. Treat `<plan-path>` as a live tracker during execution:
+   - Before starting a chunk or task, update its `Status` to `in_progress` in `<plan-path>`.
+   - After each meaningful increment, reconcile task/chunk statuses in `<plan-path>` so they match the current state of the work.
+   - When a task clears its implementation, review checkpoints, and required validations, update it to `completed`.
+   - When all scoped tasks for a chunk are `completed` and the chunk validation passes, update the chunk to `completed`.
+   - If a hard-stop constraint prevents progress, update the affected task/chunk to `blocked` and capture the evidence for the execution report.
+6. Execute implementation iteratively by delegating to the appropriate specialist programmer agents.
+7. After each meaningful code increment, delegate review to relevant code-review agents and route any serious findings back to implementation/debugging agents until resolved.
+8. Run required automated validation from the plan:
    - Unit tests
    - Integration tests
    - Other plan-defined checks
    Record exact commands and outcomes.
-8. Run manual QA validation using manual testing agents for plan journeys and user-facing flows.
-9. If `<gherkin-path>` exists, perform complete statement-level independent verification:
+9. Run manual QA validation using manual testing agents for plan journeys and user-facing flows.
+10. If `<gherkin-path>` exists, perform complete statement-level independent verification:
    - Verify every `Given/When/Then/And/But` statement from both `Changed Files` and `Related Gherkin`.
    - Record source section, file path, scenario, exact statement, validating agent, result (`true|false|blocked`), and evidence.
    - If any statement is `false` or `blocked`, treat as a blocker: resolve, re-test, and re-verify until true; only hard-stop constraints may remain `blocked`.
-10. Run a self-resolution closure loop across all findings (code review, tests, manual QA, Gherkin, and plan checkpoints):
+11. Run a self-resolution closure loop across all findings (code review, tests, manual QA, Gherkin, and plan checkpoints):
    - Build a current open-issues list.
    - Resolve each item, then re-run the minimum required validations to prove closure.
+   - Update the affected task/chunk `Status` fields in `<plan-path>` after each issue is resolved or confirmed blocked.
    - Repeat until open-issues list is empty.
    - If any issue remains due to a hard-stop constraint, document evidence and mark final status `Blocked`.
-11. Reconcile execution outcomes against plan risks and checkpoints.
-12. Write `<execution-report-path>` using the execution-report template, ensuring all sections contain concrete evidence.
-13. Return final response using the response contract.
+12. Reconcile execution outcomes against plan risks and checkpoints.
+13. Perform a final status reconciliation in `<plan-path>` so every in-scope chunk/task accurately reflects the completed, pending, or blocked state before writing the report.
+14. Write `<execution-report-path>` using the execution-report template, ensuring all sections contain concrete evidence.
+15. Return final response using the response contract.
 
 # Response To User
 ```

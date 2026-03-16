@@ -1,7 +1,6 @@
 # Quick notes from Bob:
 
 - There's an install/uninstall bash script now - I only recommend using GPT-5.3 codex as the subagent model for now because other models for me occassionally hang, but you can modify the txt files to add your own if you want. GPT 5.4 is good for the orchestrator model if it is available to you.
-- I wouldn't use the slow stage 1-X prompts this is for almost completely unattended development flows, they take an exceptionally long time to complete and I test them within 4 or more virtualbox environments.
 - Simply switch your agent to orchestrator to try out a more complex task being worked on by a large team of these designated agents. Be aware that it will take more time, but the experiment here is we're trying to trade this time for higher technical excellence and consisted standards.
 - Try the learn prompt or document prompt it converts information to agent skills - i like the learn especially but i'm not sure the ouput formats for these are quite right yet
 - You might ask how much of this markdown was LLM-generated. The answer is a good amount, but a lot of manual revision and hours has gone into writing certain prompts again from scratch and basically I slowly replace things with hand crafted markdown as I see the proof of concept from the LLM generated. Then I have the LLM make edits/improvements for me and eventually I need to do this pruning again. The product manager agent for example is a complete "vibe".

@@ -1,6 +1,6 @@
 # Quick notes from Bob:
 
-- There's an install/uninstall bash script now - I only recommend using GPT-5.3 codex as the subagent model for now because other models for me occassionally hang, but you can modify the txt files to add your own if you want. GPT 5.4 is good for the orchestrator model if it is available to you.
+- There are provider-specific install/uninstall bash scripts now. I still recommend GPT-5.3 Codex for subagents because other models occasionally hang for me, but you can modify the provider-specific model lists if you want. GPT-5.4 is a good orchestrator model when it is available.
 - Simply switch your agent to orchestrator to try out a more complex task being worked on by a large team of these designated agents. Be aware that it will take more time, but the experiment here is we're trying to trade this time for higher technical excellence and consisted standards.
 - Try the learn prompt or document prompt it converts information to agent skills - i like the learn especially but i'm not sure the ouput formats for these are quite right yet
 - You might ask how much of this markdown was LLM-generated. The answer is a good amount, but a lot of manual revision and hours has gone into writing certain prompts again from scratch and basically I slowly replace things with hand crafted markdown as I see the proof of concept from the LLM generated. Then I have the LLM make edits/improvements for me and eventually I need to do this pruning again. The product manager agent for example is a complete "vibe".
@@ -9,21 +9,23 @@
 
 # Orchestra
 
-Orchestra is a VS Code Copilot multi-agent workflow kit for planning, researching, implementing, refining, and validating software changes through coordinated specialist agents.
+Orchestra is a multi-agent workflow kit for GitHub Copilot and OpenCode that supports planning, researching, implementing, refining, and validating software changes through coordinated specialist agents.
 
 It is built for work that is too broad or too context-heavy for a single prompt. Instead of asking one agent to do everything, Orchestra gives you an orchestrator plus focused specialists for architecture, implementation, research, testing, review, UX, security, and product thinking.
 
 ## Current State
 
-- Built around custom agents and prompt files installed into `.github/agents` and `.github/prompts`
+- Built around custom agents and command/prompt files installed into either `.github/agents` plus `.github/prompts` for GitHub Copilot, or `.opencode/agents` plus `.opencode/commands` for OpenCode
 - Currently intended for VS Code Insiders
 - Relies heavily on subagent delegation, so the orchestrator carries the tool access required by its team
 - Uses model placeholders that are resolved during installation
 
 The default model lists currently live in:
 
-- `subagent-models.txt` for all specialist agents
-- `orchestrator-models.txt` for the orchestrator agent
+- `copilot.subagent-models.txt` for GitHub Copilot specialist agents
+- `copilot.orchestrator-models.txt` for the GitHub Copilot orchestrator agent
+- `opencode.subagent-models.txt` for OpenCode specialist agents
+- `opencode.orchestrator-models.txt` for the OpenCode orchestrator agent
 
 ## What You Get
 
@@ -97,14 +99,16 @@ This keeps planning, execution, review follow-up, and generated documentation in
 
 ## Repository Layout
 
-- `agents/` - custom agent definitions copied into `.github/agents`
-- `prompts/` - reusable prompt files copied into `.github/prompts`
-- `prompts/orchestra.config/` - workflow configuration copied into `.github/prompts/orchestra.config`
-- `prompts/orchestra.templates/` - shared templates copied into `.github/prompts/orchestra.templates`
+- `agents/` - shared source agent definitions transformed for either `.github/agents` or `.opencode/agents`
+- `prompts/` - shared source prompt definitions copied into `.github/prompts` or transformed into `.opencode/commands`
+- `prompts/orchestra.config/` - workflow configuration copied into `.github/prompts/orchestra.config` or `.opencode/commands/orchestra.config`
+- `prompts/orchestra.templates/` - shared templates copied into `.github/prompts/orchestra.templates` or `.opencode/commands/orchestra.templates`
 - `.agents/orchestra/` - generated per-branch output created by the installer for plan and execution artefacts
 - `scripts/` - support scripts, including model placeholder substitution
-- `install.sh` - installs Orchestra into the current repository's `.github` directory
-- `uninstall.sh` - removes installed Orchestra agents, prompts, and skills
+- `copilot.install.sh` - installs Orchestra into the current repository's `.github` directory for GitHub Copilot
+- `copilot.uninstall.sh` - removes the GitHub Copilot Orchestra installation
+- `opencode.install.sh` - installs Orchestra into the current repository's `.opencode` directory for OpenCode
+- `opencode.uninstall.sh` - removes the OpenCode Orchestra installation
 
 ## Installation
 
@@ -123,23 +127,29 @@ You also need the supporting skills expected by the agents and prompts. At minim
 ### Install Steps
 
 1. Place this repository at `ai/orchestra` inside your project.
-2. Review the available models in `subagent-models.txt` and `orchestrator-models.txt`.
+2. Review the available models in the provider-specific model files.
 3. Optionally add environment-specific notes to `prompts/orchestra.config/manual-testing-instructions.md`.
-4. From the project root, run:
+4. From the project root, run the installer for your platform:
 
 ```bash
-./ai/orchestra/install.sh
+./ai/orchestra/copilot.install.sh
+```
+
+or
+
+```bash
+./ai/orchestra/opencode.install.sh
 ```
 
 The installer will:
 
-- copy `agents/` into `.github/agents/`
-- copy `prompts/` into `.github/prompts/`
-- copy `prompts/orchestra.templates/` into `.github/prompts/orchestra.templates/`
-- copy `prompts/orchestra.config/` into `.github/prompts/orchestra.config/`
+- copy or transform `agents/` into `.github/agents/` for GitHub Copilot or `.opencode/agents/` for OpenCode
+- copy or transform `prompts/` into `.github/prompts/` for GitHub Copilot or `.opencode/commands/` for OpenCode
+- copy `prompts/orchestra.templates/` into the matching platform prompt or command directory
+- copy `prompts/orchestra.config/` into the matching platform prompt or command directory
 - create `.agents/orchestra/` when it does not already exist
 - remove any previously installed Orchestra agent and prompt files first
-- prompt you to choose models for subagents and the orchestrator
+- prompt you to choose provider-specific models for subagents and the orchestrator
 - replace `${SUBAGENT_MODEL}` and `${ORCHESTRATOR_MODEL}` placeholders in the installed agent files
 
 ### Uninstall
@@ -147,10 +157,16 @@ The installer will:
 From the project root, run:
 
 ```bash
-./ai/orchestra/uninstall.sh
+./ai/orchestra/copilot.uninstall.sh
 ```
 
-This removes installed Orchestra files from `.github/agents`, `.github/prompts`, and any Orchestra-prefixed skill directories under `.agents/skills` if that folder exists.
+or
+
+```bash
+./ai/orchestra/opencode.uninstall.sh
+```
+
+This removes installed Orchestra files from the matching platform directories and any Orchestra-prefixed skill directories under `.agents/skills` if that folder exists.
 
 ## Usage
 
@@ -213,16 +229,16 @@ Useful one-off prompts outside the main plan/execute flow:
 
 ### Model Selection
 
-Subagents and the orchestrator use separate model pools during installation:
+Subagents and the orchestrator use separate model pools during installation, and the model files differ by platform:
 
-- `subagent-models.txt` feeds all specialist agents, including programmers, reviewers, testers, product-manager, and ux-designer
-- `orchestrator-models.txt` feeds only the orchestrator agent during install
+- `copilot.subagent-models.txt` and `copilot.orchestrator-models.txt` feed GitHub Copilot installs
+- `opencode.subagent-models.txt` and `opencode.orchestrator-models.txt` feed OpenCode installs
 
-The selected values are written into the installed copies in `.github/agents/`.
+The selected values are written into the installed copies in `.github/agents/` or `.opencode/agents/`.
 
 ### Manual Testing Instructions
 
-`prompts/orchestra.config/manual-testing-instructions.md` is an optional note file for browser and manual validation guidance. It is copied to `.github/prompts/orchestra.config/manual-testing-instructions.md`, which is the path the installed tester agents reference.
+`prompts/orchestra.config/manual-testing-instructions.md` is an optional note file for browser and manual validation guidance. It is copied to `.github/prompts/orchestra.config/manual-testing-instructions.md` for GitHub Copilot installs and `.opencode/commands/orchestra.config/manual-testing-instructions.md` for OpenCode installs.
 
 ### Documents
 

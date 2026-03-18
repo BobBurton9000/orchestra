@@ -1,19 +1,20 @@
 #!/bin/bash
 
-if [ -n "$1" ]; then
-  echo "Usage: ./ai/orchestra/uninstall.sh"
+set -euo pipefail
+
+if [ -n "${1-}" ]; then
+  echo "Usage: ./ai/orchestra/copilot.uninstall.sh"
   exit 1
 fi
 
-# Ensure we run from the project root
-if [ ! -d ".github" ] || [ ! -d "ai/orchestra" ]; then
+if [ ! -d "ai/orchestra" ]; then
   echo "Please run this script from the project root."
   exit 1
 fi
 
 MODULE_NAME="orchestra"
 
-echo "Uninstalling ${MODULE_NAME}..."
+echo "Uninstalling ${MODULE_NAME} from GitHub Copilot..."
 
 if [ -d ".github/agents" ]; then
   rm -f .github/agents/${MODULE_NAME}*

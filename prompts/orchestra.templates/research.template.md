@@ -1,6 +1,6 @@
 ---
-name: {{TOPIC_NAME_KEBAB_CASE}}
-description: {{ One precise sentence explaining why this topic matters to the plan. }}
+name: TOPIC_NAME_KEBAB_CASE
+description: 'One precise sentence explaining why this topic matters to the plan.'
 ---
 
 # {{TOPIC TITLE}}

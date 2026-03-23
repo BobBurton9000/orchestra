@@ -6,13 +6,13 @@ argument-hint: "optional: specific chunk/task focus or execution constraint"
 ---
 
 # Goal
-Implement the branch plan at `.agents/orchestra/<branch-name>/plan.md` with high technical excellence, keep the chunk/task status fields in that plan updated as execution progresses, and then write `.agents/orchestra/<branch-name>/execution-report.md` using [execution-report.template.md](orchestra.templates/execution-report.template.md).
+Implement the branch chunked plan at `.agents/orchestra/<branch-name>/chunk-plan.md` with high technical excellence, keep the chunk/task status fields in that plan updated as execution progresses, and then write `.agents/orchestra/<branch-name>/execution-report.md` using [execution-report.template.md](orchestra.templates/execution-report.template.md).
 
 Execution is complete only when all required quality gates pass, there are no unresolved blockers/issues, and the execution report is fully populated with evidence.
 
 # Variables
 - `<branch-name>`: [branch-name](orchestra.snippets/branch-name.md)
-- `<plan-path>`: `.agents/orchestra/<branch-name>/plan.md`
+- `<chunk-plan-path>`: `.agents/orchestra/<branch-name>/chunk-plan.md`
 - `<gherkin-path>`: `.agents/orchestra/<branch-name>/gherkin.feature`
 - `<execution-report-path>`: `.agents/orchestra/<branch-name>/execution-report.md`
 - `{{ execution-scope }}`: Optional invocation hint narrowing execution to specific chunks, tasks, or constraints.
@@ -27,13 +27,13 @@ This prompt is executed with an optional execution scope hint.
 Inference rules:
 1. If `{{ execution-scope }}` is present, treat it as a bounded execution hint and apply it without violating required quality gates.
 2. If `{{ execution-scope }}` conflicts with the plan, prioritise plan correctness and return a concrete mismatch note in the response.
-3. If `<plan-path>` is missing, return `ERROR: plan not found`.
+3. If `<chunk-plan-path>` is missing, return `ERROR: chunk plan not found`.
 4. If `<gherkin-path>` exists, manual verification must cover all statements in that file, including `Related Gherkin`.
 
 # Required Outcomes
-1. `<plan-path>` is read and treated as the canonical implementation source.
+1. `<chunk-plan-path>` is read and treated as the canonical implementation source.
 2. All relevant plan chunks/tasks within scope are implemented in code with production-quality changes.
-3. `<plan-path>` remains a live execution source of truth: relevant chunk and task `Status` fields are updated in place as work progresses, using `pending`, `in_progress`, `completed`, or `blocked`.
+3. `<chunk-plan-path>` remains a live execution source of truth: relevant chunk and task `Status` fields are updated in place as work progresses, using `pending`, `in_progress`, `completed`, or `blocked`.
 4. Task statuses are updated as execution advances: mark a task `in_progress` before active implementation, `completed` only after its implementation and required validations/review checkpoints are satisfied, and `blocked` only for hard-stop constraints that cannot be self-resolved in-session.
 5. Chunk statuses are kept in sync with their child tasks: mark a chunk `in_progress` when scoped work starts, `completed` only when its scoped tasks are completed and its chunk-level validation passes, and `blocked` only when a hard-stop constraint prevents completion.
 6. Frequent code-review loops are run using code-review agents, and critical/high findings are resolved before completion.
@@ -48,16 +48,16 @@ Inference rules:
 
 # Steps
 1. Resolve `<branch-name>` using [branch-name](orchestra.snippets/branch-name.md).
-2. Confirm `<plan-path>` exists. If missing, return `ERROR: plan not found`.
+2. Confirm `<chunk-plan-path>` exists. If missing, return `ERROR: chunk plan not found`.
 3. Load execution context:
-   - Read `<plan-path>`.
+   - Read `<chunk-plan-path>`.
    - Read `<gherkin-path>` if present.
    - Read [execution-report.template.md](orchestra.templates/execution-report.template.md).
    - Read [manual-testing-instructions.md](orchestra.config/manual-testing-instructions.md) when `<gherkin-path>` is present.
 4. Build an execution backlog from plan chunks/tasks, constrained by `{{ execution-scope }}` when provided.
-5. Treat `<plan-path>` as a live tracker during execution:
-   - Before starting a chunk or task, update its `Status` to `in_progress` in `<plan-path>`.
-   - After each meaningful increment, reconcile task/chunk statuses in `<plan-path>` so they match the current state of the work.
+5. Treat `<chunk-plan-path>` as a live tracker during execution:
+   - Before starting a chunk or task, update its `Status` to `in_progress` in `<chunk-plan-path>`.
+   - After each meaningful increment, reconcile task/chunk statuses in `<chunk-plan-path>` so they match the current state of the work.
    - When a task clears its implementation, review checkpoints, and required validations, update it to `completed`.
    - When all scoped tasks for a chunk are `completed` and the chunk validation passes, update the chunk to `completed`.
    - If a hard-stop constraint prevents progress, update the affected task/chunk to `blocked` and capture the evidence for the execution report.
@@ -76,18 +76,18 @@ Inference rules:
 11. Run a self-resolution closure loop across all findings (code review, tests, manual QA, Gherkin, and plan checkpoints):
    - Build a current open-issues list.
    - Resolve each item, then re-run the minimum required validations to prove closure.
-   - Update the affected task/chunk `Status` fields in `<plan-path>` after each issue is resolved or confirmed blocked.
+   - Update the affected task/chunk `Status` fields in `<chunk-plan-path>` after each issue is resolved or confirmed blocked.
    - Repeat until open-issues list is empty.
    - If any issue remains due to a hard-stop constraint, document evidence and mark final status `Blocked`.
 12. Reconcile execution outcomes against plan risks and checkpoints.
-13. Perform a final status reconciliation in `<plan-path>` so every in-scope chunk/task accurately reflects the completed, pending, or blocked state before writing the report.
+13. Perform a final status reconciliation in `<chunk-plan-path>` so every in-scope chunk/task accurately reflects the completed, pending, or blocked state before writing the report.
 14. Write `<execution-report-path>` using the execution-report template, ensuring all sections contain concrete evidence.
 15. Return final response using the response contract.
 
 # Response To User
 ```
 Branch: <branch-name>
-Plan: <plan-path>
+Plan: <chunk-plan-path>
 Execution report: <execution-report-path>
 Executed chunks: <count>
 Changed files: <count>

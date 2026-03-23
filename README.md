@@ -56,6 +56,7 @@ The repository currently ships these agents:
 - `product-manager` - sharpens scope, value, and prioritization
 - `security-expert` - reviews security risks and abuse cases
 - `ux-designer` - reviews user-facing changes for clarity and usability
+- `plan-review` - reviews stage-1 plans for unresolved questions and architecture gaps, then returns APPROVED or CHANGES REQUESTED
 - `scribe` - handles straightforward documentation work
 - `code-review.bugs` - reviews correctness and runtime behavior
 - `code-review.naming` - reviews naming consistency
@@ -70,7 +71,8 @@ The repository currently ships these agents:
 - `orchestra.experimental.resolve-conflicts` - resolve merge conflicts against the correct target branch and validate the result locally
 - `orchestra.gherkinify` - convert source material into a focused `Feature:` plus supported Gherkin scenarios
 - `orchestra.learn` - extract a reusable lesson from the current chat and compile it into an Orchestra skill
-- `orchestra.plan.create` - create a branch implementation plan from inline text or a GitHub/Azure DevOps URL
+- `orchestra.plan.create` - create a simple branch implementation plan from inline text or a GitHub/Azure DevOps URL, then iterate with `plan-review` until APPROVED
+- `orchestra.plan.chunk` - expand the branch plan into chunked implementation detail for execution
 - `orchestra.plan.execute` - execute the current branch plan, enforce review and QA loops, and write an execution report
 - `orchestra.refresh-skills` - refresh existing Orchestra-generated skills against the current codebase
 - `orchestra.review-feedback` - address actionable reviewer feedback on the current pull request
@@ -78,14 +80,15 @@ The repository currently ships these agents:
 
 ## Delivery Flow
 
-The plan and execution prompts build branch-scoped artifacts under `.agents/orchestra/<branch-name>/`.
+The planning, chunking, and execution prompts build branch-scoped artifacts under `.agents/orchestra/<branch-name>/`.
 
 Primary implementation flow:
 
-1. `orchestra.plan.create` turns the request into `.agents/orchestra/<branch-name>/plan.md` using the implementation plan template
-2. Optional: `orchestra.gherkinify` converts source material into Gherkin that you can save as `.agents/orchestra/<branch-name>/gherkin.feature` or use as planning input
-3. `orchestra.plan.execute` implements the plan, runs review and validation loops, and writes `.agents/orchestra/<branch-name>/execution-report.md`
-4. `orchestra.review-feedback` addresses actionable reviewer feedback on the current pull request
+1. `orchestra.plan.create` turns the request into a simple `.agents/orchestra/<branch-name>/plan.md` using `implementation-plan.template.md`
+2. `orchestra.plan.chunk` expands that plan into `.agents/orchestra/<branch-name>/chunk-plan.md` with delivery chunks and task-level detail using `implement-chunk.template.md`
+3. Optional: `orchestra.gherkinify` converts source material into Gherkin that you can save as `.agents/orchestra/<branch-name>/gherkin.feature` or use as planning input
+4. `orchestra.plan.execute` implements `.agents/orchestra/<branch-name>/chunk-plan.md`, runs review and validation loops, and writes `.agents/orchestra/<branch-name>/execution-report.md`
+5. `orchestra.review-feedback` addresses actionable reviewer feedback on the current pull request
 
 Supporting prompt flows:
 
@@ -188,6 +191,7 @@ Plan-driven example progression:
 
 ```text
 /orchestra.plan.create https://example.com/ticket/123
+/orchestra.plan.chunk
 /orchestra.plan.execute
 /orchestra.review-feedback
 ```
@@ -199,6 +203,7 @@ Optional Gherkin-first variant:
 ```text
 /orchestra.gherkinify auth session timeout rules
 /orchestra.plan.create implement the attached gherkin feature
+/orchestra.plan.chunk
 /orchestra.plan.execute
 /orchestra.review-feedback
 ```

@@ -1,6 +1,6 @@
 ---
 agent: orchestrator
-description: Create a single implementation plan from inline text or a GitHub/Azure DevOps URL using MCP services and the Orchestra implementation-plan template
+description: Create a single implementation plan from inline text or a GitHub/Azure DevOps URL using GitHub CLI or Azure DevOps MCP services and the Orchestra implementation-plan template
 name: orchestra.plan.create
 argument-hint: "describe the implementation request to plan"
 ---
@@ -27,7 +27,7 @@ This prompt is executed with a required implementation request.
 
 Inference rules:
 1. Treat the full invocation text as `{{ request }}`.
-2. If `{{ request }}` is a supported URL, resolve canonical request details using MCP services before creating the plan.
+2. If `{{ request }}` is a supported URL, resolve canonical request details using GitHub CLI for GitHub URLs or Azure DevOps MCP services for Azure DevOps URLs before creating the plan.
 3. If no request is provided, return `ERROR: no implementation request provided`.
 
 # Required Outcomes
@@ -38,7 +38,7 @@ Inference rules:
 5. The plan is sequential, actionable, and implementation-focused.
 6. If `.agents/orchestra/<branch-name>/plan.md` already exists, no overwrite occurs until the developer explicitly confirms.
 7. No files outside of `.agents/` are modified.
-8. If the request is a supported URL, MCP services are used to fetch and normalize source details before drafting the plan.
+8. If the request is a supported URL, GitHub CLI is used for GitHub URLs and Azure DevOps MCP services are used for Azure DevOps URLs before drafting the plan.
 
 # Steps
 1. Validate input. If `{{ request }}` is empty, return `ERROR: no implementation request provided`.
@@ -46,10 +46,10 @@ Inference rules:
    - Inline request text
    - GitHub URL (issue or pull request)
    - Azure DevOps work item URL
-3. If input is a supported URL, resolve request context using MCP services:
-   - GitHub URLs: use GitHub MCP tools to fetch issue/PR details including title, description, acceptance context, and linked discussion relevant to implementation scope.
+3. If input is a supported URL, resolve request context using GitHub CLI or Azure DevOps MCP services:
+   - GitHub URLs: use GitHub CLI to fetch issue or pull request details including title, description, acceptance context, and linked discussion relevant to implementation scope.
    - Azure DevOps URLs: use Azure DevOps MCP tools to fetch work item title, description, acceptance criteria, and relevant linked items.
-4. If URL parsing or MCP resolution fails, return a concrete error and do not invent missing requirements.
+4. If URL parsing or remote resolution fails, return a concrete error and do not invent missing requirements.
 5. Normalize the resulting request into a concise implementation brief and use that brief as the planning source.
 6. Read [implementation-plan.template.md](orchestra.templates/implementation-plan.template.md) and follow its sections exactly.
 7. Resolve `<branch-name>` using [branch-name](orchestra.snippets/branch-name.md).
@@ -86,8 +86,8 @@ If input missing:
 ERROR: no implementation request provided
 ```
 
-If unsupported URL or MCP resolution fails:
+If unsupported URL or remote resolution fails:
 ```
 ERROR: could not resolve request from provided URL
-Reason: <parsing failure | unsupported host | MCP fetch failure>
+Reason: <parsing failure | unsupported host | GitHub CLI fetch failure | Azure DevOps MCP fetch failure>
 ```

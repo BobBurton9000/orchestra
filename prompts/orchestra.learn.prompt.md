@@ -1,41 +1,74 @@
 ---
 agent: agent
-description: Extract a learning from the current chat session and compile it into a reusable Orchestra skill
+description: Extract a durable learning from the current chat session and compile it into a concise standalone Orchestra skill
 name: orchestra.learn
 argument-hint: "describe the learning or pattern discovered in this session"
 ---
-# Extract Session Learning into a Skill
+# Goal
 
-Review the current chat session and extract a reusable, generalised piece of knowledge — a pattern, convention, gotcha, or technique — and compile it into an Orchestra skill document that a future LLM agent can use directly.
+Review the current chat session, extract one reusable and generalised learning, and compile it into a concise Orchestra skill that stands on its own without depending on volatile repository details.
 
-## Discovery process (do this before writing)
+# Variables
 
-Work through these steps sequentially. Do not start writing the skill until all four are done.
+- `learning_hint`: the user-supplied description of the learning, pattern, convention, gotcha, or technique to capture.
 
-1. **Identify the learning (iterative).** Re-read the user request and full chat history. Propose a one-sentence definition of the insight, technique, or pattern discovered — it must be generalisable, not specific to this one ticket or task. Present it to the user and ask whether it is correct. After every response from the user that is not an explicit confirmation (i.e. anything other than "yes", "ok", "correct", "that's right", or equivalent short affirmations), incorporate their feedback, restate the revised one-sentence definition with optimised phrasing, and ask for confirmation again. Only proceed to step 2 once the user has explicitly confirmed the definition is correct. Do not interpret alternative suggestions or corrections as confirmation — always restate and re-ask.
-2. **Locate grounding evidence.** Find the real code, config, or documentation in the repository that demonstrates the learning. Record exact file paths, class names, method names, and line-level details. Do not describe things you haven't read.
-3. **Define the scope boundary.** Determine what the skill applies to and what it explicitly does NOT apply to. Identify look-alike situations where a future agent might incorrectly use this skill.
-4. **Validate with examples.** Find at least two concrete cases in the codebase or session history that illustrate the learning — one positive (the pattern applied correctly) and one negative (the anti-pattern or the problem it prevents).
+# Invocation Pattern
 
-## Requirements
+Use this prompt when the user wants to preserve a lesson from the current session as a reusable skill for future agents.
 
-1. **Frontmatter** — include these fields:
-   - `name`: kebab-case slug that names the concept
-   - `description`: one precise sentence that allows another LLM to decide whether this skill is relevant
+# Required Outcomes
 
-2. **Quick Reference table** (first section) — every key symbol involved: class name, file path, and one-line purpose. Must be comprehensive enough to navigate the codebase without further searching.
+- Confirm a single-sentence definition of the learning with the user before writing the skill.
+- Produce a skill that is durable, concise, and understandable without opening repository files.
+- Keep examples minimal: include only the shortest positive and negative examples needed to teach the pattern.
+- Use repository inspection only to prevent false claims or to confirm stable terminology, not to populate the document with brittle implementation details.
+- Avoid file inventories, line references, exhaustive symbol lists, and codebase-specific examples unless the learning is inherently about a stable repository artifact.
+- Write the skill document to `.agents/skills/zz-orchestra.<name>/SKILL.md`.
 
-3. **Goals and Non-Goals** — explicit scope boundary. Non-goals must name specific look-alike situations that are out of scope, preventing a future agent from over-applying the skill.
+# Steps
 
-4. **The Learning** — a clear, direct explanation of what was discovered. State the insight in a single paragraph before expanding. Reference real code. Use tables over prose where structure exists.
+1. **Identify the learning (iterative).** Re-read the user request and chat history. Propose a one-sentence definition of the insight in general terms. Present it to the user and ask whether it is correct. After every response that is not an explicit confirmation, incorporate the feedback, restate the revised one-sentence definition, and ask for confirmation again. Only continue once the user explicitly confirms.
+2. **Validate the claim.** Check the session first. Inspect repository files only if needed to avoid making the skill inaccurate or to confirm stable naming. Gather the minimum evidence necessary; do not collect details that will not appear in the final skill.
+3. **Set the boundary.** Define what the skill applies to, what it does not apply to, and the common look-alike situations where a future agent might over-apply it.
+4. **Write for durability.** Prefer standalone guidance, short tables, and concise examples over repository-specific references. Mention a repository path only when it is genuinely required to understand the rule and likely to remain stable.
+5. **Trim aggressively.** Remove any detail that is not needed for a future agent to correctly apply the learning.
 
-5. **Behaviour Examples** — at least two concrete examples showing the pattern in action, referencing real file paths and class/method names from the codebase.
+# Response To User
 
-6. **Anti-Patterns** — a dedicated section listing what NOT to do and why, derived directly from the problem this session uncovered.
+## Skill Requirements
 
-7. **Design Decisions** — if the learning involves a non-obvious choice, document: what was decided, the alternative, and why this choice was made. Omit this section if no design decision is involved.
+1. **Frontmatter**
+  - Include `name`: kebab-case slug naming the concept.
+  - Include `description`: one precise sentence that helps another LLM decide whether the skill is relevant.
 
-## Output
+2. **Quick Reference**
+  - Make the first section a compact table.
+  - Summarise the key patterns, rules, or example forms needed to apply the learning.
+  - Do not turn this into a repository navigation index unless the repository artifact is itself the learning.
+
+3. **Goals and Non-Goals**
+  - State the scope explicitly.
+  - Non-goals must call out look-alike situations that are out of scope so the skill is not over-applied.
+
+4. **The Learning**
+  - Start with one clear paragraph stating the insight directly.
+  - Expand only where structure adds value.
+  - Prefer general rules and durable terminology over file-specific implementation detail.
+
+5. **Behaviour Examples**
+  - Include at least two concise examples: one positive and one negative or boundary case.
+  - Keep examples self-contained.
+  - Use repository-derived examples only if they are essential, stable, and shorter than an equivalent standalone example.
+
+6. **Anti-Patterns**
+  - List what not to do and why.
+  - Derive these directly from the failure mode or confusion uncovered in the session.
+
+7. **Design Decisions**
+  - Include this section only when the learning involves a meaningful choice between alternatives.
+  - State the chosen approach, the alternative, and the reason for the decision.
+
+## Output Rules
 
 - Write the skill document to `.agents/skills/zz-orchestra.<name>/SKILL.md`.
 - Required frontmatter:
@@ -52,8 +85,8 @@ Work through these steps sequentially. Do not start writing the skill until all 
   4. Behaviour Examples
   5. Anti-Patterns
   6. Design Decisions _(if applicable)_
-
-- Every code block must reference a real file path in a comment or caption. Do not write hypothetical code.
-- Use tables over prose wherever structure is possible.
-- Do not include task lists, implementation steps, or status-tracked work items.
-- Your final response should confirm the path created and state the one-sentence learning in plain English.
+- Use tables where they genuinely improve scanability.
+- Do not include task lists, implementation steps, status tracking, exhaustive evidence logs, or line-level citations.
+- Do not pad the skill with codebase-specific examples that are likely to become stale.
+- The finished skill must function as a standalone source of information for a future agent.
+- In the final response, confirm the path created and restate the one-sentence learning in plain English.

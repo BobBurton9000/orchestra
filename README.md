@@ -54,6 +54,7 @@ The repository currently ships these agents:
 - `tester.cli` - runs CLI-based validation and interprets failures
 - `tester.browser` - performs browser-based validation with Playwright
 - `product-manager` - sharpens scope, value, and prioritization
+- `scope-guard` - protects approved task boundaries, screens review feedback for scope creep, and flags important out-of-scope follow-up for the user
 - `security-expert` - reviews security risks and abuse cases
 - `ux-designer` - reviews user-facing changes for clarity and usability
 - `plan-review` - reviews stage-1 plans for unresolved questions and architecture gaps, then returns APPROVED or CHANGES REQUESTED
@@ -73,9 +74,9 @@ The repository currently ships these agents:
 - `orchestra.learn` - extract a reusable lesson from the current chat and compile it into an Orchestra skill
 - `orchestra.plan.create` - create a simple branch implementation plan from inline text or a GitHub/Azure DevOps URL, then iterate with `plan-review` until APPROVED
 - `orchestra.plan.chunk` - expand the branch plan into chunked implementation detail for execution
-- `orchestra.plan.execute` - execute the current branch plan, enforce review and QA loops, and write an execution report
+- `orchestra.plan.execute` - execute the current branch plan, enforce review, scope, and QA loops, and write an execution report
 - `orchestra.refresh-skills` - refresh existing Orchestra-generated skills against the current codebase
-- `orchestra.review-feedback` - address actionable reviewer feedback on the current pull request
+- `orchestra.review-feedback` - address in-scope reviewer feedback on the current pull request without allowing review-driven scope creep
 - `orchestra.review.pr-to-file` - review a pull request diff and write findings to a new markdown file at project root
 
 ## Delivery Flow
@@ -87,8 +88,8 @@ Primary implementation flow:
 1. `orchestra.plan.create` turns the request into a simple `.agents/orchestra/<branch-name>/plan.md` using `implementation-plan.template.md`
 2. `orchestra.plan.chunk` expands that plan into `.agents/orchestra/<branch-name>/chunk-plan.md` with delivery chunks and task-level detail using `implement-chunk.template.md`
 3. Optional: `orchestra.gherkinify` converts source material into Gherkin that you can save as `.agents/orchestra/<branch-name>/gherkin.feature` or use as planning input
-4. `orchestra.plan.execute` implements `.agents/orchestra/<branch-name>/chunk-plan.md`, runs review and validation loops, and writes `.agents/orchestra/<branch-name>/execution-report.md`
-5. `orchestra.review-feedback` addresses actionable reviewer feedback on the current pull request
+4. `orchestra.plan.execute` implements `.agents/orchestra/<branch-name>/chunk-plan.md`, runs review, scope, and validation loops, and writes `.agents/orchestra/<branch-name>/execution-report.md`
+5. `orchestra.review-feedback` addresses in-scope reviewer feedback on the current pull request while surfacing important out-of-scope follow-up separately
 
 Supporting prompt flows:
 

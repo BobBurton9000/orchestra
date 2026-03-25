@@ -1,12 +1,12 @@
 ---
 agent: orchestrator
 name: orchestra.review.pr-to-file
-description: Review a pull request diff via GitHub MCP, do not modify code or post PR comments, and write severity-prioritised findings to a new markdown file at project root.
+description: Review a pull request diff using GitHub CLI, do not modify code or post PR comments, and write severity-prioritised findings to a new markdown file at project root.
 argument-hint: PR URL plus owner/repo plus output markdown filename
 ---
 
 # Goal
-Perform a repository-grounded code review of the target pull request using GitHub MCP diff data, then write review feedback only to a new markdown file at the project root.
+Perform a repository-grounded code review of the target pull request using GitHub CLI diff data, then write review feedback only to a new markdown file at the project root.
 
 # Variables
 <pr-url> = {{PR_URL}}
@@ -25,7 +25,7 @@ Inference rules:
 5. <output-file> must be a markdown filename at project root only. If it includes directory separators, return ERROR: output file must be at project root.
 
 # Required Outcomes
-1. The pull request and its diff were retrieved using GitHub MCP tooling.
+1. The pull request and its diff were retrieved using GitHub CLI.
 2. No code files were edited.
 3. No pull request comments, review comments, or review submissions were posted.
 4. Exactly one new markdown file was created at project root with filename <output-file>.
@@ -50,7 +50,7 @@ Inference rules:
 
 # Steps
 1. Resolve PR context.
-   1. Use GitHub MCP to resolve the PR from <pr-url> in <owner>/<repo>.
+   1. Use GitHub CLI to resolve the PR from <pr-url> in <owner>/<repo>.
    2. Retrieve files changed, patch hunks, and relevant metadata required for review.
 2. Build review evidence set.
    1. Inspect the diff and changed-file context.

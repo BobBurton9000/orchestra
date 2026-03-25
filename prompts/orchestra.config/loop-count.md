@@ -1,1 +1,0 @@
-You can loop prompt steps a maximum of 20 times

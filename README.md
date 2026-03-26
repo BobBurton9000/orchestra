@@ -67,37 +67,42 @@ The repository currently ships these agents:
 
 ### Prompts
 
-- `orchestra.critique` - critique attached files using the available review agents
-- `orchestra.document` - generate a code-grounded feature document and save it as an Orchestra skill draft
 - `orchestra.experimental.resolve-conflicts` - resolve merge conflicts against the correct target branch and validate the result locally
+- `orchestra.create-playbook` - create a standalone auditable implementation playbook from inline text or a GitHub or Azure DevOps URL
 - `orchestra.gherkinify` - convert source material into a focused `Feature:` plus supported Gherkin scenarios
 - `orchestra.learn` - extract a reusable lesson from the current chat and compile it into an Orchestra skill
-- `orchestra.plan.create` - create a simple branch implementation plan from inline text or a GitHub/Azure DevOps URL, then iterate with `plan-review` until APPROVED
-- `orchestra.plan.chunk` - expand the branch plan into chunked implementation detail for execution
-- `orchestra.plan.execute` - execute the current branch plan, enforce review, scope, and QA loops, and write an execution report
 - `orchestra.refresh-skills` - refresh existing Orchestra-generated skills against the current codebase
-- `orchestra.review-feedback` - address in-scope reviewer feedback on the current pull request without allowing review-driven scope creep
 - `orchestra.review.pr-to-file` - review a pull request diff and write findings to a new markdown file at project root
+- `orchestra.stage1.assign` - capture the task into branch-scoped `task.md` using `task.template.md` and create complementary Gherkin when that helps define application behaviour
+- `orchestra.stage2.research` - investigate the existing user experience and relevant architecture in parallel and save the findings under the branch research folder
+- `orchestra.stage3.plan` - read the task and all research, then create an execution-ready `plan.md` and iterate with `plan-review` until APPROVED
+- `orchestra.stage4.execute` - implement the current branch plan, keep an append-only execution diary, and merge branch Gherkin into the project living Gherkin base when applicable
+- `orchestra.stage5.ship` - commit the branch, push it, and create or update the pull request
+- `orchestra.stage6.review` - repeatedly inspect the pull request, resolve feedback, and continue until the pull request is approved or a real blocker exists
 
 ## Delivery Flow
 
-The planning, chunking, and execution prompts build branch-scoped artifacts under `.agents/orchestra/<branch-name>/`.
+The primary workflow builds branch-scoped artifacts under `.agents/orchestra/<branch-name>/`.
 
 Primary implementation flow:
 
-1. `orchestra.plan.create` turns the request into a simple `.agents/orchestra/<branch-name>/plan.md` using `implementation-plan.template.md`
-2. `orchestra.plan.chunk` expands that plan into `.agents/orchestra/<branch-name>/chunk-plan.md` with delivery chunks and task-level detail using `implement-chunk.template.md`
-3. Optional: `orchestra.gherkinify` converts source material into Gherkin that you can save as `.agents/orchestra/<branch-name>/gherkin.feature` or use as planning input
-4. `orchestra.plan.execute` implements `.agents/orchestra/<branch-name>/chunk-plan.md`, runs review, scope, and validation loops, and writes `.agents/orchestra/<branch-name>/execution-report.md`
-5. `orchestra.review-feedback` addresses in-scope reviewer feedback on the current pull request while surfacing important out-of-scope follow-up separately
+1. `orchestra.stage1.assign` turns the request into `.agents/orchestra/<branch-name>/task.md` using `task.template.md` and may create `.agents/orchestra/<branch-name>/gherkin.feature`
+2. `orchestra.stage2.research` creates `.agents/orchestra/<branch-name>/research/` and fills it with the mandatory user-experience and architecture research documents
+3. `orchestra.stage3.plan` reads the task plus all research and produces `.agents/orchestra/<branch-name>/plan.md` using `implementation-plan.template.md`
+4. `orchestra.stage4.execute` implements `.agents/orchestra/<branch-name>/plan.md`, runs review and validation loops, updates the living `.gherkin/` base when applicable, and writes `.agents/orchestra/<branch-name>/execution-report.md`
+5. `orchestra.stage5.ship` commits the branch, pushes it, and creates or updates the pull request
+6. `orchestra.stage6.review` loops on pull request status and reviewer feedback until the pull request is approved or a real external blocker is hit
+
+Standalone planning flow:
+
+1. `orchestra.create-playbook` produces `.agents/orchestra/<branch-name>/playbook.md` as a human-auditable proposed direction without entering the staged workflow automatically
 
 Supporting prompt flows:
 
-1. `orchestra.document` turns an existing feature into a reusable Orchestra skill document under `.agents/skills/`
-2. `orchestra.learn` extracts a reusable lesson from the current session into `.agents/skills/`
-3. `orchestra.refresh-skills` reviews existing Orchestra-generated skills and updates them against the current codebase
-4. `orchestra.review.pr-to-file` performs an offline PR review and writes findings into a new root-level markdown file
-5. `orchestra.experimental.resolve-conflicts` resolves merge conflicts locally without committing or pushing automatically
+1. `orchestra.learn` extracts a reusable lesson from the current session into `.agents/skills/`
+2. `orchestra.refresh-skills` reviews existing Orchestra-generated skills and updates them against the current codebase
+3. `orchestra.review.pr-to-file` performs an offline PR review and writes findings into a new root-level markdown file
+4. `orchestra.experimental.resolve-conflicts` resolves merge conflicts locally without committing or pushing automatically
 
 This keeps planning, execution, review follow-up, and generated documentation in a predictable per-branch workspace.
 
@@ -107,6 +112,7 @@ This keeps planning, execution, review follow-up, and generated documentation in
 - `prompts/` - shared source prompt definitions copied into `.github/prompts` or transformed into `.opencode/commands`
 - `prompts/orchestra.config/` - workflow configuration copied into `.github/prompts/orchestra.config` or `.opencode/commands/orchestra.config`
 - `prompts/orchestra.templates/` - shared templates copied into `.github/prompts/orchestra.templates` or `.opencode/commands/orchestra.templates`
+- `prompts/orchestra.templates/task.template.md` - canonical structure for branch-scoped `task.md` created during stage 1 assignment
 - `.agents/orchestra/` - generated per-branch output created by the installer for plan and execution artefacts
 - `scripts/` - support scripts, including model placeholder substitution
 - `copilot.install.sh` - installs Orchestra into the current repository's `.github` directory for GitHub Copilot
@@ -188,31 +194,38 @@ For implementation routing, the orchestrator should pick the narrowest matching 
 
 ### Prompt Workflows
 
-Plan-driven example progression:
+Stage-driven example progression:
 
 ```text
-/orchestra.plan.create https://example.com/ticket/123
-/orchestra.plan.chunk
-/orchestra.plan.execute
-/orchestra.review-feedback
+/orchestra.stage1.assign https://example.com/ticket/123
+/orchestra.stage2.research
+/orchestra.stage3.plan
+/orchestra.stage4.execute
+/orchestra.stage5.ship
+/orchestra.stage6.review
 ```
 
-`/orchestra.review-feedback` is the concise deterministic command for the common request "address all reviewer feedback on the current PR". It resolves the active pull request first, falls back to the currently open pull request if needed, then builds a normalised feedback backlog from review comments, review submissions, and actionable PR discussion comments.
+Standalone planning example:
+
+```text
+/orchestra.create-playbook https://example.com/ticket/123
+```
 
 Optional Gherkin-first variant:
 
 ```text
 /orchestra.gherkinify auth session timeout rules
-/orchestra.plan.create implement the attached gherkin feature
-/orchestra.plan.chunk
-/orchestra.plan.execute
-/orchestra.review-feedback
+/orchestra.stage1.assign implement the attached gherkin feature
+/orchestra.stage2.research
+/orchestra.stage3.plan
+/orchestra.stage4.execute
+/orchestra.stage5.ship
+/orchestra.stage6.review
 ```
 
 Documentation and review utilities:
 
 ```text
-/orchestra.document describe the existing auth flow
 /orchestra.review.pr-to-file https://github.com/example/repo/pull/123 example repo review-notes.md
 /orchestra.experimental.resolve-conflicts
 ```
@@ -222,10 +235,9 @@ Documentation and review utilities:
 Useful one-off prompts outside the main plan/execute flow:
 
 ```text
-/orchestra.critique
+/orchestra.create-playbook design an audit-friendly plan for the attached request
 /orchestra.gherkinify password reset behaviour
 /orchestra.refresh-skills
-/orchestra.document describe the existing auth flow
 /orchestra.learn capture the pattern we discovered in this session
 /orchestra.review.pr-to-file https://github.com/example/repo/pull/123 example repo review-notes.md
 /orchestra.experimental.resolve-conflicts

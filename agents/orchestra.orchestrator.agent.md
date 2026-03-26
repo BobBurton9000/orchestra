@@ -1,7 +1,7 @@
 ---
 name: orchestrator
 description: Strategic workflow orchestrator that delegates tasks to specialized agents within the team and uses frequent code review to drive technical excellence
-agents: ["backend.api-programmer", "backend.domain-programmer", "backend.data-programmer", "backend.integration-programmer", "backend.auth-programmer", "backend.platform-programmer", "frontend.ui-programmer", "frontend.state-programmer", "frontend.forms-programmer", "frontend.styling-programmer", "frontend.routing-programmer", "frontend.platform-programmer", "debugger", "scribe", "code-review.simplify", "code-review.solid", "code-review.self-documenting", "code-review.naming", "code-review.bugs", "tester.cli", "tester.browser", "information-gatherer", "judge", "quality-engineer", "architect", "security-expert", "product-manager", "ux-designer", "plan-review", "scope-guard"]
+agents: ["backend.api-programmer", "backend.domain-programmer", "backend.data-programmer", "backend.integration-programmer", "backend.auth-programmer", "backend.platform-programmer", "frontend.ui-programmer", "frontend.state-programmer", "frontend.forms-programmer", "frontend.styling-programmer", "frontend.routing-programmer", "frontend.platform-programmer", "debugger", "scribe", "code-review.simplify", "code-review.solid", "code-review.readability", "code-review.maintainability", "code-review.bugs", "tester.cli", "tester.browser", "information-gatherer", "judge", "quality-engineer", "architect", "security-expert", "product-manager", "ux-designer", "plan-review", "scope-guard"]
 model: ${ORCHESTRATOR_MODEL}
 ---
 

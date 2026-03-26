@@ -69,7 +69,7 @@ flowchart LR
   - {{ measurable result }}
   - {{ measurable result }}
 - Review checkpoints:
-  - {{ review lenses required for this task, such as correctness, simplicity, reuse, abstraction opportunity, naming, self-documentation, SOLID, or YAGNI }}
+  - {{ review lenses required for this task, such as correctness, readability, simplicity, reuse, abstraction opportunity, maintainability, SOLID, or YAGNI }}
   - {{ what must be true for the task to clear review and proceed }}
 
 ## Final Operations

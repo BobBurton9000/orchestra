@@ -60,8 +60,8 @@ The repository currently ships these agents:
 - `plan-review` - reviews stage-1 plans for unresolved questions and architecture gaps, then returns APPROVED or CHANGES REQUESTED
 - `scribe` - handles straightforward documentation work
 - `code-review.bugs` - reviews correctness and runtime behavior
-- `code-review.naming` - reviews naming consistency
-- `code-review.self-documenting` - reviews readability and intent clarity
+- `code-review.readability` - reviews naming conventions, readability, and whether intent is clear from the code itself
+- `code-review.maintainability` - reviews structural improvements that reduce long-term maintenance cost and raise technical excellence
 - `code-review.simplify` - reviews unnecessary complexity, duplication, missed reuse, abstraction opportunities, and YAGNI risks
 - `code-review.solid` - reviews SOLID design risks
 

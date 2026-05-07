@@ -20,9 +20,6 @@ Research the developer request, clarify important ambiguities with the user, and
 
 This prompt is planning-only. It must never start implementation.
 
-# Agent Use Policy
-During this prompt, Orchestra may use any agent except the `code-review.*` agents.
-
 # Variables
 - `{{ request }}`: The developer request to research and plan.
 - `<branch-name>`: Resolve the current branch using [branch-name](orchestra.snippets/branch-name.md), then normalize it by replacing `/` and whitespace with `-` so the result is safe to use as one directory name.

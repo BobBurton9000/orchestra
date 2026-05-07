@@ -1,18 +1,21 @@
 ---
 agent: orchestrator
 name: orchestra.review.pr-to-file
-description: Review a pull request diff using GitHub CLI, do not modify code or post PR comments, and write severity-prioritised findings to a new markdown file at project root.
+description: Review a pull request diff using GitHub CLI, do not modify code or post PR comments, and write severity-prioritised findings to a branch-specific markdown file under `.orchestra/<branch-name>/`.
 argument-hint: PR URL plus owner/repo plus output markdown filename
 ---
 
 # Goal
-Perform a repository-grounded code review of the target pull request using GitHub CLI diff data, then write review feedback only to a new markdown file at the project root.
+Perform a repository-grounded code review of the target pull request using GitHub CLI diff data, then write review feedback only to `.orchestra/<branch-name>/<output-file>`.
 
 # Variables
 <pr-url> = {{PR_URL}}
 <owner> = {{OWNER}}
 <repo> = {{REPO}}
+<branch-name> = Resolve the current branch using [branch-name](orchestra.snippets/branch-name.md), then normalize it by replacing `/` and whitespace with `-` so the result is safe to use as one directory name.
 <output-file> = {{OUTPUT_FILENAME_MD}}
+<output-dir> = `.orchestra/<branch-name>/`
+<output-path> = `.orchestra/<branch-name>/<output-file>`
 
 # Invocation Pattern
 This prompt is executed with a PR URL and explicit repository coordinates.
@@ -22,13 +25,14 @@ Inference rules:
 2. If <pr-url> is missing, return ERROR: no pull request URL provided.
 3. If owner or repo is missing, return ERROR: owner/repo not provided.
 4. If <output-file> is missing, return ERROR: output filename not provided.
-5. <output-file> must be a markdown filename at project root only. If it includes directory separators, return ERROR: output file must be at project root.
+5. Resolve <branch-name> from the current git branch, then normalize it before using <output-dir> or <output-path>.
+6. <output-file> must be a markdown filename only. If it includes directory separators, return ERROR: output file must be a filename only.
 
 # Required Outcomes
 1. The pull request and its diff were retrieved using GitHub CLI.
 2. No code files were edited.
 3. No pull request comments, review comments, or review submissions were posted.
-4. Exactly one new markdown file was created at project root with filename <output-file>.
+4. Exactly one new markdown file was created at <output-path>.
 5. Review findings were prioritised by severity: Critical, High, Medium, Low.
 6. Every finding included concrete file and line references.
 7. Residual test gaps were captured explicitly.
@@ -46,10 +50,11 @@ Inference rules:
 2. Do not submit a PR review event.
 3. Do not edit, create, delete, or rename any code or test files.
 4. Do not run fix-up commits.
-5. Write feedback only into the new root-level markdown output file.
+5. Write feedback only into <output-path>.
 
 # Steps
 1. Resolve PR context.
+   1. Resolve <branch-name> using [branch-name](orchestra.snippets/branch-name.md) and normalize it before using <output-dir> or <output-path>.
    1. Use GitHub CLI to resolve the PR from <pr-url> in <owner>/<repo>.
    2. Retrieve files changed, patch hunks, and relevant metadata required for review.
 2. Build review evidence set.
@@ -63,8 +68,9 @@ Inference rules:
 4. Capture residual testing gaps.
    1. Identify missing or weak tests implied by the changed behaviour.
    2. Record what remains unverified after diff-only review.
-5. Create output file at project root.
-   1. Create <output-file> as a new markdown file at project root.
+5. Create output file in the branch-specific orchestra directory.
+   1. Ensure <output-dir> exists.
+   2. Create <output-path> as a new markdown file in <output-dir>.
    2. Write the following sections in order:
       1. Title
       2. Scope
@@ -85,8 +91,8 @@ Inference rules:
 6. Final response.
    1. Return only:
       1. Status: Completed or ERROR
-      2. Output: <output-file>
+   2. Output: <output-path>
 
 # Response To User
 Status: <Completed|ERROR>
-Output: <output-file>
+Output: <output-path>

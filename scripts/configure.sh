@@ -103,6 +103,37 @@ write_body_without_frontmatter() {
   ' "$FILE_PATH"
 }
 
+read_frontmatter_block() {
+  local KEY=$1
+  local FILE_PATH=$2
+
+  awk -v key="$KEY" '
+    BEGIN { in_frontmatter = 0; in_block = 0 }
+
+    /^---[[:space:]]*$/ {
+      if (in_frontmatter == 0) {
+        in_frontmatter = 1
+        next
+      }
+      exit
+    }
+
+    in_frontmatter == 1 {
+      pattern = "^" key ":[[:space:]]*$"
+      if ($0 ~ pattern) {
+        in_block = 1
+        next
+      }
+      if (in_block == 1) {
+        if (/^[[:space:]]/)
+          print
+        else
+          in_block = 0
+      }
+    }
+  ' "$FILE_PATH"
+}
+
 resolve_model_value() {
   local VALUE=$1
 
@@ -130,6 +161,14 @@ install_copilot_agents() {
     [ -f "$file" ] || continue
     [ -n "$SUBAGENT_MODEL" ] && sed -i "s/\${SUBAGENT_MODEL}/${SUBAGENT_MODEL}/g" "$file"
     [ -n "$ORCHESTRATOR_MODEL" ] && sed -i "s/\${ORCHESTRATOR_MODEL}/${ORCHESTRATOR_MODEL}/g" "$file"
+
+    awk '
+      /^---[[:space:]]*$/ { frontmatter++; in_perm = 0 }
+      frontmatter == 1 && /^permission:[[:space:]]*$/ { in_perm = 1; next }
+      in_perm && /^[[:space:]]/ { next }
+      in_perm { in_perm = 0 }
+      { print }
+    ' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
   done
 }
 
@@ -171,11 +210,17 @@ install_opencode_agents() {
       mode="subagent"
     fi
 
+    permissions=$(read_frontmatter_block permission "$source_file")
+
     {
       printf '%s\n' '---'
       printf 'description: %s\n' "$description"
       printf 'mode: %s\n' "$mode"
       printf 'model: %s\n' "$model"
+      if [ -n "$permissions" ]; then
+        printf 'permission:\n'
+        printf '%s\n' "$permissions"
+      fi
       printf '%s\n\n' '---'
       write_body_without_frontmatter "$source_file"
     } > "$target_file"

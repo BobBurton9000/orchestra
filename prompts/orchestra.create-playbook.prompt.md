@@ -6,7 +6,7 @@ argument-hint: "describe the implementation request to turn into a playbook"
 ---
 
 # Goal
-Create one standalone implementation playbook for the developer request and save it to `.agents/orchestra/<branch-name>/playbook.md` using [implementation-plan.template.md](orchestra.templates/implementation-plan.template.md).
+Create one standalone implementation playbook for the developer request and save it to `.orchestra/<branch-name>/playbook-<playbook-slug>.md` using [implementation-plan.template.md](orchestra.templates/implementation-plan.template.md).
 
 This prompt is intentionally standalone. Its job is to produce an auditable proposed direction after doing the necessary up-front research and resolving open questions. It does not participate in the stage workflow automatically.
 
@@ -15,7 +15,10 @@ This prompt is intentionally standalone. Its job is to produce an auditable prop
   - Inline implementation text
   - A URL to a GitHub issue or pull request
   - A URL to an Azure DevOps work item
-- `<branch-name>`: [branch-name](orchestra.snippets/branch-name.md)
+- `<branch-name>`: Resolve the current branch using [branch-name](orchestra.snippets/branch-name.md), then normalize it by replacing `/` and whitespace with `-` so the result is safe to use as one directory name.
+- `<playbook-slug>`: Derive a concise deterministic slug from `{{ request }}`. Lowercase it, replace whitespace and path separators with `-`, remove characters that are unsafe for filenames, collapse repeated `-`, trim leading and trailing `-`, and keep it short but recognizable.
+- `<output-dir>`: `.orchestra/<branch-name>/`
+- `<output-path>`: `.orchestra/<branch-name>/playbook-<playbook-slug>.md`
 
 # Invocation Pattern
 This prompt is executed with a required implementation request.
@@ -29,19 +32,22 @@ Inference rules:
 1. Treat the full invocation text as `{{ request }}`.
 2. If `{{ request }}` is a supported URL, resolve canonical request details using GitHub CLI for GitHub URLs or Azure DevOps MCP services for Azure DevOps URLs before creating the playbook.
 3. If no request is provided, return `ERROR: no implementation request provided`.
+4. Resolve `<branch-name>` from the current git branch, then normalize it before using `<output-dir>` or `<output-path>`.
+5. Derive `<playbook-slug>` from `{{ request }}` before using `<output-path>`.
+6. If slug generation would be empty after normalization, use `playbook` as the fallback slug.
 
 # Required Outcomes
 1. The template [implementation-plan.template.md](orchestra.templates/implementation-plan.template.md) was used as the base structure.
-2. The output directory `.agents/orchestra/<branch-name>/` exists after execution.
-3. The final file path is `.agents/orchestra/<branch-name>/playbook.md`.
+2. The output directory `<output-dir>` exists after execution.
+3. The final file path is `<output-path>`.
 4. The playbook contains all required sections from the template.
 5. The playbook is implementation-focused, sequential, and concrete enough for a human to audit direction and risk.
 6. Research needed to remove open questions is performed before writing the final playbook.
 7. The approved playbook contains no unresolved architectural questions.
 8. A `plan-review` subagent review is completed against the generated playbook and the final verdict is `APPROVED`.
 9. If the first review returns `CHANGES REQUESTED`, the playbook is revised and re-reviewed iteratively until the verdict is `APPROVED`.
-10. If `.agents/orchestra/<branch-name>/playbook.md` already exists, no overwrite occurs until the developer explicitly confirms.
-11. No files outside of `.agents/` are modified.
+10. If `<output-path>` already exists, no overwrite occurs until the developer explicitly confirms.
+11. No files outside `<output-dir>` are modified.
 
 # Steps
 1. Validate input. If `{{ request }}` is empty, return `ERROR: no implementation request provided`.
@@ -57,22 +63,23 @@ Inference rules:
 6. Perform targeted repository and product research needed to eliminate open questions before finalizing the playbook.
 7. Read [implementation-plan.template.md](orchestra.templates/implementation-plan.template.md) and follow its sections exactly.
 8. Extract source artifact names when available and populate `Original Source Files`.
-9. Resolve `<branch-name>` using [branch-name](orchestra.snippets/branch-name.md).
-10. Ensure `.agents/orchestra/<branch-name>/` exists. Create it if missing.
-11. Check whether `.agents/orchestra/<branch-name>/playbook.md` already exists.
-12. If the file exists, ask the developer to choose:
-   - Overwrite the existing playbook
-   - Cancel operation
-13. If overwrite is confirmed, or no file exists, generate the playbook from the normalized request and write `.agents/orchestra/<branch-name>/playbook.md`.
-14. Delegate review of `.agents/orchestra/<branch-name>/playbook.md` to the `plan-review` agent.
-15. If the `plan-review` verdict is `CHANGES REQUESTED`, update `.agents/orchestra/<branch-name>/playbook.md` to address all required changes and run `plan-review` again.
-16. Repeat step 15 until the verdict is `APPROVED`.
-17. Do not execute the playbook.
+9. Resolve and normalize `<branch-name>` using [branch-name](orchestra.snippets/branch-name.md).
+10. Derive `<playbook-slug>` from `{{ request }}`.
+11. Ensure `<output-dir>` exists. Create it if missing.
+12. Check whether `<output-path>` already exists.
+13. If the file exists, ask the developer to choose:
+    - Overwrite the existing playbook
+    - Cancel operation
+14. If overwrite is confirmed, or no file exists, generate the playbook from the normalized request and write `<output-path>`.
+15. Delegate review of `<output-path>` to the `plan-review` agent.
+16. If the `plan-review` verdict is `CHANGES REQUESTED`, update `<output-path>` to address all required changes and run `plan-review` again.
+17. Repeat step 16 until the verdict is `APPROVED`.
+18. Do not execute the playbook.
 
 # Response To User
 If created:
 ```
-Implementation playbook created: .agents/orchestra/<branch-name>/playbook.md
+Implementation playbook created: .orchestra/<branch-name>/playbook-<playbook-slug>.md
 Template used: [implementation-plan.template.md](orchestra.templates/implementation-plan.template.md)
 Plan review verdict: APPROVED
 Status: Ready for human audit
@@ -80,7 +87,7 @@ Status: Ready for human audit
 
 If existing file requires confirmation:
 ```
-Implementation playbook already exists: .agents/orchestra/<branch-name>/playbook.md
+Implementation playbook already exists: .orchestra/<branch-name>/playbook-<playbook-slug>.md
 Choose one: Overwrite | Cancel
 ```
 

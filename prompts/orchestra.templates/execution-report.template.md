@@ -2,14 +2,14 @@
 
 ## Source Artifacts
 - Task:
-  - {{ path to .agents/orchestra/<branch-name>/task.md }}
+  - {{ path to .orchestra/<branch-name>/task.md }}
 - Research:
   - {{ path to research document }}
   - {{ path to research document }}
 - Plan:
-  - {{ path to .agents/orchestra/<branch-name>/plan.md }}
+  - {{ path to .orchestra/<branch-name>/plan.md }}
 - Branch Gherkin:
-  - {{ path to .agents/orchestra/<branch-name>/gherkin.feature or None }}
+  - {{ path to .orchestra/<branch-name>/gherkin.feature or None }}
 - Living Gherkin targets:
   - {{ path under project-root .gherkin/ or None }}
 

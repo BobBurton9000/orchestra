@@ -2,7 +2,7 @@
 agent: orchestrator
 name: orchestra.review.pr-to-file
 description: Review a pull request diff using GitHub CLI, do not modify code or post PR comments, and write severity-prioritised findings to a branch-specific markdown file under `.orchestra/<branch-name>/`.
-argument-hint: PR URL plus owner/repo plus output markdown filename
+argument-hint: PR URL (e.g., https://github.com/owner/repo/pull/123)
 ---
 
 # Goal
@@ -10,22 +10,28 @@ Perform a repository-grounded code review of the target pull request using GitHu
 
 # Variables
 <pr-url> = {{PR_URL}}
-<owner> = {{OWNER}}
-<repo> = {{REPO}}
+<owner> = Derived from parsing <pr-url> (e.g., https://github.com/rld-engineering/intelligentcontract-monorepo/pull/123 → owner = rld-engineering)
+<repo> = Derived from parsing <pr-url> (e.g., https://github.com/rld-engineering/intelligentcontract-monorepo/pull/123 → repo = intelligentcontract-monorepo)
+<pr-number> = Derived from parsing <pr-url> (e.g., https://github.com/owner/repo/pull/123 → pr-number = 123)
 <branch-name> = Resolve the current branch using [branch-name](orchestra.snippets/branch-name.md), then normalize it by replacing `/` and whitespace with `-` so the result is safe to use as one directory name.
-<output-file> = {{OUTPUT_FILENAME_MD}}
+<output-file> = {{OUTPUT_FILENAME_MD}} (optional - auto-generated as `pr-{pr-number}-{datetime}-review.md` if not provided)
 <output-dir> = `.orchestra/<branch-name>/`
 <output-path> = `.orchestra/<branch-name>/<output-file>`
 
 # Invocation Pattern
-This prompt is executed with a PR URL and explicit repository coordinates.
+This prompt is executed with just a PR URL.
 
 Inference rules:
-1. If <pr-url> is present, treat it as canonical review target.
+1. If <pr-url> is present, parse it to extract <owner>, <repo>, and <pr-number>.
+   - URL format: `https://github.com/{owner}/{repo}/pull/{pr-number}`
+   - Example: `https://github.com/rld-engineering/intelligentcontract-monorepo/pull/1235`
+     → owner = rld-engineering
+     → repo = intelligentcontract-monorepo
+     → pr-number = 1235
 2. If <pr-url> is missing, return ERROR: no pull request URL provided.
-3. If owner or repo is missing, return ERROR: owner/repo not provided.
-4. If <output-file> is missing, return ERROR: output filename not provided.
-5. Resolve <branch-name> from the current git branch, then normalize it before using <output-dir> or <output-path>.
+3. If <owner> or <repo> cannot be parsed from <pr-url>, return ERROR: invalid PR URL format.
+4. Resolve <branch-name> from the current git branch, then normalize it before using <output-dir> or <output-path>.
+5. If <output-file> is not provided, auto-generate it as `pr-{pr-number}-{datetime}-review.md` where datetime is UTC in format YYYYMMDD-HHMMSS.
 6. <output-file> must be a markdown filename only. If it includes directory separators, return ERROR: output file must be a filename only.
 
 # Required Outcomes

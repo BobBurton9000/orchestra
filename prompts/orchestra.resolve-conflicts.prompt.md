@@ -43,7 +43,7 @@ Inference rules:
 1. **Load branch and pull request context**:
 	1. Resolve the current source branch and determine whether an active or current pull request exists for `<branch-name>`.
 	2. Resolve the target branch using the `Invocation Pattern` rules.
-	3. Read `.agents/orchestra/<branch-name>/story.md`, `.agents/orchestra/<branch-name>/plan.md`, and `.agents/orchestra/<branch-name>/execution-report.md` when present so conflict decisions are grounded in the intended branch behaviour.
+	3. Read `.orchestra/<branch-name>/story.md`, `.orchestra/<branch-name>/plan.md`, and `.orchestra/<branch-name>/execution-report.md` when present so conflict decisions are grounded in the intended branch behaviour.
 2. **Check repository safety before merging**:
 	1. Inspect the working tree for unrelated unstaged or uncommitted local changes.
 	2. If unrelated local changes cannot be separated safely from the conflict-resolution work, return `ERROR: working tree is not safe for automatic conflict resolution`.

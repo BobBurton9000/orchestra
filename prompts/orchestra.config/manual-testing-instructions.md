@@ -1,11 +1,11 @@
 # Manual Testing Instructions
 
 ## Goal
-Use manual testing agents to independently verify that every Gherkin statement in `.agents/orchestra/<branch-name>/gherkin.md` is true before stage 5 can finish.
+Use manual testing agents to independently verify that every Gherkin statement in `.orchestra/<branch-name>/gherkin.md` is true before stage 5 can finish.
 
 ## Required Rules
 
-1. Treat every individual `Given`, `When`, `Then`, `And`, and `But` statement in `.agents/orchestra/<branch-name>/gherkin.md` as a separate verification item.
+1. Treat every individual `Given`, `When`, `Then`, `And`, and `But` statement in `.orchestra/<branch-name>/gherkin.md` as a separate verification item.
 2. Include statements from both `Changed Files` and `Related Gherkin`.
 3. Delegate each verification item to an appropriate manual testing agent. Prefer `tester.browser` for UI and end-to-end workflow checks.
 4. Record the exact statement, the scenario exercised, the validating agent, and the observed result.

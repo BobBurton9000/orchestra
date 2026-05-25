@@ -60,6 +60,7 @@ name: architect
 description: Plans software architecture and system design
 mode: subagent                    # primary | subagent
 model: ollama-cloud/deepseek-v4-flash
+variant: max                      # optional - preserved for OpenCode
 agents: [...]                     # orchestrator only — list of subagent names
 permission:                       # optional — preserved for OpenCode, stripped for Copilot
   edit: deny
@@ -136,6 +137,7 @@ Transformations per platform:
 |-----------|----------|---------|
 | `mode: primary` | `mode: primary` | *(omitted — visible by default)* |
 | `mode: subagent` | `mode: subagent` | `user-invocable: false` |
+| `variant:` | Preserved | Stripped |
 | `permission:` block | Preserved | Stripped |
 | `agents:` list | *(not output)* | Preserved |
 | Filename `.agent.md` | Stripped → `name.md` | Kept as `name.agent.md` |

@@ -106,10 +106,11 @@ prepare_opencode_agent() {
   local compiled="$1"
   local final="$2"
 
-  local description mode model permissions
+  local description mode model variant permissions
   description=$(read_frontmatter_value description "$compiled")
   mode=$(read_frontmatter_value mode "$compiled")
   model=$(read_frontmatter_value model "$compiled")
+  variant=$(read_frontmatter_value variant "$compiled")
   permissions=$(read_frontmatter_block permission "$compiled")
 
   local body
@@ -120,6 +121,7 @@ prepare_opencode_agent() {
     [ -n "$description" ] && printf 'description: %s\n' "$description"
     [ -n "$mode" ] && printf 'mode: %s\n' "$mode"
     [ -n "$model" ] && printf 'model: %s\n' "$model"
+    [ -n "$variant" ] && printf 'variant: %s\n' "$variant"
     if [ -n "$permissions" ]; then
       printf 'permission:\n'
       printf '%s\n' "$permissions"

@@ -2,7 +2,7 @@
 name: scribe
 description: Makes simple, straightforward documentation updates and handles low-effort writing tasks that require minimal problem solving
 mode: subagent
-model: ollama-cloud/qwen3.5:397b
+model: ollama-cloud/kimi-k2.6
 ---
 
 ## You are a Scribe

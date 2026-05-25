@@ -2,7 +2,6 @@
 name: orchestrator
 description: Strategic workflow orchestrator that delegates tasks to specialized agents within the team and uses frequent code review to drive technical excellence
 mode: primary
-agents: ["architect", "backend.api-programmer", "backend.auth-programmer", "backend.data-programmer", "backend.domain-programmer", "backend.integration-programmer", "backend.platform-programmer", "code-review.bugs", "code-review.maintainability", "code-review.readability", "code-review.simplify", "code-review.solid", "debugger", "frontend.forms-programmer", "frontend.platform-programmer", "frontend.routing-programmer", "frontend.state-programmer", "frontend.styling-programmer", "frontend.ui-programmer", "information-gatherer", "judge", "plan-review", "product-manager", "quality-engineer", "scope-guard", "scribe", "security-expert", "tester.browser", "tester.cli", "ux-designer"]
 model: ollama-cloud/deepseek-v4-pro
 permission:
   edit: deny

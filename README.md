@@ -185,7 +185,6 @@ All 31 agents available in `templates/agents/`:
 | `frontend.ui-programmer` | Components, screens, and view composition |
 | `information-gatherer` | Codebase and GitHub research |
 | `judge` | Evidence-based truth determination |
-| `product-manager` | Business value and prioritisation |
 | `quality-engineer` | Automated test writing |
 | `scope-guard` | Scope creep protection |
 | `scribe` | Documentation and PR descriptions |

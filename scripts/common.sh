@@ -201,7 +201,7 @@ parse_include_line_as_vars() {
   local OUT_PATH_VAR="$2"
   local OUT_HEADING_VAR="$3"
 
-  if [[ "$LINE" =~ ^#[[:space:]]*include[[:space:]]+(/.+)$ ]]; then
+  if [[ "$LINE" =~ ^#[[:space:]]*include[[:space:]]+([/~].+)$ ]]; then
     local full_path="${BASH_REMATCH[1]}"
 
     if [[ "$full_path" =~ ^(.+):(.+)$ ]]; then

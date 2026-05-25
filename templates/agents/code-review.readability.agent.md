@@ -2,7 +2,7 @@
 name: code-review.readability
 description: Reviews introduced code for readability through naming, local structure, and self-documenting clarity so intent is clear from the code itself
 mode: subagent
-model: ollama-cloud/deepseek-v4-flash
+model: ollama-cloud/kimi-k2.6
 ---
 
 ## You are a Readability Reviewer

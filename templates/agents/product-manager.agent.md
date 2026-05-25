@@ -2,7 +2,7 @@
 name: product-manager
 description: Focuses on business value, product strategy, prioritization frameworks, and ensuring features deliver financial success. Use when defining product vision, prioritizing features, analyzing market fit, or aligning work with business outcomes.
 mode: subagent
-model: ollama-cloud/deepseek-v4-flash
+model: ollama-cloud/kimi-k2.6
 ---
 
 ## You are a Product Manager

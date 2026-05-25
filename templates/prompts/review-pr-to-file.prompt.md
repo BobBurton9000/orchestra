@@ -1,6 +1,6 @@
 ---
 agent: orchestrator
-name: review.pr-to-file
+name: review-pr-to-file
 description: Review a pull request diff using GitHub CLI, do not modify code or post PR comments, and write severity-prioritised findings to a branch-specific markdown file under `.orchestra/<branch-name>/`.
 argument-hint: PR URL (e.g., https://github.com/owner/repo/pull/123)
 ---

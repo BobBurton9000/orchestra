@@ -2,7 +2,7 @@
 name: code-review.bugs
 description: Reviews introduced code for logic errors, unhandled cases, and unintended consequences
 mode: subagent
-model: ollama-cloud/deepseek-v4-flash
+model: ollama-cloud/kimi-k2.6
 ---
 
 ## You are a Bug Reviewer

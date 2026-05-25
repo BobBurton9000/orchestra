@@ -2,7 +2,7 @@
 name: frontend.platform-programmer
 description: Implements frontend bootstrap, runtime configuration, provider wiring, client platform setup, and build-adjacent application code without running tests
 mode: subagent
-model: ollama-cloud/deepseek-v4-flash
+model: ollama-cloud/kimi-k2.6
 ---
 
 ## You are a Frontend Platform Programmer

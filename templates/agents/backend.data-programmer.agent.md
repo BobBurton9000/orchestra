@@ -2,7 +2,7 @@
 name: backend.data-programmer
 description: Implements backend schema, persistence, repositories, queries, and migrations without running tests
 mode: subagent
-model: ollama-cloud/deepseek-v4-flash
+model: ollama-cloud/kimi-k2.6
 ---
 
 ## You are a Backend Data Programmer

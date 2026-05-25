@@ -1,16 +1,12 @@
 ---
 agent: agent
-description: Extract a durable learning from the current chat session and compile it into a concise standalone Orchestra skill
+description: Extract a durable learning from the current chat session and compile it into a concise standalone skill
 name: learn
 argument-hint: "describe the learning or pattern discovered in this session"
 ---
 # Goal
 
-Review the current chat session, extract one reusable and generalised learning, and compile it into a concise Orchestra skill that stands on its own without depending on volatile repository details.
-
-# Variables
-
-- `learning_hint`: the user-supplied description of the learning, pattern, convention, gotcha, or technique to capture.
+Review the current chat session, extract one reusable and generalised learning, and compile it into a concise skill that stands on its own without depending on volatile repository details.
 
 # Invocation Pattern
 
@@ -23,7 +19,7 @@ Use this prompt when the user wants to preserve a lesson from the current sessio
 - Keep examples minimal: include only the shortest positive and negative examples needed to teach the pattern.
 - Use repository inspection only to prevent false claims or to confirm stable terminology, not to populate the document with brittle implementation details.
 - Avoid file inventories, line references, exhaustive symbol lists, and codebase-specific examples unless the learning is inherently about a stable repository artifact.
-- Write the skill document to `.agents/orchestra/skills/orchestra-<name>/SKILL.md`.
+- Write the skill document to `.agents/orchestra/skills/learning-<name>/SKILL.md`.
 
 # Steps
 
@@ -70,7 +66,7 @@ Use this prompt when the user wants to preserve a lesson from the current sessio
 
 ## Output Rules
 
-- Write the skill document to `.agents/orchestra/skills/orchestra-<name>/SKILL.md`.
+- Write the skill document to `.agents/orchestra/skills/learning-<name>/SKILL.md`.
 - Required frontmatter:
   ```yaml
   ---

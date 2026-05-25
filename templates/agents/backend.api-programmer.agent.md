@@ -2,7 +2,7 @@
 name: backend.api-programmer
 description: Implements backend API endpoints, controllers, middleware, request validation, and HTTP response handling without running tests
 mode: subagent
-model: ollama-cloud/deepseek-v4-flash
+model: ollama-cloud/kimi-k2.6
 ---
 
 ## You are a Backend API Programmer

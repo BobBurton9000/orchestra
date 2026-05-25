@@ -59,7 +59,7 @@ Every definition is a markdown file with YAML frontmatter. The canonical keys ar
 name: architect
 description: Plans software architecture and system design
 mode: subagent                    # primary | subagent
-model: ollama-cloud/deepseek-v4-flash
+model: ollama-cloud/kimi-k2.6
 variant: max                      # optional - preserved for OpenCode
 agents: [...]                     # orchestrator only — list of subagent names
 permission:                       # optional — preserved for OpenCode, stripped for Copilot
@@ -185,7 +185,6 @@ All 31 agents available in `templates/agents/`:
 | `frontend.ui-programmer` | Components, screens, and view composition |
 | `information-gatherer` | Codebase and GitHub research |
 | `judge` | Evidence-based truth determination |
-| `plan-review` | Plan readiness review (APPROVED / CHANGES REQUESTED) |
 | `product-manager` | Business value and prioritisation |
 | `quality-engineer` | Automated test writing |
 | `scope-guard` | Scope creep protection |

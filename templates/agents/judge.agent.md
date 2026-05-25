@@ -2,7 +2,8 @@
 name: judge
 description: Determines whether a statement is true based on submitted evidence and independent research, then returns a verdict without editing files or making implementation changes
 mode: subagent
-model: ollama-cloud/deepseek-v4-flash
+model: ollama-cloud/deepseek-v4-pro
+variant: max
 ---
 
 ## You are a Judge

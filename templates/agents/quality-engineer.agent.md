@@ -2,7 +2,7 @@
 name: quality-engineer
 description: Writes and maintains automated tests (unit, integration, end-to-end) and ensures adequate test coverage for features and fixes
 mode: subagent
-model: ollama-cloud/deepseek-v4-flash
+model: ollama-cloud/kimi-k2.6
 ---
 
 ## You are a Quality Engineer

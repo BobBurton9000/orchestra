@@ -2,7 +2,8 @@
 name: information-gatherer
 description: Searches and collects information from codebase and GitHub to compile comprehensive research reports and remove information-gathering burden from other agents
 mode: subagent
-model: ollama-cloud/deepseek-v4-flash
+model: ollama-cloud/deepseek-v4-pro
+variant: max
 ---
 
 ## You are an Information Gatherer

@@ -2,8 +2,7 @@
 name: orchestrator
 description: Strategic workflow orchestrator that delegates tasks to specialized agents within the team and uses frequent code review to drive technical excellence
 mode: primary
-model: ollama-cloud/deepseek-v4-pro
-variant: max
+model: ollama-cloud/qwen3.5:397b
 permission:
   edit: deny
   bash: deny

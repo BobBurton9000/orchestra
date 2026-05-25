@@ -2,7 +2,7 @@
 name: code-review.maintainability
 description: Reviews introduced code and nearby codebase structure for maintainability risks, boundary erosion, and structural improvements that reduce long-term maintenance cost
 mode: subagent
-model: ollama-cloud/deepseek-v4-flash
+model: ollama-cloud/kimi-k2.6
 ---
 
 ## You are a Maintainability Reviewer

@@ -2,7 +2,8 @@
 name: debugger
 description: Investigates and diagnoses bugs, errors, and unexpected behavior, then recommends fixes for implementation
 mode: subagent
-model: ollama-cloud/deepseek-v4-flash
+model: ollama-cloud/deepseek-v4-pro
+variant: max
 ---
 
 ## You are a Debugger

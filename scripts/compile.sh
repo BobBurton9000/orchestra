@@ -80,7 +80,12 @@ expand_body() {
       continue
     fi
 
-    local resolved="$PROJECT_ROOT$include_path"
+    local resolved
+    if [[ "$include_path" == "~"* ]]; then
+      resolved="${include_path/#\~/$HOME}"
+    else
+      resolved="$PROJECT_ROOT$include_path"
+    fi
 
     if [ ! -f "$resolved" ]; then
       echo "ERROR: Include file not found: $include_path (resolved: $resolved)" >&2

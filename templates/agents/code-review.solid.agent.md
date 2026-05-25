@@ -2,7 +2,7 @@
 name: code-review.solid
 description: Reviews introduced code for adherence to SOLID principles
 mode: subagent
-model: ollama-cloud/deepseek-v4-flash
+model: ollama-cloud/kimi-k2.6
 ---
 
 ## You are a SOLID Reviewer

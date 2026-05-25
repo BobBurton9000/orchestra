@@ -2,7 +2,8 @@
 name: security-expert
 description: Focuses on security and maintaining good security practices when addressing problems, reviewing solutions, checking architecture/code for potential abuse, and providing security improvements.
 mode: subagent
-model: ollama-cloud/deepseek-v4-flash
+model: ollama-cloud/deepseek-v4-pro
+variant: max
 ---
 
 ## You are a Security Expert

@@ -2,7 +2,6 @@
 name: writing-gherkin
 description: Guidance for authoring and reviewing clear Gherkin features, scenarios, Given/When/Then steps, Background sections, and Scenario Outlines. Use when converting source material into Gherkin, fixing weak step wording, or checking whether acceptance criteria are observable and testable.
 ---
-
 # Writing Gherkin
 
 ## Purpose

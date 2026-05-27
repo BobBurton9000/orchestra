@@ -1,12 +1,11 @@
 ---
 agent: orchestrator
 name: review-pr-to-file
-description: Review a pull request diff using GitHub CLI, do not modify code or post PR comments, and write severity-prioritised findings to a branch-specific markdown file under `.orchestra/<branch-name>/`.
+description: Review a pull request diff using GitHub CLI, do not modify code or post PR comments, and write severity-prioritised findings to a branch-specific markdown file under `.temp/<branch-name>/`.
 argument-hint: PR URL (e.g., https://github.com/owner/repo/pull/123)
 ---
-
 # Goal
-Perform a repository-grounded code review of the target pull request using GitHub CLI diff data, then write review feedback only to `.orchestra/<branch-name>/<output-file>`.
+Perform a repository-grounded code review of the target pull request using GitHub CLI diff data, then write review feedback only to `.temp/<branch-name>/<output-file>`.
 
 # Variables
 <pr-url> = {{PR_URL}}
@@ -15,8 +14,8 @@ Perform a repository-grounded code review of the target pull request using GitHu
 <pr-number> = Derived from parsing <pr-url> (e.g., https://github.com/owner/repo/pull/123 → pr-number = 123)
 <branch-name> = Resolve the current branch using [branch-name](snippets/branch-name.md), then normalize it by replacing `/` and whitespace with `-` so the result is safe to use as one directory name.
 <output-file> = {{OUTPUT_FILENAME_MD}} (optional - auto-generated as `pr-{pr-number}-{datetime}-review.md` if not provided)
-<output-dir> = `.orchestra/<branch-name>/`
-<output-path> = `.orchestra/<branch-name>/<output-file>`
+<output-dir> = `.temp/<branch-name>/`
+<output-path> = `.temp/<branch-name>/<output-file>`
 
 # Invocation Pattern
 This prompt is executed with just a PR URL.

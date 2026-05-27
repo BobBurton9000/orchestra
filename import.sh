@@ -16,7 +16,7 @@ usage() {
   echo "  Examples:" >&2
   echo "    $0 orchestrator                 # imports agents/orchestrator.agent.md" >&2
   echo "    $0 agents/architect             # imports agents/architect.agent.md" >&2
-  echo "    $0 prompts/create-playbook      # imports prompts/create-playbook.prompt.md" >&2
+    echo "    $0 prompts/gherkinify          # imports prompts/gherkinify.prompt.md" >&2
   echo "    $0 skills/writing-gherkin       # imports skills/writing-gherkin/SKILL.md" >&2
   exit 1
 }

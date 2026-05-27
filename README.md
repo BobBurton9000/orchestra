@@ -28,6 +28,7 @@ Either way, your definitions land in `.agents/orchestra/` — edit them directly
 
 ```
 .orchestra/
+├── .gitattributes               # LF line endings for shell scripts
 ├── import.sh                    # Import a single agent, prompt, or skill
 ├── import-defaults.sh           # Bulk import everything + choose default models
 ├── export.sh                    # Compile includes + export to Copilot or OpenCode
@@ -36,8 +37,8 @@ Either way, your definitions land in `.agents/orchestra/` — edit them directly
 │   ├── common.sh                # Shared frontmatter/heading parsing utilities
 │   └── compile.sh               # Recursive #include resolver + section extraction
 └── templates/                   # Prepackaged library (never modified by user)
-    ├── agents/                  # 31 agent templates (*.agent.md)
-    ├── prompts/                 # 8 prompts + snippets, templates, config
+    ├── agents/                  # 29 agent templates (*.agent.md)
+    ├── prompts/                 # 4 prompts + snippets (templates/config dirs reserved)
     └── skills/                  # 3 skills
 ```
 
@@ -84,7 +85,7 @@ Agent and prompt bodies can include external markdown files. The included conten
 #include /docs/architecture.md:##Security Model
 ```
 
-- Paths are relative to the project root (where `.orchestra/` lives)
+- Paths are relative to the project root (where `.orchestra/` lives). A leading `~` expands to the home directory.
 - `:#Section Name` injects everything under that heading until the next same-or-higher-level heading
 - `:##Sub Section` injects everything under that sub-heading
 - Includes can nest — included files can include other files
@@ -99,7 +100,7 @@ This stops agents from "lazy loading" reference documents. Everything the agent 
 ```bash
 ./.orchestra/import.sh orchestrator            # agents/orchestrator.agent.md
 ./.orchestra/import.sh agents/architect         # agents/architect.agent.md
-./.orchestra/import.sh prompts/create-playbook  # prompts/create-playbook.prompt.md
+./.orchestra/import.sh prompts/gherkinify       # prompts/gherkinify.prompt.md
 ./.orchestra/import.sh skills/writing-gherkin   # skills/writing-gherkin/SKILL.md
 ```
 
@@ -113,7 +114,7 @@ This stops agents from "lazy loading" reference documents. Everything the agent 
 ./.orchestra/import-defaults.sh
 ```
 
-Prompts for the default orchestrator model and subagent model, saves them to `.orchestra/config.yml`, then imports all 31 agents, 8 prompts (plus snippets/templates/config), and 3 skills. Asks before overwriting each existing file.
+Prompts for the default orchestrator model and subagent model, saves them to `.orchestra/config.yml`, then imports all 29 agents, 4 prompts (plus snippets), and 3 skills. Asks before overwriting each existing file.
 
 ## Export
 
@@ -143,6 +144,7 @@ Transformations per platform:
 | Filename `.agent.md` | Stripped → `name.md` | Kept as `name.agent.md` |
 | Filename `.prompt.md` | Stripped → `name.md` | Kept as `name.prompt.md` |
 | Prompt `handoffs:` | Stripped | Preserved |
+| Prompt `agent:` | Preserved | Stripped |
 
 ## Convert (Existing Agents → Definitions)
 
@@ -159,7 +161,7 @@ The conversion inverts the same field mapping used by `export.sh`, so the round-
 
 ## Agent Catalog
 
-All 31 agents available in `templates/agents/`:
+All 29 agents available in `templates/agents/`:
 
 | Agent | Role |
 |-------|------|
@@ -195,20 +197,16 @@ All 31 agents available in `templates/agents/`:
 
 ## Prompt Catalog
 
-All 8 prompts available in `templates/prompts/`:
+All 4 prompts available in `templates/prompts/`:
 
 | Prompt | Description |
 |--------|-------------|
-| `create-playbook` | Create a branch-scoped implementation playbook for human audit |
 | `gherkinify` | Convert source material into structured Gherkin scenarios |
 | `investigate-bug-claim` | Investigate a bug-analyser claim and write a verdict report |
 | `learn` | Extract a durable learning from the session into a reusable skill |
-| `plan-file` | Research a goal and write a detailed planning-only plan |
-| `refresh-skills` | Review and update all generated skills against current codebase |
-| `resolve-conflicts` | Automatically resolve PR merge conflicts without committing |
-| `review.pr-to-file` | Review a PR diff and write findings to a branch-scoped file |
+| `review-pr-to-file` | Review a PR diff and write findings to a branch-scoped file |
 
-Supporting prompt assets (snippets, templates, config) are copied alongside the prompts during import.
+Supporting prompt assets (snippets) are copied alongside the prompts during import. Directories for `templates/` and `config/` are reserved for future use.
 
 ## Skill Catalog
 

@@ -135,7 +135,6 @@ compile_definition() {
 
   {
     echo "$frontmatter"
-    echo ""
     expand_body "$body"
   } > "$OUTPUT_FILE"
 }

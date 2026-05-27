@@ -1,19 +1,18 @@
 ---
 agent: orchestrator
 name: investigate-bug-claim
-description: Investigate a bug-analyser claim against the current repository, decide whether the claim is approved, refuted, or inconclusive, and write the report to a branch-specific markdown file under `.orchestra/<branch-name>/`.
+description: Investigate a bug-analyser claim against the current repository, decide whether the claim is approved, refuted, or inconclusive, and write the report to a branch-specific markdown file under `.temp/<branch-name>/`.
 argument-hint: paste the analyser claim, including title, severity, and rationale
 ---
-
 # Goal
-Investigate a bug-analyser claim against the current repository, determine whether the claim is approved, refuted, or inconclusive based on repository evidence, and write the investigation report only to `.orchestra/<branch-name>/bug-claim-<claim-slug>.md`.
+Investigate a bug-analyser claim against the current repository, determine whether the claim is approved, refuted, or inconclusive based on repository evidence, and write the investigation report only to `.temp/<branch-name>/bug-claim-<claim-slug>.md`.
 
 # Variables
 - `{{ claim }}`: The full bug-analyser claim text supplied by the user. This may include a title, severity, rationale, affected paths, and behavioural explanation.
 - `<branch-name>`: Resolve the current branch using [branch-name](snippets/branch-name.md), then normalize it by replacing `/` and whitespace with `-` so the result is safe to use as one directory name.
 - `<claim-slug>`: Derive a concise deterministic slug from the claim title or, if no clear title exists, from the first meaningful line of `{{ claim }}`. Lowercase it, replace whitespace and path separators with `-`, remove characters that are unsafe for filenames, collapse repeated `-`, trim leading and trailing `-`, and keep it short but recognizable.
-- `<output-dir>`: `.orchestra/<branch-name>/`
-- `<output-path>`: `.orchestra/<branch-name>/bug-claim-<claim-slug>.md`
+- `<output-dir>`: `.temp/<branch-name>/`
+- `<output-path>`: `.temp/<branch-name>/bug-claim-<claim-slug>.md`
 
 # Invocation Pattern
 This prompt is executed with a required analyser claim.

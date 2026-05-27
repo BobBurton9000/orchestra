@@ -2,8 +2,7 @@
 name: mermaid-safe-node-labels
 description: 'Use when writing or fixing Mermaid flowcharts whose node labels contain code-like or symbol-heavy text, to prevent parser failures by quoting labels and escaping special characters.'
 ---
-
-## Quick Reference
+# Quick Reference
 
 | Pattern | Example | Purpose |
 | --- | --- | --- |
@@ -11,7 +10,7 @@ description: 'Use when writing or fixing Mermaid flowcharts whose node labels co
 | Simple flowchart template | `Client --> API --> Database` | Shows the baseline case where plain labels usually work without extra escaping. |
 | Plain decision-node flowchart | `Decision{"Ready?\nReview complete"}` | Shows that ordinary text and line breaks are not, by themselves, the problem this skill addresses. |
 
-## Goals and Non-Goals
+# Goals and Non-Goals
 
 | Type | Scope |
 | --- | --- |
@@ -21,7 +20,7 @@ description: 'Use when writing or fixing Mermaid flowcharts whose node labels co
 | Non-goal | Rewriting simple labels that are already plain text, such as `Client --> API --> Service --> Database`. |
 | Non-goal | General Mermaid guidance for other diagram types such as sequence diagrams, class diagrams, or Gantt charts. |
 
-## The Learning
+# The Learning
 
 When a Mermaid flowchart node label contains code-like or symbol-heavy text, treat the label as parser-sensitive rather than as free text. A corrected diagram works because each label is wrapped in quotes inside its node shape and the namespace-style backslashes are escaped as `\\`. The safe default is: preserve the node shape, quote the full label text inside that shape, and escape backslashes inside the quoted content.
 
@@ -31,7 +30,7 @@ When a Mermaid flowchart node label contains code-like or symbol-heavy text, tre
 | Method-style or code-like fragments such as `::dependency(..., itemList)` | Punctuation-heavy text can become parser-fragile in unquoted labels | Put the entire label in quotes inside the existing node delimiter | `B["OrderService::dependency(customer, itemList)"]` |
 | Simple text labels such as `Client`, `API`, `Service`, `Database` | Usually no extra handling needed | Leave them plain unless the renderer proves otherwise | `Client --> API --> Database` |
 
-## Behaviour Examples
+# Behaviour Examples
 
 | Case | Evidence | Behaviour |
 | --- | --- | --- |
@@ -39,7 +38,7 @@ When a Mermaid flowchart node label contains code-like or symbol-heavy text, tre
 | Negative: same diagram left raw | `A[Customer\Entities] --> B[OrderService::dependency(customer, itemList)] --> C[Company\Site]` | The unquoted labels contain code-like fragments and raw backslashes, which makes the flowchart parser-fragile and likely to fail. |
 | Boundary case: plain labels do not need the heavy-handed fix | `Client --> API --> Database` and `Decision{"Ready?\nReview complete"}` | Simple labels and ordinary decision text render cleanly without quoting every node, so this skill should be applied when the label content is parser-fragile rather than universally. |
 
-## Anti-Patterns
+# Anti-Patterns
 
 | Anti-pattern | Why it is wrong |
 | --- | --- |
@@ -48,7 +47,7 @@ When a Mermaid flowchart node label contains code-like or symbol-heavy text, tre
 | Applying this rule to every label regardless of complexity | It adds noise without benefit for simple labels and makes diagrams harder to scan. Use it when the label contains parser-sensitive text, not as a universal formatting rule. |
 | Treating a label-parsing failure as evidence that the underlying code or architecture description is wrong | The issue is often Mermaid syntax rather than the underlying technical content. Fix the diagram representation first. |
 
-## Design Decisions
+# Design Decisions
 
 | Decision | Alternative | Why this choice was made |
 | --- | --- | --- |

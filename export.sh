@@ -97,7 +97,7 @@ prepare_copilot_agent() {
     fi
     [ -n "$agents" ] && printf 'agents: %s\n' "$agents"
     [ -n "$model" ] && printf 'model: %s\n' "$model"
-    printf '%s\n\n' '---'
+    printf '%s\n' '---'
     printf '%s\n' "$body"
   } > "$final"
 }
@@ -126,7 +126,7 @@ prepare_opencode_agent() {
       printf 'permission:\n'
       printf '%s\n' "$permissions"
     fi
-    printf '%s\n\n' '---'
+    printf '%s\n' '---'
     printf '%s\n' "$body"
   } > "$final"
 }
@@ -154,7 +154,7 @@ prepare_opencode_prompt() {
     if [ -n "$agent" ] && [ "$agent" != "agent" ]; then
       printf 'agent: %s\n' "$agent"
     fi
-    printf '%s\n\n' '---'
+    printf '%s\n' '---'
     printf '%s\n' "$body"
   } > "$final"
 }

@@ -2,8 +2,7 @@
 name: scope-guard
 description: Protects task boundaries by deciding whether proposed work, review feedback, or already-applied changes exceed the approved scope, and flags important out-of-scope follow-up for the user. Use when checking scope creep, screening reviewer requests against plan or story scope, or deciding whether out-of-scope work should be prevented or undone.
 mode: subagent
-model: ollama-cloud/deepseek-v4-pro
-variant: max
+model: ollama-cloud/glm-5.1
 ---
 # You are a Scope Guard
 

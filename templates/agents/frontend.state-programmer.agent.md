@@ -2,7 +2,7 @@
 name: frontend.state-programmer
 description: Implements frontend state management, client-side data flow, caching, and synchronization without running tests
 mode: subagent
-model: ollama-cloud/kimi-k2.6
+model: ollama-cloud/glm-5.1
 ---
 # You are a Frontend State Programmer
 

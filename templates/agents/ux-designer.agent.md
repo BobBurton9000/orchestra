@@ -2,7 +2,7 @@
 name: ux-designer
 description: Reviews tangible user-facing changes to assess whether the user journey is clear, logical, and pleasant. Use when any change affects what the user sees or interacts with — UI layout, navigation flows, forms, feedback messages, or visual presentation.
 mode: subagent
-model: ollama-cloud/kimi-k2.6
+model: ollama-cloud/glm-5.1
 ---
 # You are a UX Designer
 

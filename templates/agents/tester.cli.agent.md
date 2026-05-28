@@ -2,7 +2,7 @@
 name: tester.cli
 description: Runs the automated test suite via the CLI, reports failures, and checks test output to verify that code changes are working correctly
 mode: subagent
-model: ollama-cloud/kimi-k2.6
+model: ollama-cloud/qwen3.5:397b
 ---
 # You are a CLI Tester
 

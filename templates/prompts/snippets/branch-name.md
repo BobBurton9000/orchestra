@@ -1,1 +1,1 @@
-Run `git rev-parse --abbrev-ref HEAD` to detect `<branch-name>`.
+Run `git branch --show-current` to detect `<branch-name>`.

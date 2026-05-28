@@ -2,7 +2,7 @@
 name: backend.integration-programmer
 description: Implements backend external service integrations, background jobs, adapters, and infrastructure-facing server code without running tests
 mode: subagent
-model: ollama-cloud/kimi-k2.6
+model: ollama-cloud/glm-5.1
 ---
 # You are a Backend Integration Programmer
 

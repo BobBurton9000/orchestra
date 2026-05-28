@@ -1,4 +1,4 @@
-# Orchestra v2
+# Orchestra
 
 Orchestra is a multi-agent workflow toolkit. You pick and choose agents, prompts, and skills from a prepackaged template library, customise them in portable definition files, then export to GitHub Copilot or OpenCode.
 
@@ -60,7 +60,7 @@ Every definition is a markdown file with YAML frontmatter. The canonical keys ar
 name: architect
 description: Plans software architecture and system design
 mode: subagent                    # primary | subagent
-model: ollama-cloud/kimi-k2.6
+model: ollama-cloud/glm-5.1
 variant: max                      # optional - preserved for OpenCode
 agents: [...]                     # orchestrator only — list of subagent names
 permission:                       # optional — preserved for OpenCode, stripped for Copilot

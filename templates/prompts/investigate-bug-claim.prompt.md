@@ -9,7 +9,7 @@ Investigate a bug-analyser claim against the current repository, determine wheth
 
 # Variables
 - `{{ claim }}`: The full bug-analyser claim text supplied by the user. This may include a title, severity, rationale, affected paths, and behavioural explanation.
-- `<branch-name>`: Resolve the current branch using [branch-name](snippets/branch-name.md), then normalize it by replacing `/` and whitespace with `-` so the result is safe to use as one directory name.
+- `<branch-name>`: Resolve the current branch using `git branch --show-current`, then normalize it by replacing `/` and whitespace with `-` so the result is safe to use as one directory name.
 - `<claim-slug>`: Derive a concise deterministic slug from the claim title or, if no clear title exists, from the first meaningful line of `{{ claim }}`. Lowercase it, replace whitespace and path separators with `-`, remove characters that are unsafe for filenames, collapse repeated `-`, trim leading and trailing `-`, and keep it short but recognizable.
 - `<output-dir>`: `.temp/<branch-name>/`
 - `<output-path>`: `.temp/<branch-name>/bug-claim-<claim-slug>.md`
@@ -33,9 +33,9 @@ Inference rules:
 2. The only permitted workspace edits are creating `<output-dir>` if needed and creating or updating `<output-path>`.
 3. No code, test, configuration, or documentation files outside `<output-path>` are modified.
 4. The investigation is repository-grounded and cites concrete evidence such as code paths, symbols, control flow, tests, commands, or observed outputs.
-5. Runtime behaviour is observed with tester agents when the claim depends on user-visible flow, integration behaviour, or other execution-time effects.
-6. `tester.browser` is preferred for browser-reachable UI claims so the investigation can observe live behaviour and gather console, network, or interaction evidence when feasible.
-7. When browser runtime validation is not applicable, use the most relevant tester agent available to reproduce the behaviour or gather logs.
+5. Runtime behaviour is observed with a testing agent when the claim depends on user-visible flow, integration behaviour, or other execution-time effects.
+6. A browser-testing agent is preferred for browser-reachable UI claims so the investigation can observe live behaviour and gather console, network, or interaction evidence when feasible.
+7. When browser runtime validation is not applicable, use the most relevant testing agent available to reproduce the behaviour or gather logs.
 8. The claim receives exactly one verdict: `Approved`, `Refuted`, or `Inconclusive`.
 9. `Approved` means the repository evidence supports the reported bug as a real issue.
 10. `Refuted` means the repository evidence shows the reported bug does not hold as stated.
@@ -48,12 +48,23 @@ Inference rules:
 2. Do not edit product code.
 3. Do not open or submit a pull request review.
 4. Prefer the smallest set of repository reads and checks that can prove or disprove the claim.
-5. If the claim depends on runtime behaviour that cannot be validated from code alone, use a tester agent to reproduce or observe it before relying on static analysis alone.
-6. Prefer `tester.browser` when the claim is about browser-visible behaviour, user interaction flow, tab state, rendering, loading, console errors, or network activity and the application can be exercised in a browser.
-7. When `tester.browser` is not applicable, use the most relevant tester agent available to run the narrowest feasible command, test, or scenario and capture the result.
+5. If the claim depends on runtime behaviour that cannot be validated from code alone, use a testing agent to reproduce or observe it before relying on static analysis alone.
+6. Prefer a browser-testing agent when the claim is about browser-visible behaviour, user interaction flow, tab state, rendering, loading, console errors, or network activity and the application can be exercised in a browser.
+7. When a browser-testing agent is not applicable, use the most relevant testing agent available to run the narrowest feasible command, test, or scenario and capture the result.
 8. Gather logs when feasible, including browser console output, network failures, terminal output, or test logs, and include them as evidence.
 9. If no feasible validation exists, explain precisely what evidence is missing and use `Inconclusive` rather than guessing.
 10. If the analyser claim overstates the issue, record the narrower true statement instead of accepting the broader claim.
+
+# Agent Capability Resolution
+This prompt delegates work by capability, not by agent name. When resolving which agent to use for a capability, pick the narrowest available agent that fits the work.
+
+| Capability needed | Must be able to | Typical agent examples |
+|---|---|---|
+| Research | Search codebase, read files, compile findings into a report without writing code or making judgements | `information-gatherer` |
+| Browser testing | Navigate a running application, reproduce UI flows, capture console and network evidence | `tester.browser` |
+| CLI testing | Run commands, execute tests, capture terminal output | `tester.cli` |
+
+Dispatch to whichever available agent best fulfils the capability. The agent landscape varies across projects; adapt accordingly.
 
 # Report Document Structure
 Write `<output-path>` as markdown with these sections in this order:
@@ -88,11 +99,11 @@ Additional report rules:
    - claimed user or system impact
 7. Start repository-grounded investigation.
    - Identify the narrowest owning code path for the claimed behaviour.
-   - Use the `information-gatherer` agent for read-only discovery of the controlling implementation, any nearby tests, and likely runtime entry points.
-   - If the claim spans separate areas such as UI trigger flow, data loading, and tests, launch 2 or 3 `information-gatherer` agents in parallel, one per area.
+   - Use a research agent for read-only discovery of the controlling implementation, any nearby tests, and likely runtime entry points.
+   - If the claim spans separate areas such as UI trigger flow, data loading, and tests, launch 2 or 3 research agents in parallel, one per area.
    - Decide whether runtime observation is required to reach a defensible verdict.
-   - If the claim is browser-reachable, use `tester.browser` to reproduce the scenario, observe behaviour, and gather logs when feasible.
-   - If the claim is not browser-reachable, use the most relevant tester agent to run a narrow reproduction or gather execution logs.
+   - If the claim is browser-reachable, use a browser-testing agent to reproduce the scenario, observe behaviour, and gather logs when feasible.
+   - If the claim is not browser-reachable, use the most relevant testing agent to run a narrow reproduction or gather execution logs.
 8. Evaluate the claim against the evidence.
    - Confirm whether the reported control flow, state transition, guard, or missing condition actually exists.
    - Check for contradictory code paths, compensating behaviour, or tests that invalidate the claim.

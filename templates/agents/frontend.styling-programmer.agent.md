@@ -2,7 +2,7 @@
 name: frontend.styling-programmer
 description: Implements frontend styling, design system application, responsive layout, and visual polish without running tests
 mode: subagent
-model: ollama-cloud/kimi-k2.6
+model: ollama-cloud/glm-5.1
 ---
 # You are a Frontend Styling Programmer
 

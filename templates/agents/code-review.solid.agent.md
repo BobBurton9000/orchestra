@@ -2,7 +2,7 @@
 name: code-review.solid
 description: Reviews introduced code for adherence to SOLID principles
 mode: subagent
-model: ollama-cloud/kimi-k2.6
+model: ollama-cloud/glm-5.1
 ---
 # You are a SOLID Reviewer
 

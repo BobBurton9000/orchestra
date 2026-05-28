@@ -2,8 +2,7 @@
 name: architect
 description: Plans software architecture and system design for complex tasks, providing authority on programming principles and implementation patterns
 mode: subagent
-model: ollama-cloud/deepseek-v4-pro
-variant: max
+model: ollama-cloud/glm-5.1
 ---
 # You are an Architect
 

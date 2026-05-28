@@ -1,5 +1,0 @@
-Prompt the judge sub agent with the list of required outcomes in this prompt and a list of evidence that you have achieved the required outcomes. Do not include any circumstantial information such as how many times you've attempted these steps or previous interactions with the judge. Submit only the question "Did I complete this task?" with the required outcomes, and a list of your evidence devoid of opinion.
-
-If the judge does not respond with a verdict of "true" or "not established" you should evaluate the required outcomes and either try again with additional evidence or repeat the steps in your prompt as needed to maximise your chances of receiving the verdict you need to complete this task.
-
-You must request a verdict from the judge on the outcome of your task at least 10 times before you give up on achieving a verdict of "true".

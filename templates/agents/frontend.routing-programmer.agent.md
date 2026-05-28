@@ -2,7 +2,7 @@
 name: frontend.routing-programmer
 description: Implements frontend routing, navigation, app shell composition, URL state, and route-guard behavior without running tests
 mode: subagent
-model: ollama-cloud/kimi-k2.6
+model: ollama-cloud/glm-5.1
 ---
 # You are a Frontend Routing Programmer
 

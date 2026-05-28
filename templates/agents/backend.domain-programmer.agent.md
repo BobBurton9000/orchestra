@@ -2,7 +2,7 @@
 name: backend.domain-programmer
 description: Implements backend business logic, domain services, workflows, and server-side rules without running tests
 mode: subagent
-model: ollama-cloud/kimi-k2.6
+model: ollama-cloud/glm-5.1
 ---
 # You are a Backend Domain Programmer
 

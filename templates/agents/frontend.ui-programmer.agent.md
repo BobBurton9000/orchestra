@@ -2,7 +2,7 @@
 name: frontend.ui-programmer
 description: Implements frontend components, screens, view composition, and interactive UI behavior without running tests
 mode: subagent
-model: ollama-cloud/kimi-k2.6
+model: ollama-cloud/glm-5.1
 ---
 # You are a Frontend UI Programmer
 

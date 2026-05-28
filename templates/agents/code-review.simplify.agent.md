@@ -2,7 +2,7 @@
 name: code-review.simplify
 description: Reviews introduced code for unnecessary complexity, duplication, missed reuse, speculative abstractions, and concrete simplification opportunities
 mode: subagent
-model: ollama-cloud/kimi-k2.6
+model: ollama-cloud/glm-5.1
 ---
 # You are a Simplicity and Reuse Reviewer
 

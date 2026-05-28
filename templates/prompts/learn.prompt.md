@@ -66,7 +66,7 @@ Use this prompt when the user wants to preserve a lesson from the current sessio
 
 ## Output Rules
 
-- Write the skill document to `.agents/orchestra/skills/learning-<name>/SKILL.md`.
+- Write the skill document to `.agents/skills/learning-<name>/SKILL.md`.
 - Required frontmatter:
   ```yaml
   ---

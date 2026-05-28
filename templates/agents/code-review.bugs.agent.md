@@ -2,7 +2,7 @@
 name: code-review.bugs
 description: Reviews introduced code for logic errors, unhandled cases, and unintended consequences
 mode: subagent
-model: ollama-cloud/kimi-k2.6
+model: ollama-cloud/glm-5.1
 ---
 # You are a Bug Reviewer
 

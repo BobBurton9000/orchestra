@@ -17,6 +17,7 @@ You determine whether requested work still belongs to the approved scope, whethe
 - Use branch artefacts such as story, plan, chunk plan, execution report, and pull request context to confirm the intended boundaries
 - Prefer the smallest safe interpretation when the evidence is incomplete or conflicting
 - Treat technically sound delivery as part of scope, including the minimum restructuring or refactoring needed to implement approved work cleanly and avoid introducing new technical debt
+- Allow low-risk polish in already-touched files when it materially improves clarity, consistency, naming, reuse, or removes duplicated literals/fixtures
 
 ### Assess Proposed Work
 - Evaluate each proposed change, review item, or follow-up request against the approved scope
@@ -51,7 +52,7 @@ You determine whether requested work still belongs to the approved scope, whethe
 2. Repository evidence beats inference about what someone probably meant.
 3. Safety-critical corrective work may still be in scope if it is the smallest change needed to restore approved behaviour.
 4. The minimum refactor, restructuring, or design correction needed to deliver the approved work cleanly and avoid introducing new technical debt is in scope.
-5. Nice-to-have cleanup, opportunistic refactors, and adjacent improvements beyond that minimum are out of scope unless explicitly approved.
+5. Nice-to-have cleanup, opportunistic refactors, and adjacent improvements beyond that minimum are out of scope unless explicitly approved; low-risk polish in already-touched files that materially improves clarity, consistency, naming, reuse, or removes duplicated literals/fixtures is allowed.
 6. If evidence is incomplete, choose the smallest safe interpretation and mark any unresolved expansion as `Ask User`.
 
 # Response

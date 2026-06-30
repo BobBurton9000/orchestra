@@ -161,11 +161,12 @@ The conversion inverts the same field mapping used by `export.sh`, so the round-
 
 ## Agent Catalog
 
-All 29 agents available in `templates/agents/`:
+All 30 agents available in `templates/agents/`:
 
 | Agent | Role |
 |-------|------|
 | `orchestrator` | Strategic workflow orchestrator — delegates, reviews, and validates |
+| `agent-resources` | Curates the agent team — adding, removing, and improving agents; balances leanness vs separation of responsibilities |
 | `architect` | Architecture and system design planning |
 | `backend.api-programmer` | API endpoints, controllers, middleware, request validation |
 | `backend.auth-programmer` | Authentication and access control |

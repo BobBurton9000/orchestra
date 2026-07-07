@@ -35,7 +35,7 @@ A single feature often produces all three. The PRD is written first and drives t
 
 1. **Understand the problem.** Read the relevant evergreen docs (`vision.md`, `domain-model.md`, `ui-ux.md`) and any existing code or ADRs the feature touches. Do not draft blind.
 2. **Ask clarifying questions before writing.** Use the `question` tool to resolve design tensions that materially change the document (storage model, coupling rules, migration strategy, UX flow). Do not ask questions you can answer by reading the repo.
-3. **Draft against the template.** Copy `docs/prd.template.md`, strip the per-section guidance comments, and fill every section. If a section does not apply, write "Not applicable" with a one-line reason — do not delete the heading.
+3. **Draft against the template.** Copy `prd.template.md` (co-located with this skill), strip the per-section guidance comments, and fill every section. If a section does not apply, write "Not applicable" with a one-line reason — do not delete the heading.
 4. **Review with the user.** Get approval on the draft before saving. Adjust based on feedback.
 5. **Save with the next number.** Determine the next sequential `NNNN` by listing `docs/product/requirements/`, then write `NNNN-kebab-case-title.md`. Sequential numbering is mandatory even if earlier PRDs are superseded — gaps are expected and fine.
 6. **Cross-link.** If the PRD supersedes or informs an ADR, reference the ADR by number in the PRD's metadata block and in §8.
@@ -44,7 +44,7 @@ A single feature often produces all three. The PRD is written first and drives t
 
 - **Directory:** `docs/product/requirements/`
 - **Naming:** `NNNN-descriptive-title-with-dashes.md` (mirrors the ADR convention in `docs/dev/adr/`)
-- **Template:** `docs/prd.template.md` — the canonical structure. Do not invent a different shape.
+- **Template:** `prd.template.md` (co-located with this skill) — the canonical structure. Do not invent a different shape.
 
 ## Section-by-section guidance
 
@@ -88,11 +88,11 @@ When reviewing a drafted PRD, check these in order:
 - **Bundling behaviours in Gherkin.** One scenario per behaviour. A scenario that creates, edits, toggles, and filters is four scenarios.
 - **Resolved questions left in §9.** Once a question is answered, fold the answer into the relevant section and remove the question.
 - **Skipping the clarifying-questions step.** PRDs drafted without resolving design tensions (storage model, coupling, migration) get rewritten in review. Ask first.
-- **Inventing a template.** The structure is fixed by `docs/prd.template.md`. If you feel a section is missing, raise it as an open question — do not add ad hoc sections.
+- **Inventing a template.** The structure is fixed by `prd.template.md` (co-located with this skill). If you feel a section is missing, raise it as an open question — do not add ad hoc sections.
 
 ## Example references
 
-- `docs/product/requirements/0001-explicit-buy-sell-make-capabilities.md` — the first PRD written against this template, covering a reversion of inferred capability logic to explicit user-controlled toggles. Use it as a reference for tone, section length, and how to handle a PRD that supersedes an ADR.
+- The first PRD written against this template in your project's `docs/product/requirements/` directory — use it as a reference for tone, section length, and how to handle a PRD that supersedes an ADR. List the directory to find it.
 
 ## See also
 

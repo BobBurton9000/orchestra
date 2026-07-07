@@ -282,6 +282,17 @@ process_skills() {
     cp "$compiled" "$dst/SKILL.md"
     record_output ".agents/skills/$skill_name/SKILL.md"
     EXPORT_COUNT=$((EXPORT_COUNT + 1))
+
+    local companion
+    for companion in "$skill_dir"*; do
+      [ -f "$companion" ] || continue
+      local companion_name
+      companion_name=$(basename "$companion")
+      [ "$companion_name" = "SKILL.md" ] && continue
+      cp "$companion" "$dst/$companion_name"
+      record_output ".agents/skills/$skill_name/$companion_name"
+      EXPORT_COUNT=$((EXPORT_COUNT + 1))
+    done
   done
 }
 

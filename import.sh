@@ -141,8 +141,12 @@ import_skill() {
   fi
 
   mkdir -p "$target_dir"
-  cp "$template_dir/SKILL.md" "$target_dir/SKILL.md"
-  echo "Imported: $target_dir/SKILL.md"
+  local src_file
+  for src_file in "$template_dir"/*; do
+    [ -f "$src_file" ] || continue
+    cp "$src_file" "$target_dir/$(basename "$src_file")"
+    echo "Imported: $target_dir/$(basename "$src_file")"
+  done
 }
 
 if [ $# -lt 1 ]; then

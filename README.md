@@ -38,7 +38,7 @@ Either way, your definitions land in `.agents/orchestra/` — edit them directly
 │   └── compile.sh               # Recursive #include resolver + section extraction
 └── templates/                   # Prepackaged library (never modified by user)
     ├── agents/                  # 29 agent templates (*.agent.md)
-    ├── prompts/                 # 4 prompts + snippets (templates/config dirs reserved)
+    ├── prompts/                 # 6 prompts + snippets (templates/config dirs reserved)
     └── skills/                  # 3 skills
 ```
 
@@ -114,7 +114,7 @@ This stops agents from "lazy loading" reference documents. Everything the agent 
 ./.orchestra/import-defaults.sh
 ```
 
-Prompts for the default orchestrator model and subagent model, saves them to `.orchestra/config.yml`, then imports all 29 agents, 4 prompts (plus snippets), and 3 skills. Asks before overwriting each existing file.
+Prompts for the default orchestrator model and subagent model, saves them to `.orchestra/config.yml`, then imports all 29 agents, 6 prompts (plus snippets), and 3 skills. Asks before overwriting each existing file.
 
 ## Export
 
@@ -198,14 +198,16 @@ All 30 agents available in `templates/agents/`:
 
 ## Prompt Catalog
 
-All 4 prompts available in `templates/prompts/`:
+All 6 prompts available in `templates/prompts/`:
 
 | Prompt | Description |
 |--------|-------------|
 | `gherkinify` | Convert source material into structured Gherkin scenarios |
 | `investigate-bug-claim` | Investigate a bug-analyser claim and write a verdict report |
 | `learn` | Extract a durable learning from the session into a reusable skill |
+| `prompt-optimiser` | Rewrite a phrase or draft prompt into a clearer, structured prompt for LLM consumption |
 | `review-pr-to-file` | Review a PR diff and write findings to a branch-scoped file |
+| `transcribe-plan` | Transcribe the plan to a markdown document inside `.temp/` with a unique name |
 
 Supporting prompt assets (snippets) are copied alongside the prompts during import. Directories for `templates/` and `config/` are reserved for future use.
 

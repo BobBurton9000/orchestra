@@ -28,8 +28,7 @@ read_file_body() {
   local path="$1"
 
   if [ ! -f "$path" ]; then
-    echo "ERROR: File not found: $path" >&2
-    exit 1
+    die "File not found: $path"
   fi
 
   if write_frontmatter "$path" | grep -q .; then
@@ -88,13 +87,11 @@ expand_body() {
     fi
 
     if [ ! -f "$resolved" ]; then
-      echo "ERROR: Include file not found: $include_path (resolved: $resolved)" >&2
-      exit 1
+      die "Include file not found: $include_path (resolved: $resolved)"
     fi
 
     if on_stack "$resolved"; then
-      echo "ERROR: Circular include detected: $include_path" >&2
-      exit 1
+      die "Circular include detected: $include_path"
     fi
     push_stack "$resolved"
 
@@ -104,8 +101,7 @@ expand_body() {
       normalized_heading=$(normalize_heading_text "$include_heading")
 
       validate_heading_exists "$normalized_heading" "$resolved" || {
-        echo "ERROR: Heading '$include_heading' not found in $include_path" >&2
-        exit 1
+        die "Heading '$include_heading' not found in $include_path"
       }
 
       local section_text
@@ -144,8 +140,7 @@ if [ -n "${BASH_SOURCE[0]:-}" ] && [ "${BASH_SOURCE[0]}" != "${0}" ]; then
 fi
 
 if [ $# -lt 3 ]; then
-  echo "Usage: compile.sh <project-root> <source-file> <output-file>" >&2
-  exit 1
+  die "Usage: compile.sh <project-root> <source-file> <output-file>"
 fi
 
 PROJECT_ROOT="$1"

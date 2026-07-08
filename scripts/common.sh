@@ -5,11 +5,28 @@ set -euo pipefail
 ORCHESTRA_DIR=".orchestra"
 AGENTS_ORCHESTRA_DIR=".agents/orchestra"
 
-read_frontmatter_value() {
-  local KEY=$1
-  local FILE_PATH=$2
+log_info() {
+  printf '[orchestra] %s\n' "$*" >&2
+}
 
-  awk -v key="$KEY" '
+log_warn() {
+  printf '[orchestra] WARN: %s\n' "$*" >&2
+}
+
+log_err() {
+  printf '[orchestra] ERROR: %s\n' "$*" >&2
+}
+
+die() {
+  log_err "$*"
+  exit 1
+}
+
+read_frontmatter_value() {
+  local key="$1"
+  local file_path="$2"
+
+  awk -v key="$key" '
     BEGIN { in_frontmatter = 0 }
 
     /^---[[:space:]]*$/ {
@@ -28,14 +45,14 @@ read_frontmatter_value() {
         exit
       }
     }
-  ' "$FILE_PATH" | tr -d '\r'
+  ' "$file_path" | tr -d '\r'
 }
 
 read_frontmatter_block() {
-  local KEY=$1
-  local FILE_PATH=$2
+  local key="$1"
+  local file_path="$2"
 
-  awk -v key="$KEY" '
+  awk -v key="$key" '
     BEGIN { in_frontmatter = 0; in_block = 0 }
 
     /^---[[:space:]]*$/ {
@@ -59,11 +76,11 @@ read_frontmatter_block() {
           in_block = 0
       }
     }
-  ' "$FILE_PATH"
+  ' "$file_path"
 }
 
 write_body_without_frontmatter() {
-  local FILE_PATH=$1
+  local file_path="$1"
 
   awk '
     /^---[[:space:]]*$/ {
@@ -74,11 +91,11 @@ write_body_without_frontmatter() {
     marker_count >= 2 {
       print
     }
-  ' "$FILE_PATH"
+  ' "$file_path"
 }
 
 write_frontmatter() {
-  local FILE_PATH=$1
+  local file_path="$1"
 
   awk '
     /^---[[:space:]]*$/ {
@@ -96,7 +113,7 @@ write_frontmatter() {
     marker_count == 1 {
       print
     }
-  ' "$FILE_PATH"
+  ' "$file_path"
 }
 
 normalize_heading_text() {
@@ -105,10 +122,10 @@ normalize_heading_text() {
 }
 
 extract_section() {
-  local HEADING="$1"
-  local FILE_PATH="$2"
+  local heading="$1"
+  local file_path="$2"
   local normalized
-  normalized=$(normalize_heading_text "$HEADING")
+  normalized=$(normalize_heading_text "$heading")
 
   awk -v heading="$normalized" '
     BEGIN { in_target = 0; heading_level = 0 }
@@ -133,14 +150,14 @@ extract_section() {
         print
       }
     }
-  ' "$FILE_PATH"
+  ' "$file_path"
 }
 
 validate_heading_exists() {
-  local HEADING="$1"
-  local FILE_PATH="$2"
+  local heading="$1"
+  local file_path="$2"
   local normalized
-  normalized=$(normalize_heading_text "$HEADING")
+  normalized=$(normalize_heading_text "$heading")
 
   awk -v heading="$normalized" '
     {
@@ -159,23 +176,23 @@ validate_heading_exists() {
     END {
       if (!found) exit 1
     }
-  ' "$FILE_PATH"
+  ' "$file_path"
 }
 
 resolve_model_value() {
-  local VALUE=$1
-  local ORCHESTRATOR_MODEL="${2-}"
-  local SUBAGENT_MODEL="${3-}"
+  local value="$1"
+  local orchestrator_model="${2-}"
+  local subagent_model="${3-}"
 
-  case "$VALUE" in
+  case "$value" in
     '${ORCHESTRATOR_MODEL}')
-      printf '%s\n' "$ORCHESTRATOR_MODEL"
+      printf '%s\n' "$orchestrator_model"
       ;;
     '${SUBAGENT_MODEL}')
-      printf '%s\n' "$SUBAGENT_MODEL"
+      printf '%s\n' "$subagent_model"
       ;;
     *)
-      printf '%s\n' "$VALUE"
+      printf '%s\n' "$value"
       ;;
   esac
 }
@@ -192,26 +209,34 @@ detect_project_root() {
     dir="$(dirname "$dir")"
   done
 
-  echo "ERROR: Could not find .orchestra/ directory. Run from a project with Orchestra installed." >&2
-  exit 1
+  die "Could not find .orchestra/ directory. Run from a project with Orchestra installed."
 }
 
 parse_include_line_as_vars() {
-  local LINE="$1"
-  local OUT_PATH_VAR="$2"
-  local OUT_HEADING_VAR="$3"
+  local line="$1"
+  local out_path_var="$2"
+  local out_heading_var="$3"
 
-  if [[ "$LINE" =~ ^#[[:space:]]*include[[:space:]]+([/~].+)$ ]]; then
+  if [[ "$line" =~ ^#[[:space:]]*include[[:space:]]+([/~].+)$ ]]; then
     local full_path="${BASH_REMATCH[1]}"
 
     if [[ "$full_path" =~ ^(.+):(.+)$ ]]; then
-      printf -v "$OUT_PATH_VAR" '%s' "${BASH_REMATCH[1]}"
-      printf -v "$OUT_HEADING_VAR" '%s' "${BASH_REMATCH[2]}"
+      printf -v "$out_path_var" '%s' "${BASH_REMATCH[1]}"
+      printf -v "$out_heading_var" '%s' "${BASH_REMATCH[2]}"
     else
-      printf -v "$OUT_PATH_VAR" '%s' "$full_path"
-      printf -v "$OUT_HEADING_VAR" '%s' ""
+      printf -v "$out_path_var" '%s' "$full_path"
+      printf -v "$out_heading_var" '%s' ""
     fi
     return 0
   fi
   return 1
+}
+
+read_agents_field() {
+  local file_path="$1"
+
+  awk '
+    /^---[[:space:]]*$/ { m++; next }
+    m==1 && /^agents:[[:space:]]/ { print; exit }
+  ' "$file_path" | sed 's/^agents:[[:space:]]*//' | tr -d '\r'
 }

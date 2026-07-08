@@ -1,1 +1,0 @@
-Run `git branch --show-current` to detect `<branch-name>`.

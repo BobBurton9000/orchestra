@@ -1,1 +1,12 @@
 .manifest
+.orchestra/sources.yaml
+.orchestra/pkg.lock.yaml
+.orchestra/pkg-cache/
+.orchestra/config.yml
+.agents/orchestra/
+.agents/skills/
+.opencode/
+.github/agents/
+.github/prompts/
+.orchestra/.temp/
+.orchestra/.manifest

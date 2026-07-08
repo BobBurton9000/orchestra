@@ -448,6 +448,59 @@ test_upgrade_uptodate() {
 }
 
 # ---------------------------------------------------------------------------
+# Test: upgrade preserves the user's model choice
+# ---------------------------------------------------------------------------
+test_upgrade_preserves_model() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  setup_cached_source "$tmp"
+  printf 'orchestrator: gpt-4o\nsubagent: claude-sonnet\n' > "$tmp/.orchestra/config.yml"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-agent >/dev/null 2>&1
+
+  local model_before
+  model_before="$(grep '^model:' "$tmp/.agents/orchestra/agents/demo-agent.agent.md" | tr -d '\r')"
+  assert_eq "$model_before" "model: claude-sonnet" "install injects model from config.yml"
+
+  # Change config.yml so a re-resolution would pick gpt-4o
+  printf 'orchestrator: gpt-4o\nsubagent: gpt-4o\n' > "$tmp/.orchestra/config.yml"
+
+  # Bump the cached SHA to trigger an upgrade
+  local new_sha="zzz999zzz999zzz999zzz999zzz999zzz999zzz9"
+  echo "$new_sha" > "$tmp/.orchestra/pkg-cache/core/head.sha"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" upgrade demo-agent >/dev/null 2>&1
+
+  local model_after
+  model_after="$(grep '^model:' "$tmp/.agents/orchestra/agents/demo-agent.agent.md" | tr -d '\r')"
+  assert_eq "$model_after" "model: claude-sonnet" "upgrade preserves original model, ignores changed config.yml"
+}
+
+# ---------------------------------------------------------------------------
+# Test: install injects model into source file without one
+# ---------------------------------------------------------------------------
+test_install_injects_model_into_source_without_one() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  setup_cached_source "$tmp"
+  printf 'orchestrator: gpt-4o\nsubagent: claude-sonnet\n' > "$tmp/.orchestra/config.yml"
+
+  run_in_project "$tmp" install demo-agent >/dev/null 2>&1
+
+  local content
+  content="$(cat "$tmp/.agents/orchestra/agents/demo-agent.agent.md")"
+  assert_contains "$content" "model: claude-sonnet" "installed file has model injected from config.yml"
+
+  local model_line
+  model_line="$(grep '^model:' "$tmp/.agents/orchestra/agents/demo-agent.agent.md" | tr -d '\r')"
+  assert_eq "$model_line" "model: claude-sonnet" "injected model matches config.yml subagent default"
+}
+
+# ---------------------------------------------------------------------------
 # Test: source remove refuses when packages installed
 # ---------------------------------------------------------------------------
 test_source_remove_refuses() {
@@ -632,6 +685,8 @@ main() {
     test_remove
     test_upgrade_sha_change
     test_upgrade_uptodate
+    test_upgrade_preserves_model
+    test_install_injects_model_into_source_without_one
     test_source_remove_refuses
     test_source_remove_succeeds
     test_export_opencode

@@ -14,11 +14,10 @@ convert_copilot_agent() {
   local src="$1"
   local dest="$2"
 
-  local name description model user_invocable agents body
+  local name description user_invocable agents body
 
   name=$(read_frontmatter_value name "$src")
   description=$(read_frontmatter_value description "$src")
-  model=$(read_frontmatter_value model "$src")
   user_invocable=$(read_frontmatter_value user-invocable "$src")
   agents=$(read_agents_field "$src")
 
@@ -42,7 +41,6 @@ convert_copilot_agent() {
     [ -n "$description" ] && printf 'description: %s\n' "$description"
     printf 'mode: %s\n' "$mode"
     [ -n "$agents" ] && printf 'agents: %s\n' "$agents"
-    [ -n "$model" ] && printf 'model: %s\n' "$model"
     printf '%s\n\n' '---'
     printf '%s\n' "$body"
   } > "$dest"
@@ -52,11 +50,10 @@ convert_opencode_agent() {
   local src="$1"
   local dest="$2"
 
-  local description mode model variant permissions body
+  local description mode variant permissions body
 
   description=$(read_frontmatter_value description "$src")
   mode=$(read_frontmatter_value mode "$src")
-  model=$(read_frontmatter_value model "$src")
   variant=$(read_frontmatter_value variant "$src")
   permissions=$(read_frontmatter_block permission "$src")
 
@@ -74,7 +71,6 @@ convert_opencode_agent() {
     printf 'name: %s\n' "$name"
     [ -n "$description" ] && printf 'description: %s\n' "$description"
     [ -n "$mode" ] && printf 'mode: %s\n' "$mode"
-    [ -n "$model" ] && printf 'model: %s\n' "$model"
     [ -n "$variant" ] && printf 'variant: %s\n' "$variant"
     if [ -n "$permissions" ]; then
       printf 'permission:\n'

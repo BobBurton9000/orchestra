@@ -102,6 +102,12 @@ config_ensure_for_install() {
 resolve_model_for_agent() {
   local agent_name="$1"
   local template_path="$2"
+  local existing_model="${3:-}"
+
+  if [ -n "$existing_model" ]; then
+    printf '%s\n' "$existing_model"
+    return
+  fi
 
   if [ ! -f "$PKG_CONFIG_FILE" ]; then
     config_ensure_for_install
@@ -129,13 +135,20 @@ resolve_model_for_agent() {
   printf '%s\n' "$model_input"
 }
 
-rewrite_model_in_frontmatter() {
+inject_model_in_frontmatter() {
   local src_file="$1"
   local model="$2"
   local out_file="$3"
 
   awk -v model="$model" '
-    /^model:[[:space:]]/ { print "model: " model; next }
+    BEGIN { injected = 0; marker_count = 0 }
+    /^---[[:space:]]*$/ {
+      marker_count++
+      if (marker_count == 2 && !injected) { print "model: " model; injected = 1 }
+      print
+      next
+    }
+    /^model:[[:space:]]/ { print "model: " model; injected = 1; next }
     { print }
   ' "$src_file" > "$out_file"
 }
@@ -167,6 +180,7 @@ fetch_dir_files() {
 install_agent_file() {
   local source_repo="$1" pkg_path="$2" sha="$3" target_base="$4" pkg_name="$5"
   local -n agent_installed_ref="$6"
+  local existing_model="${7:-}"
   local target="$target_base/${pkg_name}.agent.md"
   if [ -f "$target" ]; then
     ask_overwrite "agents/${pkg_name}.agent.md" || { log_info "Skipped $pkg_name."; return 1; }
@@ -184,9 +198,9 @@ install_agent_file() {
   [ -n "$agent_name" ] || agent_name="$pkg_name"
 
   local model
-  model="$(resolve_model_for_agent "$agent_name" "$tmp_raw")"
+  model="$(resolve_model_for_agent "$agent_name" "$tmp_raw" "$existing_model")"
 
-  rewrite_model_in_frontmatter "$tmp_raw" "$model" "$target"
+  inject_model_in_frontmatter "$tmp_raw" "$model" "$target"
   rm -f "$tmp_raw"
   agent_installed_ref+=("agents/${pkg_name}.agent.md")
   log_info "Installed agent '$pkg_name' (model: $model) -> $target"
@@ -243,6 +257,7 @@ install_files_for_package() {
   local pkg_path="$4"
   local sha="$5"
   local pkg_name="$6"
+  local existing_model="${7:-}"
 
   local ns
   ns="$(canonical_type_for_install "$pkg_type")"
@@ -253,7 +268,7 @@ install_files_for_package() {
 
   case "$pkg_type" in
     agent)
-      install_agent_file "$source_repo" "$pkg_path" "$sha" "$target_base" "$pkg_name" installed_paths || return 1
+      install_agent_file "$source_repo" "$pkg_path" "$sha" "$target_base" "$pkg_name" installed_paths "$existing_model" || return 1
       ;;
     prompt)
       install_prompt_file "$source_repo" "$pkg_path" "$sha" "$target_base" "$pkg_name" installed_paths || return 1

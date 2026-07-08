@@ -2,7 +2,6 @@
 name: demo-agent
 description: A demo agent for testing
 mode: subagent
-model: REPLACE_ME
 ---
 # Demo Agent
 

@@ -41,8 +41,14 @@ upgrade_one() {
   local _src _repo pkg_path
   IFS=$'\t' read -r _src _repo _type pkg_path <<< "$found"
 
+  local existing_model=""
+  local installed_agent_file="$AGENTS_ORCHESTRA_DIR_ABS/agents/${pkg_name}.agent.md"
+  if [ "$pkg_type" = "agent" ] && [ -f "$installed_agent_file" ]; then
+    existing_model="$(read_frontmatter_value model "$installed_agent_file" 2>/dev/null || true)"
+  fi
+
   local installed_paths
-  installed_paths="$(install_files_for_package "$source" "$source_repo" "$pkg_type" "$pkg_path" "$current_sha" "$pkg_name")" || {
+  installed_paths="$(install_files_for_package "$source" "$source_repo" "$pkg_type" "$pkg_path" "$current_sha" "$pkg_name" "$existing_model")" || {
     log_info "Upgrade cancelled for $pkg_name."
     return 1
   }

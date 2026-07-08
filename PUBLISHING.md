@@ -35,6 +35,10 @@ packages:
 | `prompt-dir` | All files in the directory → `.agents/orchestra/prompts/<name>/` | A directory |
 | `skill` | All files in the directory → `.agents/orchestra/skills/<name>/` | A directory (must contain `SKILL.md`) |
 
+### Agent frontmatter: no `model:` line
+
+Agent source files should **not** contain a `model:` line in their frontmatter. The model is the installer's choice, not the author's. Orchestra injects `model:` into the installed file at install time, reading from the user's `config.yml`. This means the same agent definition can be run on different models by different developers without any edits to the shared source file.
+
 ### Comments and blank lines
 
 Lines starting with `#` are comments. Blank lines are ignored. Use them to group packages visually (e.g. `  # --- Agents ---`).

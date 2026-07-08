@@ -50,7 +50,7 @@ If you already have agents installed for Copilot or OpenCode, `convert` inverts 
 
 Orchestra is inspired by `apt`. Sources are GitHub repositories with an `orchestra-source.yaml` manifest at their root. You add sources, install packages from them, and lock versions to a specific commit SHA.
 
-The sharing model is simple: **authors publish markdown definitions; each developer picks their own models.** When you install an agent, Orchestra reads `config.yml` for your default model choices and writes the model into the agent's frontmatter silently. One developer runs `architect` on Claude; another runs it on GPT — same definition, different models, no edits to the shared file.
+The sharing model is simple: **authors publish markdown definitions without a model; each developer picks their own.** Source files never contain a `model:` line. When you install an agent, Orchestra reads `config.yml` for your default model choices and injects the model into the installed file's frontmatter. One developer runs `architect` on Claude; another runs it on GPT — same source definition, different models, no edits to the shared file. Upgrades preserve your model choice — the upgraded file inherits the model from your previously installed file, not from `config.yml`.
 
 ```yaml
 # .orchestra/config.yml
@@ -183,7 +183,7 @@ OpenCode discovers all `.opencode/agents/*.md` files; Copilot discovers all `.gi
 ```
 
 - Fetches the package at the source's current HEAD SHA via `gh api`
-- For agents: reads `config.yml` for the default model and writes it into the frontmatter silently. If `config.yml` is missing, you are prompted once and the choice is saved.
+- For agents: source files have no `model:` line. Orchestra injects the model from `config.yml` into the installed file's frontmatter. If `config.yml` is missing, you are prompted once and the choice is saved.
 - Records the package, source, type, SHA, and installed file paths in `pkg.lock.yaml`
 - Asks before overwriting an existing file (set `ORCHESTRA_YES=1` to auto-confirm)
 
@@ -194,6 +194,8 @@ OpenCode discovers all `.opencode/agents/*.md` files; Copilot discovers all `.gi
 .orchestra/orchestra.sh upgrade       # upgrade all installed packages
 .orchestra/orchestra.sh upgrade orchestrator   # upgrade a single package
 ```
+
+Upgrades preserve your model choice — the upgraded file inherits the model from your previously installed file, not from `config.yml`. If you change your mind about a model, re-install the package fresh (`remove` then `install`).
 
 ### Remove
 
@@ -241,7 +243,6 @@ Every definition is a markdown file with YAML frontmatter. The canonical keys ar
 name: architect
 description: Plans software architecture and system design
 mode: subagent                    # primary | subagent
-model: ollama-cloud/glm-5.1
 variant: max                      # optional - preserved for OpenCode
 agents: [...]                     # orchestrator only — list of subagent names
 permission:                       # optional — preserved for OpenCode, stripped for Copilot
@@ -249,6 +250,8 @@ permission:                       # optional — preserved for OpenCode, strippe
   bash: deny
 ---
 ```
+
+Source files **do not** contain a `model:` line — the model is the installer's choice, not the author's. Orchestra injects `model:` into the installed file at install time, reading from `config.yml`. The `model:` line appears in installed files (and is preserved through export and upgrade), but never in source files.
 
 `mode` is the universal visibility key:
 - `primary` — visible to the user (maps to OpenCode `mode: primary`; Copilot: no `user-invocable` line)

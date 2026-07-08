@@ -179,24 +179,6 @@ validate_heading_exists() {
   ' "$file_path"
 }
 
-resolve_model_value() {
-  local value="$1"
-  local orchestrator_model="${2-}"
-  local subagent_model="${3-}"
-
-  case "$value" in
-    '${ORCHESTRATOR_MODEL}')
-      printf '%s\n' "$orchestrator_model"
-      ;;
-    '${SUBAGENT_MODEL}')
-      printf '%s\n' "$subagent_model"
-      ;;
-    *)
-      printf '%s\n' "$value"
-      ;;
-  esac
-}
-
 detect_project_root() {
   local dir
   dir="$(cd "$(dirname "${BASH_SOURCE[1]:-$0}")" && pwd)"

@@ -86,7 +86,7 @@ upgrade_cmd() {
   local upgraded=0 unchanged=0 skipped=0
   for p in "${pkgs[@]}"; do
     local rc=0
-    upgrade_one "$p" >/dev/null 2>&1 || rc=$?
+    upgrade_one "$p" >/dev/null || rc=$?
     case "$rc" in
       0)  upgraded=$((upgraded + 1)) ;;
       2)  unchanged=$((unchanged + 1)) ;;

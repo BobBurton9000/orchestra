@@ -513,6 +513,7 @@ test_upgrade_bulk_overwrites_without_prompt() {
   rc="${rc:-0}"
   assert_eq "$rc" "0" "bulk upgrade over installed packages exits 0 (no hang, no prompt)"
   assert_contains "$out" "Upgrade complete" "bulk upgrade reports completion"
+  assert_contains "$out" "Upgrading demo-agent" "bulk upgrade streams per-package progress to stderr"
 
   # Every package should be locked at the new SHA — proves overwrite happened
   # without prompting (previously this hung before reaching lock_write_entry).

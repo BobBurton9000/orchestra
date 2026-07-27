@@ -479,6 +479,49 @@ test_upgrade_preserves_model() {
 }
 
 # ---------------------------------------------------------------------------
+# Test: bulk upgrade over already-installed packages must not hang on
+# overwrite prompts when stdin is not a TTY (regression: silent indefinite hang).
+# ---------------------------------------------------------------------------
+test_upgrade_bulk_overwrites_without_prompt() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  setup_cached_source "$tmp"
+  printf 'orchestrator: gpt-4o\nsubagent: claude-sonnet\n' > "$tmp/.orchestra/config.yml"
+
+  # Install several packages so the bulk loop has targets to overwrite.
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-agent >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" install second-agent >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
+
+  # Bump the cached SHA so every package needs an upgrade.
+  local new_sha="zzz999zzz999zzz999zzz999zzz999zzz999zzz9"
+  echo "$new_sha" > "$tmp/.orchestra/pkg-cache/core/head.sha"
+
+  # Bulk upgrade with a non-TTY stdin that never closes (simulates the original
+  # hang scenario: script run under another process / CI with stdin piped).
+  # Before the fix, the buried "Overwrite? [y/N]" prompt blocked on this stdin
+  # forever. The watchdog ensures a regression fails fast instead of hanging
+  # the whole suite.
+  local out rc
+  out="$(timeout 10 bash -c 'cd "'"$tmp"'" && PATH="'"$tmp"'/bin:$PATH" \
+      ORCHESTRA_PROJECT_ROOT="'"$tmp"'" \
+      FIXTURE_SOURCE_DIR="'"$FIXTURE_SOURCE_DIR"'" \
+      FIXTURE_SHA="'"$FIXTURE_SHA"'" \
+      .orchestra/orchestra.sh upgrade < <(sleep 30) 2>&1')" || rc=$?
+  rc="${rc:-0}"
+  assert_eq "$rc" "0" "bulk upgrade over installed packages exits 0 (no hang, no prompt)"
+  assert_contains "$out" "Upgrade complete" "bulk upgrade reports completion"
+
+  # Every package should be locked at the new SHA — proves overwrite happened
+  # without prompting (previously this hung before reaching lock_write_entry).
+  local locked_sha
+  locked_sha="$(yq -r '.packages[] | select(.name=="demo-agent") | .sha' "$tmp/.orchestra/pkg.lock.yaml")"
+  assert_eq "$locked_sha" "$new_sha" "bulk upgrade updated locked SHA"
+}
+
+# ---------------------------------------------------------------------------
 # Test: install injects model into source file without one
 # ---------------------------------------------------------------------------
 test_install_injects_model_into_source_without_one() {
@@ -686,6 +729,7 @@ main() {
     test_upgrade_sha_change
     test_upgrade_uptodate
     test_upgrade_preserves_model
+    test_upgrade_bulk_overwrites_without_prompt
     test_install_injects_model_into_source_without_one
     test_source_remove_refuses
     test_source_remove_succeeds

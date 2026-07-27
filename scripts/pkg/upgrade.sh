@@ -48,7 +48,7 @@ upgrade_one() {
   fi
 
   local installed_paths
-  installed_paths="$(install_files_for_package "$source" "$source_repo" "$pkg_type" "$pkg_path" "$current_sha" "$pkg_name" "$existing_model")" || {
+  installed_paths="$(install_files_for_package "$source" "$source_repo" "$pkg_type" "$pkg_path" "$current_sha" "$pkg_name" "$existing_model" 1)" || {
     log_info "Upgrade cancelled for $pkg_name."
     return 1
   }

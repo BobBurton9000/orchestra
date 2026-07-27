@@ -37,6 +37,9 @@ ask_yes_no() {
   if [ -n "${ORCHESTRA_YES:-}" ]; then
     return 0
   fi
+  if [ ! -t 0 ]; then
+    die "Prompt required ('$prompt') but stdin is not a TTY. Re-run with ORCHESTRA_YES=1 to auto-accept, or run interactively."
+  fi
   local answer
   read -rp "$prompt [y/N] " answer
   [ "${answer,,}" = "y" ] || [ "${answer,,}" = "yes" ]

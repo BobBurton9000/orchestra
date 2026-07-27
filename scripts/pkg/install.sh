@@ -181,9 +181,14 @@ install_agent_file() {
   local source_repo="$1" pkg_path="$2" sha="$3" target_base="$4" pkg_name="$5"
   local -n agent_installed_ref="$6"
   local existing_model="${7:-}"
+  local overwrite="${8:-0}"
   local target="$target_base/${pkg_name}.agent.md"
   if [ -f "$target" ]; then
-    ask_overwrite "agents/${pkg_name}.agent.md" || { log_info "Skipped $pkg_name."; return 1; }
+    if [ "$overwrite" -eq 1 ]; then
+      log_info "Overwriting agents/${pkg_name}.agent.md (upgrade)."
+    else
+      ask_overwrite "agents/${pkg_name}.agent.md" || { log_info "Skipped $pkg_name."; return 1; }
+    fi
   fi
   mkdir -p "$target_base"
 
@@ -209,9 +214,14 @@ install_agent_file() {
 install_prompt_file() {
   local source_repo="$1" pkg_path="$2" sha="$3" target_base="$4" pkg_name="$5"
   local -n prompt_installed_ref="$6"
+  local overwrite="${7:-0}"
   local target="$target_base/${pkg_name}.prompt.md"
   if [ -f "$target" ]; then
-    ask_overwrite "prompts/${pkg_name}.prompt.md" || { log_info "Skipped $pkg_name."; return 1; }
+    if [ "$overwrite" -eq 1 ]; then
+      log_info "Overwriting prompts/${pkg_name}.prompt.md (upgrade)."
+    else
+      ask_overwrite "prompts/${pkg_name}.prompt.md" || { log_info "Skipped $pkg_name."; return 1; }
+    fi
   fi
   mkdir -p "$target_base"
 
@@ -227,9 +237,14 @@ install_prompt_file() {
 install_prompt_dir() {
   local source_repo="$1" pkg_path="$2" sha="$3" target_base="$4" pkg_name="$5"
   local -n pdir_installed_ref="$6"
+  local overwrite="${7:-0}"
   local target="$target_base/${pkg_name}"
   if [ -d "$target" ]; then
-    ask_overwrite "prompts/${pkg_name}/" || { log_info "Skipped $pkg_name."; return 1; }
+    if [ "$overwrite" -eq 1 ]; then
+      log_info "Overwriting prompts/${pkg_name}/ (upgrade)."
+    else
+      ask_overwrite "prompts/${pkg_name}/" || { log_info "Skipped $pkg_name."; return 1; }
+    fi
   fi
   mkdir -p "$target"
 
@@ -240,9 +255,14 @@ install_prompt_dir() {
 install_skill_dir() {
   local source_repo="$1" pkg_path="$2" sha="$3" target_base="$4" pkg_name="$5"
   local -n skill_installed_ref="$6"
+  local overwrite="${7:-0}"
   local target="$target_base/${pkg_name}"
   if [ -d "$target" ]; then
-    ask_overwrite "skills/${pkg_name}/" || { log_info "Skipped $pkg_name."; return 1; }
+    if [ "$overwrite" -eq 1 ]; then
+      log_info "Overwriting skills/${pkg_name}/ (upgrade)."
+    else
+      ask_overwrite "skills/${pkg_name}/" || { log_info "Skipped $pkg_name."; return 1; }
+    fi
   fi
   mkdir -p "$target"
 
@@ -258,6 +278,7 @@ install_files_for_package() {
   local sha="$5"
   local pkg_name="$6"
   local existing_model="${7:-}"
+  local overwrite="${8:-0}"
 
   local ns
   ns="$(canonical_type_for_install "$pkg_type")"
@@ -268,16 +289,16 @@ install_files_for_package() {
 
   case "$pkg_type" in
     agent)
-      install_agent_file "$source_repo" "$pkg_path" "$sha" "$target_base" "$pkg_name" installed_paths "$existing_model" || return 1
+      install_agent_file "$source_repo" "$pkg_path" "$sha" "$target_base" "$pkg_name" installed_paths "$existing_model" "$overwrite" || return 1
       ;;
     prompt)
-      install_prompt_file "$source_repo" "$pkg_path" "$sha" "$target_base" "$pkg_name" installed_paths || return 1
+      install_prompt_file "$source_repo" "$pkg_path" "$sha" "$target_base" "$pkg_name" installed_paths "$overwrite" || return 1
       ;;
     prompt-dir)
-      install_prompt_dir "$source_repo" "$pkg_path" "$sha" "$target_base" "$pkg_name" installed_paths || return 1
+      install_prompt_dir "$source_repo" "$pkg_path" "$sha" "$target_base" "$pkg_name" installed_paths "$overwrite" || return 1
       ;;
     skill)
-      install_skill_dir "$source_repo" "$pkg_path" "$sha" "$target_base" "$pkg_name" installed_paths || return 1
+      install_skill_dir "$source_repo" "$pkg_path" "$sha" "$target_base" "$pkg_name" installed_paths "$overwrite" || return 1
       ;;
     *)
       die "Unknown package type: $pkg_type"

@@ -5,7 +5,7 @@ set -euo pipefail
 sources_default_content() {
   cat <<EOF
 # Orchestra sources — personal list of package sources.
-# Edit via 'orchestra source add/remove'.
+# Edit via 'orchestra source add/remove/subscribe'.
 sources:
   - name: core
     repo: BobBurton9000/orchestra-defaults
@@ -36,6 +36,52 @@ sources_lookup_name() {
   local repo="$1"
   sources_ensure_file
   yaml_sources_find_name "$PKG_SOURCES_FILE" "$repo"
+}
+
+sources_subscribe() {
+  local name="$1"
+
+  sources_ensure_file
+
+  local source_repo
+  source_repo="$(sources_lookup_repo "$name" || true)"
+  [ -n "$source_repo" ] || die "No source named '$name' is configured. Run 'orchestra source add <owner>/<repo> [name]'."
+
+  if yaml_sources_subscription_sha "$PKG_SOURCES_FILE" "$name" >/dev/null 2>&1; then
+    die "Source '$name' is already subscribed. Run 'orchestra source unsubscribe $name' first to reset its baseline."
+  fi
+
+  gh_check_auth
+  ensure_pkg_dirs
+  log_info "Refreshing source '$name' before subscribing..."
+
+  local baseline_sha
+  baseline_sha="$(index_refresh_source "$name" "$source_repo")"
+
+  local baseline_file
+  baseline_file="$(index_subscription_baseline_file_for "$name")"
+  cp "$(index_cache_dir_for "$name")/manifest.yaml" "$baseline_file"
+  yaml_sources_set_subscription "$PKG_SOURCES_FILE" "$name" "$baseline_sha"
+
+  log_info "Subscribed to '$name'; future packages added after ${baseline_sha:0:12} will be installed by 'orchestra upgrade'."
+}
+
+sources_unsubscribe() {
+  local name="$1"
+
+  sources_ensure_file
+
+  if ! sources_lookup_repo "$name" >/dev/null 2>&1; then
+    die "No source named '$name' is configured."
+  fi
+
+  if ! yaml_sources_subscription_sha "$PKG_SOURCES_FILE" "$name" >/dev/null 2>&1; then
+    die "Source '$name' is not subscribed."
+  fi
+
+  yaml_sources_set_subscription "$PKG_SOURCES_FILE" "$name"
+  rm -f "$(index_subscription_baseline_file_for "$name")"
+  log_info "Unsubscribed from '$name'. Installed packages were left unchanged."
 }
 
 sources_add() {
@@ -92,6 +138,13 @@ sources_cmd_list() {
   sources_ensure_file
   echo "Configured sources ($PKG_SOURCES_FILE):"
   echo ""
-  _sources_cmd_list_print() { printf '  %-20s %s\n' "$1" "$2"; }
+  _sources_cmd_list_print() {
+    local subscription_sha="${3:-}"
+    if [ -n "$subscription_sha" ]; then
+      printf '  %-20s %-35s subscribed since %s\n' "$1" "$2" "${subscription_sha:0:12}"
+    else
+      printf '  %-20s %s\n' "$1" "$2"
+    fi
+  }
   yaml_sources_each "$PKG_SOURCES_FILE" _sources_cmd_list_print
 }

@@ -137,6 +137,8 @@ OpenCode discovers all `.opencode/agents/*.md` files; Copilot discovers all `.gi
 
 ```bash
 .orchestra/orchestra.sh source add <owner/repo> [name] # add a source + fetch its manifest
+.orchestra/orchestra.sh source subscribe <name>       # install future packages from a source on upgrade
+.orchestra/orchestra.sh source unsubscribe <name>     # stop installing future packages
 .orchestra/orchestra.sh source list                    # show configured sources
 .orchestra/orchestra.sh source remove <name>           # remove a source (refuses if packages installed)
 ```
@@ -211,6 +213,26 @@ local read-only check; it does not refresh source indexes or modify state.
 ```
 
 Upgrades preserve your model choice — the upgraded file inherits the model from your previously installed file, not from `config.yml`. If you change your mind about a model, re-install the package fresh (`remove` then `install`).
+
+### Subscribing to a source
+
+Adding a source makes its packages available for explicit installation. It does not automatically install the source's existing packages or future packages.
+
+To receive assets added to a source in future bulk upgrades:
+
+```bash
+.orchestra/orchestra.sh source add alice/orchestra-extras extras
+.orchestra/orchestra.sh source subscribe extras
+.orchestra/orchestra.sh upgrade
+```
+
+`source subscribe` records the source manifest at that point as a baseline. A later `upgrade` refreshes subscribed sources and installs only package names added after that baseline. Existing packages are left under normal lockfile control, and `upgrade <pkg>` remains a targeted upgrade without subscription discovery. Use `install --all <source>` when you also want the source's current packages.
+
+Unsubscribing stops future automatic installs but does not remove packages already installed:
+
+```bash
+.orchestra/orchestra.sh source unsubscribe extras
+```
 
 ### Remove
 
@@ -386,7 +408,7 @@ Personal Orchestra state (all gitignored — your choices, not your team's):
 
 ```
 .orchestra/
-├── sources.yaml                # Your configured sources
+├── sources.yaml                # Your configured sources and subscription baselines
 ├── pkg.lock.yaml               # Installed package ledger (package, source, SHA, paths)
 ├── pkg-cache/                  # Fetched manifests + HEAD SHAs
 ├── config.yml                  # Default model choices for agents

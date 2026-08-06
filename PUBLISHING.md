@@ -96,6 +96,12 @@ If Orchestra is installed in a project, you can invoke it via:
    orchestra source add <your-github-username>/<your-repo>
    ```
 
+   Users who want newly published packages installed automatically can opt in
+   after adding the source:
+   ```bash
+   orchestra source subscribe <source-name>
+   ```
+
    They can give it a custom name if they prefer:
    ```bash
    orchestra source add alice/my-source alices-extras
@@ -110,6 +116,9 @@ This means:
 - **No version bumping** — just push commits.
 - **No releases or tags required** — though you can use them if you want.
 - **Users control when to upgrade** — `orchestra upgrade` is opt-in.
+- **Subscriptions are opt-in** — subscribing installs only packages added to
+  the source after the subscription baseline. Existing packages still require
+  an explicit install or `orchestra install --all <source>`.
 
 ## Reference example
 

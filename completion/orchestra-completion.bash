@@ -27,10 +27,10 @@ _orchestra_completion() {
       ;;
     source)
       if [ "$cword" -eq 2 ]; then
-        COMPREPLY=( $(compgen -W "add list remove" -- "$cur") )
+        COMPREPLY=( $(compgen -W "add subscribe unsubscribe list remove" -- "$cur") )
         return 0
       fi
-      if [ "$cword" -eq 3 ] && [ "${words[2]}" = "remove" ]; then
+      if [ "$cword" -eq 3 ] && [[ "${words[2]}" == subscribe || "${words[2]}" == unsubscribe || "${words[2]}" == remove ]]; then
         if [ -f ".orchestra/sources.yaml" ]; then
           local srcs
           srcs="$(yq -r '.sources[] | .name' .orchestra/sources.yaml 2>/dev/null)"

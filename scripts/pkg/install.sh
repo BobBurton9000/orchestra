@@ -311,6 +311,25 @@ install_files_for_package() {
   done
 }
 
+package_install_target() {
+  local pkg_type="$1"
+  local pkg_name="$2"
+
+  case "$pkg_type" in
+    agent)      printf '%s/agents/%s.agent.md\n' "$AGENTS_ORCHESTRA_DIR_ABS" "$pkg_name" ;;
+    prompt)     printf '%s/prompts/%s.prompt.md\n' "$AGENTS_ORCHESTRA_DIR_ABS" "$pkg_name" ;;
+    prompt-dir) printf '%s/prompts/%s\n' "$AGENTS_ORCHESTRA_DIR_ABS" "$pkg_name" ;;
+    skill)      printf '%s/skills/%s\n' "$AGENTS_ORCHESTRA_DIR_ABS" "$pkg_name" ;;
+    *)           return 1 ;;
+  esac
+}
+
+package_install_target_exists() {
+  local target
+  target="$(package_install_target "$1" "$2")"
+  [ -e "$target" ]
+}
+
 install_one_package() {
   local pkg_spec="$1"
   local use_locked="${2:-0}"

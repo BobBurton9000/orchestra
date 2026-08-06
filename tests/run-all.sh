@@ -9,6 +9,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TESTS_DIR="$SCRIPT_DIR"
 
 FIXTURE_SOURCE_DIR="$TESTS_DIR/fixtures/source"
+FIXTURE_SOURCE_V2_DIR="$TESTS_DIR/fixtures/source-v2"
 FIXTURE_SHA="abc123def456789012345678901234567890abcd"
 
 export FIXTURE_SOURCE_DIR
@@ -163,6 +164,7 @@ test_help_version() {
   assert_contains "$out" "convert" "help mentions convert"
   assert_contains "$out" "generate-manifest" "help mentions generate-manifest"
   assert_contains "$out" "status" "help mentions status"
+  assert_contains "$out" "subscribe" "help mentions source subscriptions"
 }
 
 # ---------------------------------------------------------------------------
@@ -588,6 +590,81 @@ test_upgrade_bulk_overwrites_without_prompt() {
 }
 
 # ---------------------------------------------------------------------------
+# Test: subscribed sources install only packages added after subscription
+# ---------------------------------------------------------------------------
+test_source_subscribe_future_packages() {
+  local tmp
+  tmp="$(setup_test)"
+  local fixture_source_before="$FIXTURE_SOURCE_DIR"
+  local fixture_sha_before="$FIXTURE_SHA"
+  trap 'FIXTURE_SOURCE_DIR="$fixture_source_before"; FIXTURE_SHA="$fixture_sha_before"; teardown_test_project "$tmp"' RETURN
+
+  setup_cached_source "$tmp"
+  printf 'orchestrator: gpt-4o\nsubagent: claude-sonnet\n' > "$tmp/.orchestra/config.yml"
+
+  local out
+  out="$(run_in_project "$tmp" source subscribe core 2>&1)"
+  assert_contains "$out" "Subscribed to 'core'" "source subscribe reports subscription"
+
+  local baseline_sha
+  baseline_sha="$(yq -r '.sources[] | select(.name=="core") | .subscribed_since' "$tmp/.orchestra/sources.yaml")"
+  assert_eq "$baseline_sha" "$FIXTURE_SHA" "subscription records baseline SHA"
+  assert_file_exists "$tmp/.orchestra/pkg-cache/core/subscription-baseline.yaml" "subscription stores manifest baseline"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-agent >/dev/null 2>&1
+
+  local new_sha="new456new456new456new456new456new456new4"
+  FIXTURE_SOURCE_DIR="$FIXTURE_SOURCE_V2_DIR"
+  FIXTURE_SHA="$new_sha"
+
+  ORCHESTRA_YES=1 out="$(run_in_project "$tmp" upgrade 2>&1)"
+  assert_contains "$out" "Subscription sync complete" "upgrade reports subscription sync"
+  assert_file_exists "$tmp/.agents/orchestra/agents/future-agent.agent.md" "subscription installs future agent"
+  assert_file_exists "$tmp/.agents/orchestra/prompts/future-prompt.prompt.md" "subscription installs future prompt"
+  assert_file_exists "$tmp/.agents/orchestra/prompts/future-snippets/context.md" "subscription installs future prompt-dir"
+  assert_file_exists "$tmp/.agents/orchestra/skills/future-skill/SKILL.md" "subscription installs future skill"
+  assert_file_exists "$tmp/.agents/orchestra/skills/future-skill/helper.md" "subscription installs future skill companion"
+
+  assert_file_missing "$tmp/.agents/orchestra/agents/second-agent.agent.md" "subscription does not install baseline agent"
+  assert_file_missing "$tmp/.agents/orchestra/prompts/demo-prompt.prompt.md" "subscription does not install baseline prompt"
+  assert_dir_missing "$tmp/.agents/orchestra/prompts/snippets" "subscription does not install baseline prompt-dir"
+  assert_dir_missing "$tmp/.agents/orchestra/skills/demo-skill" "subscription does not install baseline skill"
+
+  local package_count
+  package_count="$(yq -r '.packages | length' "$tmp/.orchestra/pkg.lock.yaml")"
+  assert_eq "$package_count" "5" "subscription locks explicit and future packages only"
+  assert_eq "$(yq -r '.sources[] | select(.name=="core") | .subscribed_since' "$tmp/.orchestra/sources.yaml")" "$baseline_sha" "upgrade preserves subscription baseline"
+}
+
+# ---------------------------------------------------------------------------
+# Test: unsubscribe stops future package installation
+# ---------------------------------------------------------------------------
+test_source_unsubscribe_stops_future_packages() {
+  local tmp
+  tmp="$(setup_test)"
+  local fixture_source_before="$FIXTURE_SOURCE_DIR"
+  local fixture_sha_before="$FIXTURE_SHA"
+  trap 'FIXTURE_SOURCE_DIR="$fixture_source_before"; FIXTURE_SHA="$fixture_sha_before"; teardown_test_project "$tmp"' RETURN
+
+  setup_cached_source "$tmp"
+  run_in_project "$tmp" source subscribe core >/dev/null 2>&1
+  run_in_project "$tmp" source unsubscribe core >/dev/null 2>&1
+
+  local new_sha="new789new789new789new789new789new789new7"
+  FIXTURE_SOURCE_DIR="$FIXTURE_SOURCE_V2_DIR"
+  FIXTURE_SHA="$new_sha"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" upgrade >/dev/null 2>&1
+  assert_file_missing "$tmp/.agents/orchestra/agents/future-agent.agent.md" "unsubscribed source does not install future agent"
+  if yq -e '.sources[] | select(.name == "core" and has("subscribed_since"))' "$tmp/.orchestra/sources.yaml" >/dev/null 2>&1; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: source unsubscribe -- subscription marker still present")
+  else
+    PASS=$((PASS + 1))
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Test: install injects model into source file without one
 # ---------------------------------------------------------------------------
 test_install_injects_model_into_source_without_one() {
@@ -799,6 +876,8 @@ main() {
     test_upgrade_uptodate
     test_upgrade_preserves_model
     test_upgrade_bulk_overwrites_without_prompt
+    test_source_subscribe_future_packages
+    test_source_unsubscribe_stops_future_packages
     test_install_injects_model_into_source_without_one
     test_source_remove_refuses
     test_source_remove_succeeds

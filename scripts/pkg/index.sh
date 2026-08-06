@@ -7,6 +7,11 @@ index_cache_dir_for() {
   printf '%s/%s' "$PKG_CACHE_DIR" "$source_name"
 }
 
+index_subscription_baseline_file_for() {
+  local source_name="$1"
+  printf '%s/subscription-baseline.yaml' "$(index_cache_dir_for "$source_name")"
+}
+
 index_refresh_source() {
   local source_name="$1"
   local owner_repo="$2"
@@ -135,4 +140,20 @@ index_list_packages_in_source() {
 
   _index_list_print() { printf '%s\t%s\t%s\n' "$1" "$2" "$3"; }
   yaml_manifest_each "$cache_dir/manifest.yaml" _index_list_print
+}
+
+index_list_new_packages_in_source() {
+  local source_name="$1"
+  local baseline_file
+  baseline_file="$(index_subscription_baseline_file_for "$source_name")"
+
+  [ -f "$baseline_file" ] || return 1
+
+  local pkg_name pkg_type pkg_path
+  while IFS=$'\t' read -r pkg_name pkg_type pkg_path; do
+    [ -n "$pkg_name" ] || continue
+    if ! yaml_manifest_has_package "$baseline_file" "$pkg_name"; then
+      printf '%s\t%s\t%s\n' "$pkg_name" "$pkg_type" "$pkg_path"
+    fi
+  done < <(index_list_packages_in_source "$source_name")
 }

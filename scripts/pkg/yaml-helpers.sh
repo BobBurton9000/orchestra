@@ -62,7 +62,7 @@ yaml_sources_each() {
     IFS=$'\t' read -r -a fields <<< "$line"
     [ "${#fields[@]}" -ge 2 ] || continue
     "$callback" "${fields[@]}" "$@" || true
-  done < <("$YQ_BIN" -r '.sources[] | "\(.name)\t\(.repo)"' "$file" 2>/dev/null)
+  done < <("$YQ_BIN" -r '.sources[] | "\(.name)\t\(.repo)\t\(.subscribed_since // "")"' "$file" 2>/dev/null)
 }
 
 yaml_sources_find_repo() {
@@ -87,6 +87,17 @@ yaml_sources_find_name() {
   printf '%s\n' "$name"
 }
 
+yaml_sources_subscription_sha() {
+  local file="$1"
+  local name="$2"
+  require_yq
+  [ -f "$file" ] || return 1
+  local sha
+  sha="$("$YQ_BIN" -r --arg n "$name" '.sources[] | select(.name == $n) | (.subscribed_since // "")' "$file" 2>/dev/null | head -n1)"
+  [ -n "$sha" ] || return 1
+  printf '%s\n' "$sha"
+}
+
 yaml_sources_add() {
   local file="$1"
   local name="$2"
@@ -104,6 +115,31 @@ yaml_sources_remove() {
   [ -f "$file" ] || return 0
   "$YQ_BIN" -y -i --arg n "$name" \
     '.sources |= map(select(.name != $n))' "$file"
+}
+
+yaml_sources_set_subscription() {
+  local file="$1"
+  local name="$2"
+  local sha="${3:-}"
+  require_yq
+  [ -f "$file" ] || return 1
+
+  if [ -n "$sha" ]; then
+    "$YQ_BIN" -y -i --arg n "$name" --arg h "$sha" \
+      '.sources |= map(if .name == $n then .subscribed_since = $h else . end)' "$file"
+  else
+    "$YQ_BIN" -y -i --arg n "$name" \
+      '.sources |= map(if .name == $n then del(.subscribed_since) else . end)' "$file"
+  fi
+}
+
+yaml_manifest_has_package() {
+  local file="$1"
+  local pkg_name="$2"
+  require_yq
+  [ -f "$file" ] || return 1
+  "$YQ_BIN" -e -r --arg n "$pkg_name" \
+    '.packages[] | select(.name == $n)' "$file" >/dev/null 2>&1
 }
 
 yaml_lock_each() {

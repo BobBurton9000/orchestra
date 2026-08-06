@@ -18,6 +18,8 @@ Package management:
 
 Sources:
   source add <owner/repo> [name] Add a source to sources.yaml and fetch its manifest
+  source subscribe <name>      Install packages added to a source in future upgrades
+  source unsubscribe <name>    Stop installing future packages from a source
   source list                    Show configured sources
   source remove <name>           Remove a source (refuses if packages still installed)
 
@@ -88,10 +90,14 @@ orchestra source — manage package sources
 
 Usage:
   orchestra source add <owner/repo> [name]
+  orchestra source subscribe <name>
+  orchestra source unsubscribe <name>
   orchestra source list
   orchestra source remove <name>
 
 A source is a GitHub repo with an orchestra-source.yaml at its root.
+Subscribing records the current manifest as a baseline; only packages added
+after that point are installed automatically by a bulk 'orchestra upgrade'.
 EOF
       ;;
     list)
@@ -181,6 +187,16 @@ cmd_source() {
       fi
       sources_add "$repo" "$name"
       log_info "Source '$src_name' ready."
+      ;;
+    subscribe)
+      local name="${2:-}"
+      [ -n "$name" ] || die "Usage: orchestra source subscribe <name>"
+      sources_subscribe "$name"
+      ;;
+    unsubscribe)
+      local name="${2:-}"
+      [ -n "$name" ] || die "Usage: orchestra source unsubscribe <name>"
+      sources_unsubscribe "$name"
       ;;
     list)
       sources_cmd_list

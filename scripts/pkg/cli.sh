@@ -26,6 +26,7 @@ Query:
   list --available               Show all packages across all sources
   search <term>                  Search packages by name/type/path
   info <pkg>                     Show details for a package (installed or available)
+  status                         Audit installed files against the package lockfile
 
 Platform compatibility:
   export copilot|opencode        Compile .agents/orchestra/ to platform output
@@ -104,6 +105,16 @@ EOF
     info)
       echo "orchestra info — show details for a package"
       echo "Usage: orchestra info <pkg>"
+      ;;
+    status)
+      cat <<EOF
+orchestra status — audit installed files against the package lockfile
+
+Usage: orchestra status
+
+Shows every locked package and its installed paths, then reports files under
+.agents/orchestra/ that are missing from the lockfile.
+EOF
       ;;
     export)
       echo "orchestra export — compile .agents/orchestra/ to platform output"
@@ -201,6 +212,7 @@ orchestra_main() {
     list)               list_cmd "$@" ;;
     search)             search_cmd "$@" ;;
     info)               info_cmd "$@" ;;
+    status)             status_cmd "$@" ;;
     export)             export_cmd "$@" ;;
     convert)            convert_cmd "$@" ;;
     generate-manifest)  manifest_generate "$@" ;;

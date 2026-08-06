@@ -19,6 +19,7 @@ source "$PKG_DIR/install.sh"
 source "$PKG_DIR/uninstall.sh"
 source "$PKG_DIR/upgrade.sh"
 source "$PKG_DIR/list.sh"
+source "$PKG_DIR/status.sh"
 source "$PKG_DIR/manifest.sh"
 
 if [ -f "$PKG_DIR/export.sh" ]; then

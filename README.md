@@ -148,6 +148,7 @@ OpenCode discovers all `.opencode/agents/*.md` files; Copilot discovers all `.gi
 .orchestra/orchestra.sh list --available               # all packages across all sources
 .orchestra/orchestra.sh search <term>                  # search by name/type/path
 .orchestra/orchestra.sh info <pkg>                     # details for a package (installed or available)
+.orchestra/orchestra.sh status                         # audit package paths and orphaned files
 ```
 
 ### Platform compatibility
@@ -172,6 +173,20 @@ OpenCode discovers all `.opencode/agents/*.md` files; Copilot discovers all `.gi
 ```
 
 ## How it works
+
+### Status
+
+Use `status` to audit the local definition directory against the package
+lockfile:
+
+```bash
+.orchestra/orchestra.sh status
+```
+
+The report shows each locked package, its source, type, SHA, and installed
+paths. It also identifies locked paths that are missing from disk and files
+under `.agents/orchestra/` that are not part of any locked package. This is a
+local read-only check; it does not refresh source indexes or modify state.
 
 ### Install
 
@@ -349,6 +364,7 @@ Package *choice* stays personal. Your `sources.yaml`, `pkg.lock.yaml`, and `conf
 │       ├── upgrade.sh          # upgrade installed packages to current HEAD
 │       ├── uninstall.sh        # remove (deletes files + lockfile entry)
 │       ├── list.sh             # list/search/info query commands
+│       ├── status.sh           # package lockfile/filesystem audit
 │       ├── manifest.sh         # generate-manifest for source authors
 │       ├── export.sh           # export subcommand (compile → platform output)
 │       └── convert.sh          # convert subcommand (platform → Orchestra defs)

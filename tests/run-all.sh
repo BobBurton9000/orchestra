@@ -162,6 +162,7 @@ test_help_version() {
   assert_contains "$out" "export" "help mentions export"
   assert_contains "$out" "convert" "help mentions convert"
   assert_contains "$out" "generate-manifest" "help mentions generate-manifest"
+  assert_contains "$out" "status" "help mentions status"
 }
 
 # ---------------------------------------------------------------------------
@@ -376,6 +377,70 @@ test_info_available() {
   out="$(run_in_project "$tmp" info demo-agent 2>&1)"
   assert_contains "$out" "available" "info shows available status"
   assert_contains "$out" "not installed" "info says not installed"
+}
+
+# ---------------------------------------------------------------------------
+# Test: status reports package paths that exist on disk
+# ---------------------------------------------------------------------------
+test_status_reports_managed_paths() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  setup_cached_source "$tmp"
+  printf 'orchestrator: gpt-4o\nsubagent: claude-sonnet\n' > "$tmp/.orchestra/config.yml"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-agent >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
+
+  local out
+  out="$(run_in_project "$tmp" status)"
+  assert_contains "$out" "[OK] demo-agent" "status reports agent package as healthy"
+  assert_contains "$out" "[TRACKED] .agents/orchestra/agents/demo-agent.agent.md" "status reports tracked agent path"
+  assert_contains "$out" "[TRACKED] .agents/orchestra/skills/demo-skill/SKILL.md" "status reports tracked skill entrypoint"
+  assert_contains "$out" "[TRACKED] .agents/orchestra/skills/demo-skill/helper.md" "status reports tracked skill companion"
+  assert_contains "$out" "Summary: 2 package(s), 3 managed file(s), 0 missing file(s), 0 file(s) not part of a package." "status reports clean summary"
+}
+
+# ---------------------------------------------------------------------------
+# Test: status reports missing lockfile paths and orphaned files
+# ---------------------------------------------------------------------------
+test_status_reports_missing_and_untracked() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  setup_cached_source "$tmp"
+  printf 'orchestrator: gpt-4o\nsubagent: claude-sonnet\n' > "$tmp/.orchestra/config.yml"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-agent >/dev/null 2>&1
+  rm -f "$tmp/.agents/orchestra/agents/demo-agent.agent.md"
+  printf '%s\n' '---' 'name: local-agent' '---' > "$tmp/.agents/orchestra/agents/local-agent.agent.md"
+
+  local out
+  out="$(run_in_project "$tmp" status)"
+  assert_contains "$out" "[MISSING] demo-agent" "status marks package with missing path"
+  assert_contains "$out" "[MISSING] .agents/orchestra/agents/demo-agent.agent.md" "status reports missing path"
+  assert_contains "$out" "[UNTRACKED] .agents/orchestra/agents/local-agent.agent.md" "status reports orphaned file"
+  assert_contains "$out" "Summary: 1 package(s), 1 managed file(s), 1 missing file(s), 1 file(s) not part of a package." "status reports inconsistency summary"
+}
+
+# ---------------------------------------------------------------------------
+# Test: status works without a lockfile and finds local files
+# ---------------------------------------------------------------------------
+test_status_without_lockfile() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  mkdir -p "$tmp/.agents/orchestra/prompts"
+  printf '%s\n' '# Local prompt' > "$tmp/.agents/orchestra/prompts/local.md"
+
+  local out
+  out="$(run_in_project "$tmp" status)"
+  assert_contains "$out" "Installed packages: none (no lockfile)" "status handles missing lockfile"
+  assert_contains "$out" "[UNTRACKED] .agents/orchestra/prompts/local.md" "status finds file without lockfile"
+  assert_contains "$out" "Summary: 0 package(s), 0 managed file(s), 0 missing file(s), 1 file(s) not part of a package." "status reports no-lockfile summary"
 }
 
 # ---------------------------------------------------------------------------
@@ -726,6 +791,9 @@ main() {
     test_search
     test_info_installed
     test_info_available
+    test_status_reports_managed_paths
+    test_status_reports_missing_and_untracked
+    test_status_without_lockfile
     test_remove
     test_upgrade_sha_change
     test_upgrade_uptodate

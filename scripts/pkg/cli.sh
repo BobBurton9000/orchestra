@@ -35,7 +35,7 @@ Platform compatibility:
   convert copilot|opencode [name] Convert existing platform files to Orchestra definitions
 
 Publishing (for source authors):
-  generate-manifest [dir]        Scan a directory and emit orchestra-source.yaml
+  generate-manifest [options] [dir] Scan a directory and emit orchestra-source.yaml
 
 Other:
   help [command]                 Show this help, or help for a specific command
@@ -142,10 +142,16 @@ EOF
       cat <<EOF
 orchestra generate-manifest — scan a directory and emit orchestra-source.yaml
 
-Usage: orchestra generate-manifest [dir]
+Usage: orchestra generate-manifest [options] [dir]
 
-Defaults to the current directory. Run this in your source repo root after
-adding or removing agent/prompt/skill files.
+Options:
+  --check       Check whether orchestra-source.yaml is up to date
+  --force       Replace an existing manifest without prompting
+  --self-update Update the standalone generator from Orchestra master first
+
+Defaults to the current directory. The same generator is available as the
+standalone orchestra-manifest.sh script for source repositories that do not
+contain an Orchestra installation.
 EOF
       ;;
     *)

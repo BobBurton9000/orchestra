@@ -45,18 +45,43 @@ Lines starting with `#` are comments. Blank lines are ignored. Use them to group
 
 ## Generating the manifest automatically
 
-Run Orchestra's generator in your source repo root:
+A source repository does not need to contain a full Orchestra installation.
+Download the standalone manifest tool once in the source repo root:
 
 ```bash
-orchestra generate-manifest /path/to/your/source/repo
+curl -fsSL \
+  https://raw.githubusercontent.com/BobBurton9000/orchestra/master/orchestra-manifest.sh \
+  -o orchestra-manifest.sh
+chmod +x orchestra-manifest.sh
 ```
 
-This scans for `agents/*.agent.md`, `prompts/*.prompt.md`, `prompts/snippets/`, and `skills/*/SKILL.md`, then writes `orchestra-source.yaml`. Re-run it whenever you add or remove packages.
-
-If Orchestra is installed in a project, you can invoke it via:
+Generate the manifest after adding or removing packages:
 
 ```bash
-.orchestra/orchestra.sh generate-manifest /path/to/your/source/repo
+./orchestra-manifest.sh --force .
+```
+
+The tool scans for `agents/*.agent.md`, `prompts/*.prompt.md`,
+`prompts/snippets/`, and `skills/*/SKILL.md`, then writes
+`orchestra-source.yaml`. It needs only Bash and standard command-line
+utilities; `gh` and `yq` are not required for source authoring.
+
+The committed tool can update itself from the latest Orchestra `master` copy:
+
+```bash
+./orchestra-manifest.sh --self-update --force .
+```
+
+Use `--check` in CI to reject a stale manifest without changing it:
+
+```bash
+./orchestra-manifest.sh --check .
+```
+
+If Orchestra is installed in a project, the equivalent command is:
+
+```bash
+.orchestra/orchestra.sh generate-manifest --force /path/to/your/source/repo
 ```
 
 ## Publishing workflow
@@ -67,6 +92,7 @@ If Orchestra is installed in a project, you can invoke it via:
    ```
    my-source/
    ├── orchestra-source.yaml
+   ├── orchestra-manifest.sh
    ├── agents/
    │   └── triage-agent.agent.md
    ├── prompts/
@@ -79,10 +105,10 @@ If Orchestra is installed in a project, you can invoke it via:
            └── helper.md
    ```
 
-3. **Generate the manifest** (or hand-write it):
-   ```bash
-   orchestra generate-manifest .
-   ```
+3. **Generate the manifest**:
+    ```bash
+    ./orchestra-manifest.sh --force .
+    ```
 
 4. **Commit and push**:
    ```bash

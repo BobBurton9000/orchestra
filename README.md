@@ -166,6 +166,23 @@ OpenCode discovers all `.opencode/agents/*.md` files; Copilot discovers all `.gi
 .orchestra/orchestra.sh generate-manifest [dir]        # scan a directory, emit orchestra-source.yaml
 ```
 
+Source repositories do not need to contain Orchestra to maintain their
+manifest. Download the standalone `orchestra-manifest.sh` tool from the
+Orchestra `master` branch, commit it to the source repository, and run it after
+adding or removing packages:
+
+```bash
+curl -fsSL \
+  https://raw.githubusercontent.com/BobBurton9000/orchestra/master/orchestra-manifest.sh \
+  -o orchestra-manifest.sh
+chmod +x orchestra-manifest.sh
+./orchestra-manifest.sh --force .
+```
+
+The committed tool updates itself from `master` with
+`./orchestra-manifest.sh --self-update --force .`. Use
+`./orchestra-manifest.sh --check .` in CI to detect a stale manifest.
+
 ### Help
 
 ```bash
@@ -371,6 +388,7 @@ Package *choice* stays personal. Your `sources.yaml`, `pkg.lock.yaml`, and `conf
 
 ```
 .orchestra/
+├── orchestra-manifest.sh        # Standalone source manifest generator
 ├── orchestra.sh                # Single CLI entry point — all commands
 ├── scripts/
 │   ├── common.sh               # Shared frontmatter/heading parsing utilities

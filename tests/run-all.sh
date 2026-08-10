@@ -31,6 +31,8 @@ setup_test_project() {
   tmp="$(mktemp -d)"
   mkdir -p "$tmp/.orchestra"
   cp "$REPO_ROOT/orchestra.sh" "$tmp/.orchestra/orchestra.sh"
+  cp "$REPO_ROOT/orchestra-manifest.sh" "$tmp/.orchestra/orchestra-manifest.sh"
+  chmod +x "$tmp/.orchestra/orchestra-manifest.sh"
   cp -r "$REPO_ROOT/scripts" "$tmp/.orchestra/scripts"
   cp -r "$REPO_ROOT/completion" "$tmp/.orchestra/completion" 2>/dev/null || mkdir -p "$tmp/.orchestra/completion"
   # Set up the gh stub on PATH
@@ -202,6 +204,61 @@ test_generate_manifest() {
   assert_contains "$content" "type: skill" "manifest has skill type"
   assert_contains "$content" "name: snippets" "manifest has snippets prompt-dir"
   assert_contains "$content" "type: prompt-dir" "manifest has prompt-dir type"
+}
+
+# ---------------------------------------------------------------------------
+# Test: standalone manifest tool works without an Orchestra project
+# ---------------------------------------------------------------------------
+test_standalone_manifest() {
+  local tmp source
+  tmp="$(mktemp -d)"
+  source="$tmp/source"
+  trap "rm -rf '$tmp'" RETURN
+
+  mkdir -p "$source"
+  cp -R "$FIXTURE_SOURCE_DIR/agents" "$source/agents"
+  cp -R "$FIXTURE_SOURCE_DIR/prompts" "$source/prompts"
+  cp -R "$FIXTURE_SOURCE_DIR/skills" "$source/skills"
+
+  "$REPO_ROOT/orchestra-manifest.sh" --force "$source" >/dev/null 2>&1
+  assert_file_exists "$source/orchestra-source.yaml" "standalone tool creates manifest"
+
+  local package_count
+  package_count="$(yq -r '.packages | length' "$source/orchestra-source.yaml")"
+  assert_eq "$package_count" "5" "standalone manifest package count"
+
+  local out rc=0
+  out="$("$REPO_ROOT/orchestra-manifest.sh" --check "$source" 2>&1)" || rc=$?
+  assert_eq "$rc" "0" "standalone check accepts current manifest"
+  assert_contains "$out" "up to date" "standalone check reports current manifest"
+
+  cp "$FIXTURE_SOURCE_DIR/agents/second-agent.agent.md" "$source/agents/new-agent.agent.md"
+  out="$("$REPO_ROOT/orchestra-manifest.sh" --check "$source" 2>&1)" || rc=$?
+  assert_eq "$rc" "1" "standalone check rejects stale manifest"
+  assert_contains "$out" "out of date" "standalone check reports stale manifest"
+}
+
+# ---------------------------------------------------------------------------
+# Test: standalone manifest tool updates itself from a remote copy
+# ---------------------------------------------------------------------------
+test_standalone_self_update() {
+  local tmp source
+  tmp="$(mktemp -d)"
+  source="$tmp/source"
+  trap "rm -rf '$tmp'" RETURN
+
+  mkdir -p "$source"
+  cp -R "$FIXTURE_SOURCE_DIR/agents" "$source/agents"
+  cp -R "$FIXTURE_SOURCE_DIR/prompts" "$source/prompts"
+  cp -R "$FIXTURE_SOURCE_DIR/skills" "$source/skills"
+  cp "$REPO_ROOT/orchestra-manifest.sh" "$tmp/orchestra-manifest.sh"
+  chmod +x "$tmp/orchestra-manifest.sh"
+
+  ORCHESTRA_MANIFEST_URL="file://$REPO_ROOT/orchestra-manifest.sh" \
+    "$tmp/orchestra-manifest.sh" --self-update --force "$source" >/dev/null 2>&1
+
+  assert_file_exists "$source/orchestra-source.yaml" "self-updating tool generates manifest"
+  assert_file_exists "$tmp/orchestra-manifest.sh" "self-updating tool remains installed"
 }
 
 # ---------------------------------------------------------------------------
@@ -859,6 +916,8 @@ main() {
     test_help_version
     test_source_list_default
     test_generate_manifest
+    test_standalone_manifest
+    test_standalone_self_update
     test_install_agent_silent_model
     test_install_prompt
     test_install_skill_multifile

@@ -63,6 +63,11 @@ _orchestra_completion() {
         COMPREPLY=( $(compgen -W "$cmds" -- "$cur") )
       fi
       ;;
+    generate-manifest)
+      if [ "$cword" -eq 2 ] && [[ "$cur" == --* ]]; then
+        COMPREPLY=( $(compgen -W "--check --force --self-update" -- "$cur") )
+      fi
+      ;;
   esac
 
   return 0

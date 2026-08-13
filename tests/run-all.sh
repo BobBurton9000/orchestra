@@ -47,6 +47,33 @@ teardown_test_project() {
   rm -rf "$tmp"
 }
 
+test_gitignore_for_project_state() {
+  local tmp
+  tmp="$(mktemp -d)"
+  mkdir -p "$tmp/.orchestra"
+  cp "$REPO_ROOT/.gitignore" "$tmp/.orchestra/.gitignore"
+  git -C "$tmp" init -q
+
+  local path
+  for path in \
+    .orchestra/sources.yaml \
+    .orchestra/pkg.lock.yaml \
+    .orchestra/pkg-cache/head.sha \
+    .orchestra/config.yml \
+    .orchestra/.temp/file; do
+    mkdir -p "$(dirname "$tmp/$path")"
+    : > "$tmp/$path"
+    if ! git -C "$tmp" check-ignore -q "$path"; then
+      FAIL=$((FAIL + 1))
+      FAILURES+=("FAIL: $path is not ignored")
+      continue
+    fi
+    PASS=$((PASS + 1))
+  done
+
+  teardown_test_project "$tmp"
+}
+
 run_in_project() {
   local tmp="$1"
   shift
@@ -913,6 +940,7 @@ main() {
   echo ""
 
   local tests=(
+    test_gitignore_for_project_state
     test_help_version
     test_source_list_default
     test_generate_manifest

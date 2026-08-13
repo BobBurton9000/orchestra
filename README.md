@@ -433,6 +433,10 @@ Personal Orchestra state (all gitignored — your choices, not your team's):
 └── .manifest                   # Last export output list
 ```
 
+These files are generated locally and should not be committed. The `.gitignore`
+shipped with Orchestra contains rules relative to the `.orchestra/` directory,
+where Orchestra is normally cloned.
+
 ## Tab completion
 
 Source the completion file in your shell:

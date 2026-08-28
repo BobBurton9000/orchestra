@@ -78,13 +78,28 @@ run_in_project() {
   local tmp="$1"
   shift
   (
+    unset ORCHESTRA_PROJECT_ROOT
     cd "$tmp"
     PATH="$tmp/bin:$PATH" \
-      ORCHESTRA_PROJECT_ROOT="$tmp" \
       ORCHESTRA_YES="${ORCHESTRA_YES:-}" \
       FIXTURE_SOURCE_DIR="$FIXTURE_SOURCE_DIR" \
       FIXTURE_SHA="$FIXTURE_SHA" \
       .orchestra/orchestra.sh "$@"
+  )
+}
+
+run_in_nested_project() {
+  local tmp="$1"
+  shift
+  mkdir -p "$tmp/nested/work"
+  (
+    unset ORCHESTRA_PROJECT_ROOT
+    cd "$tmp/nested/work"
+    PATH="$tmp/bin:$PATH" \
+      ORCHESTRA_YES="${ORCHESTRA_YES:-}" \
+      FIXTURE_SOURCE_DIR="$FIXTURE_SOURCE_DIR" \
+      FIXTURE_SHA="$FIXTURE_SHA" \
+      "$tmp/.orchestra/orchestra.sh" "$@"
   )
 }
 
@@ -197,6 +212,61 @@ test_help_version() {
 }
 
 # ---------------------------------------------------------------------------
+# Test: project root is discovered from a nested working directory
+# ---------------------------------------------------------------------------
+test_nested_project_directory() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  setup_cached_source "$tmp"
+
+  ORCHESTRA_YES=1 run_in_nested_project "$tmp" install demo-prompt >/dev/null 2>&1
+  assert_file_exists "$tmp/.agents/orchestra/prompts/demo-prompt.prompt.md" "nested directory uses project root"
+  assert_file_exists "$tmp/.orchestra/pkg.lock.yaml" "nested directory writes lockfile to project root"
+}
+
+# ---------------------------------------------------------------------------
+# Test: completion resolves state from a nested working directory
+# ---------------------------------------------------------------------------
+test_completion_from_nested_directory() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  setup_cached_source "$tmp"
+  printf '%s\n' 'packages:' '  - name: demo-agent' > "$tmp/.orchestra/pkg.lock.yaml"
+  mkdir -p "$tmp/nested/work"
+
+  local out
+  out="$(
+    cd "$tmp/nested/work"
+    unset ORCHESTRA_PROJECT_ROOT ORCHESTRA_DIR
+    _init_completion() {
+      cur="${COMP_WORDS[COMP_CWORD]}"
+      prev="${COMP_WORDS[COMP_CWORD-1]:-}"
+      words=("${COMP_WORDS[@]}")
+      cword="$COMP_CWORD"
+    }
+    source "$tmp/.orchestra/completion/orchestra-completion.bash"
+
+    COMP_WORDS=(orchestra install "")
+    COMP_CWORD=2
+    _orchestra_completion
+    printf '%s\n' "${COMPREPLY[@]}"
+
+    COMP_WORDS=(orchestra source subscribe "")
+    COMP_CWORD=3
+    COMPREPLY=()
+    _orchestra_completion
+    printf '%s\n' "${COMPREPLY[@]}"
+  )"
+
+  assert_contains "$out" "demo-agent" "completion finds packages from nested directory"
+  assert_contains "$out" "core" "completion finds sources from nested directory"
+}
+
+# ---------------------------------------------------------------------------
 # Test: source list auto-creates default sources.yaml
 # ---------------------------------------------------------------------------
 test_source_list_default() {
@@ -219,8 +289,14 @@ test_generate_manifest() {
   tmp="$(setup_test)"
   trap "teardown_test_project $tmp" RETURN
 
-  ORCHESTRA_YES=1 run_in_project "$tmp" generate-manifest "$FIXTURE_SOURCE_DIR" >/dev/null 2>&1
-  local manifest="$FIXTURE_SOURCE_DIR/orchestra-source.yaml"
+  local source="$tmp/source"
+  mkdir -p "$source"
+  cp -R "$FIXTURE_SOURCE_DIR/agents" "$source/agents"
+  cp -R "$FIXTURE_SOURCE_DIR/prompts" "$source/prompts"
+  cp -R "$FIXTURE_SOURCE_DIR/skills" "$source/skills"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" generate-manifest "$source" >/dev/null 2>&1
+  local manifest="$source/orchestra-source.yaml"
   assert_file_exists "$manifest" "generate-manifest creates orchestra-source.yaml"
 
   local content
@@ -657,7 +733,6 @@ test_upgrade_bulk_overwrites_without_prompt() {
   # the whole suite.
   local out rc
   out="$(timeout 10 bash -c 'cd "'"$tmp"'" && PATH="'"$tmp"'/bin:$PATH" \
-      ORCHESTRA_PROJECT_ROOT="'"$tmp"'" \
       FIXTURE_SOURCE_DIR="'"$FIXTURE_SOURCE_DIR"'" \
       FIXTURE_SHA="'"$FIXTURE_SHA"'" \
       .orchestra/orchestra.sh upgrade < <(sleep 30) 2>&1')" || rc=$?
@@ -942,6 +1017,8 @@ main() {
   local tests=(
     test_gitignore_for_project_state
     test_help_version
+    test_nested_project_directory
+    test_completion_from_nested_directory
     test_source_list_default
     test_generate_manifest
     test_standalone_manifest

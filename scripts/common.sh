@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-ORCHESTRA_DIR=".orchestra"
-AGENTS_ORCHESTRA_DIR=".agents/orchestra"
+ORCHESTRA_DIR="${ORCHESTRA_DIR:-.orchestra}"
+AGENTS_ORCHESTRA_DIR="${AGENTS_ORCHESTRA_DIR:-.agents/orchestra}"
 
 log_info() {
   printf '[orchestra] %s\n' "$*" >&2
@@ -180,18 +180,19 @@ validate_heading_exists() {
 }
 
 detect_project_root() {
-  local dir
-  dir="$(cd "$(dirname "${BASH_SOURCE[1]:-$0}")" && pwd)"
+  local dir="$PWD"
+  dir="$(cd "$dir" 2>/dev/null && pwd)" || return 1
 
-  while [ "$dir" != "/" ]; do
+  while :; do
     if [ -d "$dir/$ORCHESTRA_DIR" ]; then
       echo "$dir"
       return 0
     fi
+    [ "$dir" = "/" ] && break
     dir="$(dirname "$dir")"
   done
 
-  die "Could not find .orchestra/ directory. Run from a project with Orchestra installed."
+  return 1
 }
 
 parse_include_line_as_vars() {

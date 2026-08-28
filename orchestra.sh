@@ -2,14 +2,22 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-export ORCHESTRA_PROJECT_ROOT="$PROJECT_ROOT"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 PKG_DIR="$SCRIPT_DIR/scripts/pkg"
 SCRIPTS_DIR="$SCRIPT_DIR/scripts"
 
 source "$SCRIPTS_DIR/common.sh"
+
+if [ -n "${ORCHESTRA_PROJECT_ROOT:-}" ]; then
+  requested_root="$ORCHESTRA_PROJECT_ROOT"
+  ORCHESTRA_PROJECT_ROOT="$(cd "$requested_root" 2>/dev/null && pwd)" ||
+    die "Project root does not exist: $requested_root"
+else
+  ORCHESTRA_PROJECT_ROOT="$(detect_project_root || pwd)"
+fi
+export ORCHESTRA_PROJECT_ROOT
+
 source "$PKG_DIR/pkg-common.sh"
 source "$PKG_DIR/yaml-helpers.sh"
 source "$PKG_DIR/ghutil.sh"

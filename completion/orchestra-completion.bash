@@ -1,3 +1,19 @@
+_orchestra_completion_project_root() {
+  local dir="${ORCHESTRA_PROJECT_ROOT:-$PWD}"
+  local state_dir="${ORCHESTRA_DIR:-.orchestra}"
+
+  dir="$(cd "$dir" 2>/dev/null && pwd)" || return 1
+
+  while :; do
+    if [ -d "$dir/$state_dir" ]; then
+      printf '%s\n' "$dir"
+      return 0
+    fi
+    [ "$dir" = "/" ] && return 1
+    dir="$(dirname "$dir")"
+  done
+}
+
 _orchestra_completion() {
   local cur prev words cword
   _init_completion -n : || return
@@ -17,9 +33,12 @@ _orchestra_completion() {
         return 0
       fi
       if [ "$cword" -eq 2 ]; then
-        if [ -f ".orchestra/pkg.lock.yaml" ]; then
+        local project_root lock_file
+        project_root="$(_orchestra_completion_project_root)" || return 0
+        lock_file="$project_root/${ORCHESTRA_DIR:-.orchestra}/pkg.lock.yaml"
+        if [ -f "$lock_file" ]; then
           local pkgs
-          pkgs="$(yq -r '.packages[] | .name' .orchestra/pkg.lock.yaml 2>/dev/null)"
+          pkgs="$(yq -r '.packages[] | .name' "$lock_file" 2>/dev/null)"
           COMPREPLY=( $(compgen -W "$pkgs" -- "$cur") )
         fi
         return 0
@@ -31,9 +50,12 @@ _orchestra_completion() {
         return 0
       fi
       if [ "$cword" -eq 3 ] && [[ "${words[2]}" == subscribe || "${words[2]}" == unsubscribe || "${words[2]}" == remove ]]; then
-        if [ -f ".orchestra/sources.yaml" ]; then
+        local project_root sources_file
+        project_root="$(_orchestra_completion_project_root)" || return 0
+        sources_file="$project_root/${ORCHESTRA_DIR:-.orchestra}/sources.yaml"
+        if [ -f "$sources_file" ]; then
           local srcs
-          srcs="$(yq -r '.sources[] | .name' .orchestra/sources.yaml 2>/dev/null)"
+          srcs="$(yq -r '.sources[] | .name' "$sources_file" 2>/dev/null)"
           COMPREPLY=( $(compgen -W "$srcs" -- "$cur") )
         fi
         return 0
@@ -52,9 +74,13 @@ _orchestra_completion() {
       fi
       ;;
     remove|info|upgrade)
-      if [ "$cword" -eq 2 ] && [ -f ".orchestra/pkg.lock.yaml" ]; then
+      if [ "$cword" -eq 2 ]; then
+        local project_root lock_file
+        project_root="$(_orchestra_completion_project_root)" || return 0
+        lock_file="$project_root/${ORCHESTRA_DIR:-.orchestra}/pkg.lock.yaml"
+        [ -f "$lock_file" ] || return 0
         local pkgs
-        pkgs="$(yq -r '.packages[] | .name' .orchestra/pkg.lock.yaml 2>/dev/null)"
+        pkgs="$(yq -r '.packages[] | .name' "$lock_file" 2>/dev/null)"
         COMPREPLY=( $(compgen -W "$pkgs" -- "$cur") )
       fi
       ;;

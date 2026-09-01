@@ -155,7 +155,7 @@ yaml_lock_each() {
     IFS=$'\t' read -r -a fields <<< "$line"
     [ "${#fields[@]}" -ge 5 ] || continue
     "$callback" "${fields[@]}" "$@" || true
-  done < <("$YQ_BIN" -r '.packages[] | "\(.name)\t\(.source)\t\(.type)\t\(.sha)\t\(.paths | join("|"))"' "$file" 2>/dev/null)
+  done < <("$YQ_BIN" -r '.packages[] | "\(.name)\t\(.source)\t\(.type)\t\(.sha)\t\(.paths | join("|"))\t\(.forked // false)"' "$file" 2>/dev/null)
 }
 
 yaml_lock_field() {
@@ -170,6 +170,7 @@ yaml_lock_field() {
     type)   "$YQ_BIN" -r --arg n "$pkg" '.packages[] | select(.name == $n) | .type'   "$file" 2>/dev/null | head -n1 ;;
     sha)    "$YQ_BIN" -r --arg n "$pkg" '.packages[] | select(.name == $n) | .sha'    "$file" 2>/dev/null | head -n1 ;;
     paths)  "$YQ_BIN" -r --arg n "$pkg" '.packages[] | select(.name == $n) | .paths | join("|")' "$file" 2>/dev/null | head -n1 ;;
+    forked) "$YQ_BIN" -r --arg n "$pkg" '.packages[] | select(.name == $n) | (.forked // false)' "$file" 2>/dev/null | head -n1 ;;
     *) return 1 ;;
   esac
 }
@@ -239,4 +240,13 @@ yaml_lock_remove_entry() {
   [ -f "$file" ] || return 0
   "$YQ_BIN" -y -i --arg n "$pkg" \
     '.packages |= map(select(.name != $n))' "$file"
+}
+
+yaml_lock_mark_forked() {
+  local file="$1"
+  local pkg="$2"
+  require_yq
+  [ -f "$file" ] || return 1
+  "$YQ_BIN" -y -i --arg n "$pkg" \
+    '.packages |= map(if .name == $n then .forked = true else . end)' "$file"
 }

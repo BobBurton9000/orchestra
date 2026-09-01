@@ -209,6 +209,7 @@ test_help_version() {
   assert_contains "$out" "generate-manifest" "help mentions generate-manifest"
   assert_contains "$out" "status" "help mentions status"
   assert_contains "$out" "subscribe" "help mentions source subscriptions"
+  assert_contains "$out" "fork" "help mentions fork"
 }
 
 # ---------------------------------------------------------------------------
@@ -257,6 +258,12 @@ test_completion_from_nested_directory() {
 
     COMP_WORDS=(orchestra source subscribe "")
     COMP_CWORD=3
+    COMPREPLY=()
+    _orchestra_completion
+    printf '%s\n' "${COMPREPLY[@]}"
+
+    COMP_WORDS=(orchestra fork "")
+    COMP_CWORD=2
     COMPREPLY=()
     _orchestra_completion
     printf '%s\n' "${COMPREPLY[@]}"
@@ -627,6 +634,86 @@ test_remove() {
   if yq -e '.packages[] | select(.name=="demo-skill")' "$tmp/.orchestra/pkg.lock.yaml" >/dev/null 2>&1; then
     FAIL=$((FAIL + 1))
     FAILURES+=("FAIL: remove -- lockfile still contains demo-skill")
+  else
+    PASS=$((PASS + 1))
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Test: fork detaches agent, prompt, and skill packages from upgrades
+# ---------------------------------------------------------------------------
+test_fork_detaches_packages() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  setup_cached_source "$tmp"
+  printf 'orchestrator: gpt-4o\nsubagent: claude-sonnet\n' > "$tmp/.orchestra/config.yml"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-agent >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-prompt >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
+
+  printf '\nLocal agent fork.\n' >> "$tmp/.agents/orchestra/agents/demo-agent.agent.md"
+  printf '\nLocal prompt fork.\n' >> "$tmp/.agents/orchestra/prompts/demo-prompt.prompt.md"
+  printf '\nLocal skill fork.\n' >> "$tmp/.agents/orchestra/skills/demo-skill/helper.md"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" fork demo-agent >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" fork demo-prompt >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" fork demo-skill >/dev/null 2>&1
+
+  local forked_count
+  forked_count="$(yq -r '[.packages[] | select(.forked == true)] | length' "$tmp/.orchestra/pkg.lock.yaml")"
+  assert_eq "$forked_count" "3" "fork marks all package types in the lockfile"
+
+  local new_sha="forked999forked999forked999forked999forked"
+  echo "$new_sha" > "$tmp/.orchestra/pkg-cache/core/head.sha"
+
+  local targeted_out targeted_rc=0
+  targeted_out="$(run_in_project "$tmp" upgrade demo-agent 2>&1)" || targeted_rc=$?
+  assert_eq "$targeted_rc" "0" "targeted upgrade treats forked package as unchanged"
+  assert_contains "$targeted_out" "demo-agent is forked" "targeted upgrade skips forked agent"
+
+  local out
+  out="$(ORCHESTRA_YES=1 run_in_project "$tmp" upgrade 2>&1)"
+  assert_contains "$out" "demo-agent is forked" "bulk upgrade skips forked agent"
+  assert_contains "$out" "demo-prompt is forked" "bulk upgrade skips forked prompt"
+  assert_contains "$out" "demo-skill is forked" "bulk upgrade skips forked skill"
+  assert_contains "$(cat "$tmp/.agents/orchestra/agents/demo-agent.agent.md")" "Local agent fork." "fork preserves agent edits"
+  assert_contains "$(cat "$tmp/.agents/orchestra/prompts/demo-prompt.prompt.md")" "Local prompt fork." "fork preserves prompt edits"
+  assert_contains "$(cat "$tmp/.agents/orchestra/skills/demo-skill/helper.md")" "Local skill fork." "fork preserves skill edits"
+
+  local info list status
+  info="$(run_in_project "$tmp" info demo-agent 2>&1)"
+  assert_contains "$info" "Status:    forked" "info reports forked package"
+  assert_contains "$info" "Upgrade:   disabled" "info disables forked upgrades"
+  list="$(run_in_project "$tmp" list)"
+  assert_contains "$list" "demo-agent" "list retains forked package"
+  assert_contains "$list" "(forked)" "list identifies forked package"
+  status="$(run_in_project "$tmp" status)"
+  assert_contains "$status" "demo-skill (skill, core (forked)" "status identifies forked package"
+}
+
+# ---------------------------------------------------------------------------
+# Test: forked packages can be removed and no longer block source removal
+# ---------------------------------------------------------------------------
+test_fork_remove_and_source_remove() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  setup_cached_source "$tmp"
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" fork demo-skill >/dev/null 2>&1
+
+  run_in_project "$tmp" source remove core >/dev/null 2>&1
+  assert_file_exists "$tmp/.agents/orchestra/skills/demo-skill/SKILL.md" "source removal keeps forked files"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" remove demo-skill >/dev/null 2>&1
+  assert_file_missing "$tmp/.agents/orchestra/skills/demo-skill/SKILL.md" "remove deletes forked files"
+  if yq -e '.packages[] | select(.name=="demo-skill")' "$tmp/.orchestra/pkg.lock.yaml" >/dev/null 2>&1; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: remove forked package -- lockfile still contains demo-skill")
   else
     PASS=$((PASS + 1))
   fi
@@ -1036,6 +1123,8 @@ main() {
     test_status_reports_missing_and_untracked
     test_status_without_lockfile
     test_remove
+    test_fork_detaches_packages
+    test_fork_remove_and_source_remove
     test_upgrade_sha_change
     test_upgrade_uptodate
     test_upgrade_preserves_model

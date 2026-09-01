@@ -10,6 +10,11 @@ upgrade_one() {
     return 1
   fi
 
+  if lock_is_forked "$pkg_name"; then
+    log_info "$pkg_name is forked; skipping upgrade."
+    return 2
+  fi
+
   local locked_sha source pkg_type
   locked_sha="$(lock_get_sha "$pkg_name")"
   source="$(lock_get_source "$pkg_name")"
@@ -137,8 +142,10 @@ upgrade_cmd() {
   ensure_pkg_dirs
 
   if [ -n "$pkg" ]; then
-    upgrade_one "$pkg"
-    return
+    local rc=0
+    upgrade_one "$pkg" || rc=$?
+    [ "$rc" -eq 2 ] && return 0
+    return "$rc"
   fi
 
   sources_ensure_file

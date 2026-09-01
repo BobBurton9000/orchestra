@@ -123,7 +123,7 @@ sources_remove() {
 
   if [ -f "$PKG_LOCK_FILE" ]; then
     _sources_remove_check() {
-      if [ "$2" = "$name" ]; then
+      if [ "$2" = "$name" ] && [ "${6:-false}" != "true" ]; then
         die "Cannot remove source '$name': package '$1' is still installed. Run 'orchestra remove $1' first."
       fi
     }

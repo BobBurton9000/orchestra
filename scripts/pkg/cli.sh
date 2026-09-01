@@ -15,6 +15,7 @@ Package management:
   update                         Refresh all source manifests and HEAD SHAs
   upgrade [pkg]                  Upgrade installed package(s) to current HEAD
   remove <pkg>                   Remove a package (deletes files and lockfile entry)
+  fork <pkg>                     Detach a package from its source for local edits
 
 Sources:
   source add <owner/repo> [name] Add a source to sources.yaml and fetch its manifest
@@ -83,6 +84,17 @@ EOF
     remove)
       echo "orchestra remove — remove a package (files + lockfile entry)"
       echo "Usage: orchestra remove <pkg>"
+      ;;
+    fork)
+      cat <<EOF
+orchestra fork — detach an installed package from its source
+
+Usage:
+  orchestra fork <pkg>
+
+The installed files stay in place and remain tracked locally, but future
+upgrades leave the forked package unchanged.
+EOF
       ;;
     source)
       cat <<EOF
@@ -230,6 +242,7 @@ orchestra_main() {
     update)             gh_check_auth; ensure_pkg_dirs; index_update_all ;;
     upgrade)            upgrade_cmd "$@" ;;
     remove)             uninstall_cmd "$@" ;;
+    fork)               fork_cmd "$@" ;;
     source)             cmd_source "$@" ;;
     list)               list_cmd "$@" ;;
     search)             search_cmd "$@" ;;

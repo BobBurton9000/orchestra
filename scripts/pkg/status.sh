@@ -38,6 +38,7 @@ status_cmd() {
       local type="$3"
       local sha="$4"
       local paths="$5"
+      local forked="${6:-false}"
       local present=0
       local missing=0
       local path
@@ -73,8 +74,10 @@ status_cmd() {
         package_status="NO PATHS"
       fi
 
+      local source_label="$source"
+      [ "$forked" = "true" ] && source_label="$source (forked)"
       printf '  [%s] %s (%s, %s @ %s)\n' \
-        "$package_status" "$pkg" "$type" "$source" "${sha:0:12}"
+        "$package_status" "$pkg" "$type" "$source_label" "${sha:0:12}"
 
       for path in "${package_paths[@]}"; do
         [ -n "$path" ] || continue

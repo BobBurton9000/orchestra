@@ -13,6 +13,7 @@ lock_read_field() {
     3) field_name="type" ;;
     4) field_name="sha" ;;
     5) field_name="paths" ;;
+    6) field_name="forked" ;;
     *) return 1 ;;
   esac
   local val
@@ -31,6 +32,14 @@ lock_get_source() { lock_read_field "$1" 2; }
 lock_get_type() { lock_read_field "$1" 3; }
 lock_get_sha() { lock_read_field "$1" 4; }
 lock_get_paths() { lock_read_field "$1" 5; }
+lock_get_forked() { lock_read_field "$1" 6; }
+
+lock_is_forked() {
+  local pkg="$1"
+  local forked
+  forked="$(lock_get_forked "$pkg" 2>/dev/null || true)"
+  [ "$forked" = "true" ]
+}
 
 lock_remove_entry() {
   local pkg="$1"

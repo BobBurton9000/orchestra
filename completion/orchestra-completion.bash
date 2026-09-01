@@ -18,7 +18,7 @@ _orchestra_completion() {
   local cur prev words cword
   _init_completion -n : || return
 
-  local cmds="install update upgrade remove source list search info status export convert generate-manifest help --version"
+  local cmds="install update upgrade remove fork source list search info status export convert generate-manifest help --version"
 
   if [ "$cword" -eq 1 ]; then
     COMPREPLY=( $(compgen -W "$cmds" -- "$cur") )
@@ -73,7 +73,7 @@ _orchestra_completion() {
         return 0
       fi
       ;;
-    remove|info|upgrade)
+    remove|fork|info|upgrade)
       if [ "$cword" -eq 2 ]; then
         local project_root lock_file
         project_root="$(_orchestra_completion_project_root)" || return 0

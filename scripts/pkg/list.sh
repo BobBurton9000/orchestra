@@ -14,7 +14,9 @@ list_installed() {
   echo ""
   printf '  %-30s %-12s %-12s %s\n' "PACKAGE" "SOURCE" "TYPE" "SHA"
   _list_installed_print() {
-    printf '  %-30s %-12s %-12s %s\n' "$1" "$2" "$3" "${4:0:12}"
+    local source="$2"
+    [ "${6:-false}" = "true" ] && source="$source (forked)"
+    printf '  %-30s %-12s %-12s %s\n' "$1" "$source" "$3" "${4:0:12}"
     count=$((count + 1))
   }
   yaml_lock_each "$PKG_LOCK_FILE" _list_installed_print
@@ -102,15 +104,21 @@ info_cmd() {
   ensure_orchestra_dir
 
   if lock_is_installed "$pkg"; then
-    local source type sha paths
+    local source type sha paths forked
     source="$(lock_get_source "$pkg")"
     type="$(lock_get_type "$pkg")"
     sha="$(lock_get_sha "$pkg")"
     paths="$(lock_get_paths "$pkg")"
+    forked="$(lock_get_forked "$pkg")"
 
     echo "Package: $pkg"
-    echo "  Status:    installed"
-    echo "  Source:    $source"
+    if [ "$forked" = "true" ]; then
+      echo "  Status:    forked"
+      echo "  Source:    $source (detached)"
+    else
+      echo "  Status:    installed"
+      echo "  Source:    $source"
+    fi
     echo "  Type:      $type"
     echo "  Head SHA:  $sha"
     echo "  Installed paths:"
@@ -120,7 +128,9 @@ info_cmd() {
     done
 
     local current_sha=""
-    if index_ensure_cached "$source"; then
+    if [ "$forked" = "true" ]; then
+      echo "  Upgrade:   disabled (forked copy)"
+    elif index_ensure_cached "$source"; then
       current_sha="$(index_get_sha "$source")"
       if [ "$current_sha" != "$sha" ]; then
         echo "  Upgrade available: $current_sha"

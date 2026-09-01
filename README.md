@@ -131,6 +131,7 @@ OpenCode discovers all `.opencode/agents/*.md` files; Copilot discovers all `.gi
 .orchestra/orchestra.sh update                          # refresh all source manifests + HEAD SHAs
 .orchestra/orchestra.sh upgrade [pkg]                  # upgrade installed package(s) to current HEAD
 .orchestra/orchestra.sh remove <pkg>                   # remove a package (files + lockfile entry)
+.orchestra/orchestra.sh fork <pkg>                     # detach a package for local edits
 ```
 
 ### Sources
@@ -230,6 +231,21 @@ local read-only check; it does not refresh source indexes or modify state.
 ```
 
 Upgrades preserve your model choice — the upgraded file inherits the model from your previously installed file, not from `config.yml`. If you change your mind about a model, re-install the package fresh (`remove` then `install`).
+
+### Fork
+
+```bash
+.orchestra/orchestra.sh fork orchestrator
+```
+
+Forking keeps the installed files and their lockfile entry, but marks the
+package as detached from future source upgrades. The original source and SHA
+remain recorded for provenance, while both targeted and bulk `upgrade` leave
+the fork unchanged. Edit the files under `.agents/orchestra/` directly, then
+run the existing `export` command when platform output needs refreshing.
+
+Forked packages remain managed by `status` and can still be removed. Running
+`install` for the same package explicitly reattaches it to the source.
 
 ### Subscribing to a source
 
@@ -403,6 +419,7 @@ Package *choice* stays personal. Your `sources.yaml`, `pkg.lock.yaml`, and `conf
 │       ├── install.sh          # install + lockfile + model prompt logic
 │       ├── upgrade.sh          # upgrade installed packages to current HEAD
 │       ├── uninstall.sh        # remove (deletes files + lockfile entry)
+│       ├── fork.sh              # detach an installed package from its source
 │       ├── list.sh             # list/search/info query commands
 │       ├── status.sh           # package lockfile/filesystem audit
 │       ├── manifest.sh         # generate-manifest for source authors
@@ -427,7 +444,7 @@ Personal Orchestra state (all gitignored — your choices, not your team's):
 ```
 .orchestra/
 ├── sources.yaml                # Your configured sources and subscription baselines
-├── pkg.lock.yaml               # Installed package ledger (package, source, SHA, paths)
+├── pkg.lock.yaml               # Installed package ledger (package, source, SHA, paths, fork state)
 ├── pkg-cache/                  # Fetched manifests + HEAD SHAs
 ├── config.yml                  # Default model choices for agents
 └── .manifest                   # Last export output list

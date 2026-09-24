@@ -30,7 +30,7 @@ permission:                       # optional — preserved for OpenCode, strippe
 - `primary` — visible to the user (maps to OpenCode `mode: primary`; Copilot: no `user-invocable` line)
 - `subagent` — invoked only by the orchestrator (maps to OpenCode `mode: subagent`; Copilot: `user-invocable: false`)
 
-When you run `export copilot`, `export opencode`, or `export pi`, Orchestra compiles the applicable definitions (resolving `#include` directives and extracting sections) and transforms prompt/agent frontmatter for the target:
+When you run `export copilot`, `export opencode`, or `export pi`, Orchestra compiles the applicable definitions (resolving `#include` directives and extracting sections), transforms agent frontmatter, and emits the prompt metadata supported by each target. Copilot prompt frontmatter is copied verbatim:
 
 | Canonical | OpenCode | Copilot | Pi |
 |-----------|----------|---------|----|
@@ -38,16 +38,17 @@ When you run `export copilot`, `export opencode`, or `export pi`, Orchestra comp
 | `mode: subagent` (agent) | `mode: subagent` | `user-invocable: false` | Agent definitions not exported |
 | `variant:` (agent) | Preserved | Stripped | Agent definitions not exported |
 | `permission:` block (agent) | Preserved | Stripped | Agent definitions not exported |
+| `model:` (agent) | Preserved | Preserved | Agent definitions not exported |
 | `agents:` list (agent) | *(not output)* | Preserved | Agent definitions not exported |
 | Filename `.agent.md` | Stripped → `name.md` | Kept as `name.agent.md` | Not exported |
 | Filename `.prompt.md` | Stripped → `name.md` | Kept as `name.prompt.md` | Stripped → `.pi/prompts/name.md` |
 | Prompt `handoffs:` | Stripped | Preserved | Stripped |
-| Prompt `agent:` | Preserved | Stripped | Stripped |
+| Prompt `agent:` | Preserved (except `agent: agent`) | Preserved verbatim | Stripped |
 | Prompt `argument-hint:` | Stripped | Preserved | Preserved |
 
 Pi exports prompts as project slash commands under `.pi/prompts/` and skills under the shared `.agents/skills/` directory. It does not export Orchestra agent definitions. Pi loads project prompts after project trust is granted.
 
-If you already have agents installed for Copilot or OpenCode, `convert` inverts the same mapping — so the round-trip is structurally sound. See [How it works — Export](#export) and [Convert](#convert-existing-agents--definitions) below for the mechanics.
+`convert` maps supported agent fields from Copilot or OpenCode back into Orchestra definitions. It converts agents only (not prompts) and omits `model:` because models are user-specific, so it is not a lossless import of arbitrary platform metadata. See [How it works — Export](#export) and [Convert](#convert-existing-agents--definitions) for details.
 
 ### 2. A package manager for shareable definitions
 
@@ -67,7 +68,7 @@ Packages are versioned by their source repo's HEAD commit SHA — there are no s
 
 Orchestra is built around an orchestration model, though it's not mandatory. The centrepiece is the **Orchestrator** agent — a `mode: primary` agent that delegates every unit of work to the specialised subagent best suited to carry it out. The Orchestrator never does direct work itself; it coordinates, reviews, and iterates.
 
-The `core` source ([`orchestra-defaults`](https://github.com/BobBurton9000/orchestra-defaults)) ships with the Orchestrator and 29 subagents covering architecture, frontend, backend, code review, debugging, testing, security, and more. You install the ones you want.
+The default `core` source ([`orchestra-defaults`](https://github.com/BobBurton9000/orchestra-defaults)) provides the Orchestrator, a changing catalog of specialist agents, prompts, and skills. See its [source manifest](https://github.com/BobBurton9000/orchestra-defaults/blob/master/orchestra-source.yaml) for the current package list; install only what you want.
 
 **Auto-discovery:** When you `export opencode`, every installed agent lands in `.opencode/agents/`. OpenCode discovers all agents in that directory. The Orchestrator can delegate to any `mode: subagent` agent it finds — no explicit allowlist needed. Install a new agent, re-export, and the Orchestrator is automatically aware of it. The same applies to Copilot (`.github/agents/*.agent.md`).
 
@@ -76,17 +77,17 @@ The workflow loop: **delegate → implement → review → iterate.** The Orches
 ## Setup
 
 ```bash
-git clone <repo-url> .orchestra
+git clone https://github.com/BobBurton9000/orchestra.git .orchestra
 ```
 
-No install script. Orchestra is a single entry point:
+No install script. Orchestra is a single entry point. If this project is a Git repository, either add Orchestra as a submodule or ignore `.orchestra/` in the project's root `.gitignore`; a clone inside `.orchestra/` is itself a Git repository.
 
 ```bash
 .orchestra/orchestra.sh install orchestrator           # install a single agent
 .orchestra/orchestra.sh install --all core             # install everything from the core source
 ```
 
-A default `sources.yaml` is created on first run, pointing at the [`orchestra-defaults`](https://github.com/BobBurton9000/orchestra-defaults) source (30 agents, 12 prompts, 5 skills).
+A default `sources.yaml` is created on first run, pointing at the [`orchestra-defaults`](https://github.com/BobBurton9000/orchestra-defaults) source. Its package catalog changes over time; see the source manifest for current contents.
 
 ## Requirements
 
@@ -94,7 +95,8 @@ Orchestra depends on three things:
 
 - **`gh`** — GitHub CLI, for fetching packages and manifests from source repos. Install from [cli.github.com](https://cli.github.com) and run `gh auth login`.
 - **`yq`** — YAML processor, for reading and writing Orchestra's data files. Install [mikefarah/yq](https://github.com/mikefarah/yq) (Go) or [kislyuk/yq](https://github.com/kislyuk/yq) (Python).
-- **Bash 4+**
+- **Bash 4.3+** (required for nameref support)
+- **Git** is also required if you use `push`.
 
 ## Quick start
 
@@ -145,7 +147,7 @@ OpenCode discovers all `.opencode/agents/*.md` files; Copilot discovers all `.gi
 .orchestra/orchestra.sh source subscribe <name>       # install future packages from a source on upgrade
 .orchestra/orchestra.sh source unsubscribe <name>     # stop installing future packages
 .orchestra/orchestra.sh source list                    # show configured sources
-.orchestra/orchestra.sh source remove <name>           # remove a source (refuses if packages installed)
+.orchestra/orchestra.sh source remove <name>           # remove a source (refuses while non-forked packages use it)
 ```
 
 ### Query
@@ -217,7 +219,7 @@ local read-only check; it does not refresh source indexes or modify state.
 ```bash
 .orchestra/orchestra.sh install orchestrator           # agents/orchestrator.agent.md
 .orchestra/orchestra.sh install writing-gherkin        # skills/writing-gherkin/SKILL.md
-.orchestra/orchestra.sh install gherkinify             # prompts/gherkinify.prompt.md
+.orchestra/orchestra.sh install commit                 # prompts/commit.prompt.md
 .orchestra/orchestra.sh install triage-agent@extras    # from a specific source
 ```
 

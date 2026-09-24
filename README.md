@@ -62,7 +62,7 @@ orchestrator: ollama-cloud/qwen3.5:397b
 subagent: ollama-cloud/glm-5.1
 ```
 
-Packages are versioned by their source repo's HEAD commit SHA — there are no static version numbers to bump. `orchestra update` compares your locked SHA to the current HEAD; if it has moved, `orchestra upgrade` pulls the new version.
+Packages are versioned by their source repo's HEAD commit SHA — there are no static version numbers to bump. `orchestra update` refreshes cached manifests and HEAD SHAs; `orchestra upgrade` compares installed lockfile SHAs with those cached SHAs and installs newer package revisions. Run `update` first to refresh all sources; bulk `upgrade` refreshes subscribed sources automatically.
 
 ### 3. An orchestration workflow
 
@@ -131,10 +131,10 @@ OpenCode discovers all `.opencode/agents/*.md` files; Copilot discovers all `.gi
 
 ```bash
 .orchestra/orchestra.sh install <pkg>[@<source>]       # install a single package
-.orchestra/orchestra.sh install <pkg> --locked         # install exact SHA from pkg.lock.yaml
+.orchestra/orchestra.sh install <pkg> --locked         # fetch at lockfile SHA (package metadata from cache)
 .orchestra/orchestra.sh install --all <source>         # install every package from one source
 .orchestra/orchestra.sh update                          # refresh all source manifests + HEAD SHAs
-.orchestra/orchestra.sh upgrade [pkg]                  # upgrade installed package(s) to current HEAD
+.orchestra/orchestra.sh upgrade [pkg]                  # upgrade to cached source HEADs (run update to refresh)
 .orchestra/orchestra.sh remove <pkg>                   # remove a package (files + lockfile entry)
 .orchestra/orchestra.sh fork <pkg>                     # detach a package for local edits
 .orchestra/orchestra.sh push <pkg> [options]            # publish forked edits to the source repo
@@ -223,7 +223,7 @@ local read-only check; it does not refresh source indexes or modify state.
 .orchestra/orchestra.sh install triage-agent@extras    # from a specific source
 ```
 
-- Fetches the package at the source's current HEAD SHA via `gh api`
+- Fetches the package at the source HEAD SHA recorded in the local cache via `gh api`. Run `update` first if you need to refresh that cache.
 - For agents: source files have no `model:` line. Orchestra injects the model from `config.yml` into the installed file's frontmatter. If `config.yml` is missing, you are prompted once and the choice is saved.
 - Records the package, source, source repository/path, type, SHA, and installed file paths in `pkg.lock.yaml`
 - Asks before overwriting an existing file (set `ORCHESTRA_YES=1` to auto-confirm)
@@ -232,11 +232,11 @@ local read-only check; it does not refresh source indexes or modify state.
 
 ```bash
 .orchestra/orchestra.sh update        # refresh all source manifests + HEAD SHAs
-.orchestra/orchestra.sh upgrade       # upgrade all installed packages
-.orchestra/orchestra.sh upgrade orchestrator   # upgrade a single package
+.orchestra/orchestra.sh upgrade       # upgrade all installed packages to cached HEADs
+.orchestra/orchestra.sh upgrade orchestrator   # upgrade one package to its source's cached HEAD
 ```
 
-Upgrades preserve your model choice — the upgraded file inherits the model from your previously installed file, not from `config.yml`. If you change your mind about a model, re-install the package fresh (`remove` then `install`).
+Bulk `upgrade` refreshes subscribed sources, but other sources use their cached HEAD until you run `update`. Targeted `upgrade <pkg>` also uses the cached HEAD (refreshing only if no cache exists). Upgrades preserve your model choice — the upgraded file inherits the model from your previously installed file, not from `config.yml`. If you change your mind about a model, re-install the package fresh (`remove` then `install`).
 
 ### Fork
 
@@ -269,8 +269,9 @@ from agents, and creates a branch and pull request. Use `--direct` to push to
 the source repository's default branch, or `--dry-run` to inspect the staged
 diff without committing or pushing. Existing package files must remain tracked;
 new or deleted files are rejected for now. Pull-request pushes leave the package
-forked until the change is merged; direct pushes update its lockfile SHA and
-reattach it to the source.
+forked after the pull request is created. Merging the pull request does not
+update the local lockfile automatically; re-install the package after merge to
+reattach it. Direct pushes update its lockfile SHA and reattach it to the source.
 
 ### Subscribing to a source
 
@@ -313,12 +314,12 @@ What happens:
 1. Every applicable definition in `.agents/orchestra/` is compiled (`#include` directives resolved, headings extracted)
 2. Compiled output lands in `.orchestra/.temp/`
 3. Frontmatter is transformed to the target platform's format (see the [transformation table](#1-a-universal-format-for-agents-and-prompts) above)
-4. Platform output files are written
-5. Skills are copied to `.agents/skills/`
+4. Platform output files are staged
+5. Skills are compiled and staged in `.agents/skills/`
 6. The selected platform output directories and shared skills directory are replaced to match the resources supported by that exporter in `.agents/orchestra/`; stale and manually added files in those managed directories are removed. Other platform outputs are untouched.
 7. A `.orchestra/.manifest` file lists the outputs from the latest export, and `.orchestra/.temp/` is removed
 
-All outputs are staged before the export changes existing files. A missing `.agents/orchestra/` directory is an error; an existing but empty directory clears the selected platform outputs and shared skills. Prompt-directory package files are not copied as standalone outputs on any platform; they are included when referenced by `#include` in an exported prompt.
+All outputs are staged before export changes existing files. A missing `.agents/orchestra/` directory is an error; an existing but empty directory clears the selected platform outputs and shared skills. The managed directories are then replaced one at a time, so the multi-directory update is not a single atomic transaction. Prompt-directory package files are not copied as standalone outputs on any platform; they are included when referenced by `#include` in an exported prompt.
 
 ### Convert (Existing Agents → Definitions)
 
@@ -331,7 +332,7 @@ If you already have agents installed for Copilot or OpenCode, convert them back 
 .orchestra/orchestra.sh convert opencode architect   # single agent
 ```
 
-The conversion inverts the same field mapping used by `export`, so the round-trip is structurally sound. Output lands in `.agents/orchestra/agents/`. Asks before overwriting.
+Conversion handles supported agent metadata, but drops `model:` and does not preserve arbitrary platform-specific fields. Output lands in `.agents/orchestra/agents/`; it asks before overwriting.
 
 ## Agent Definition Format
 
@@ -371,7 +372,7 @@ Agent and prompt bodies can include external markdown files. The included conten
 - `:##Sub Section` injects everything under that sub-heading
 - Includes can nest — included files can include other files
 - Every include is validated at export time; missing files or headings cause a hard error
-- Exports compile into `.orchestra/.temp/` first, then atomically copy to platform directories
+- Exports compile into `.orchestra/.temp/` and stage outputs before replacing managed platform directories. A compile failure leaves existing outputs untouched; replacing multiple output directories is sequential, not one atomic transaction.
 - `.temp/` is always cleaned up, success or failure
 
 ## The Orchestration Workflow
@@ -410,7 +411,7 @@ The Orchestrator drives an iterative cycle:
 
 1. **Delegate** — the Orchestrator assigns a scoped task to the best-matched subagent, providing all necessary context in the prompt (subagents have no shared context).
 2. **Implement** — the subagent does the work.
-3. **Review** — code-review agents (e.g. `code-review.bugs`, `code-review.readability`, `code-review.solid`) review the change. The Orchestrator sends every batch to all available reviewers — applying all perspectives to every change is the point.
+3. **Review** — applicable code-review agents (for example, `code-review.bugs`, `code-review.maintainability`, and `code-review.solid`) review each change batch. Reviewers are selected by remit; agents limited to another language or domain are not included.
 4. **Scope-check** — a scope-guard agent checks whether proposed follow-up work is still in scope.
 5. **Adjudicate** — when claims conflict or evidence is ambiguous, a judge agent provides an independent decision.
 6. **Iterate** — the cycle repeats until the originally approved task is complete. The Orchestrator does not widen scope because an agent proposes adjacent improvements.
@@ -446,7 +447,7 @@ Package *choice* stays personal. Your `sources.yaml`, `pkg.lock.yaml`, and `conf
 │       ├── sources.sh          # sources.yaml parsing + add/remove/list
 │       ├── index.sh            # Manifest fetch + cache via gh api
 │       ├── install.sh          # install + lockfile + model prompt logic
-│       ├── upgrade.sh          # upgrade installed packages to current HEAD
+│       ├── upgrade.sh          # upgrade installed packages to cached source HEADs
 │       ├── uninstall.sh        # remove (deletes files + lockfile entry)
 │       ├── fork.sh              # detach an installed package from its source
 │       ├── push.sh              # publish forked package edits to GitHub
@@ -456,7 +457,7 @@ Package *choice* stays personal. Your `sources.yaml`, `pkg.lock.yaml`, and `conf
 │       ├── export.sh           # export subcommand (compile → platform output)
 │       └── convert.sh          # convert subcommand (platform → Orchestra defs)
 ├── completion/
-│   └── orchestra-completion.bash   # bash/zsh tab completion
+│   └── orchestra-completion.bash   # Bash tab completion (requires bash-completion)
 └── tests/                      # Test suite
 ```
 
@@ -486,10 +487,10 @@ where Orchestra is normally cloned.
 
 ## Tab completion
 
-Source the completion file in your shell:
+The completion script uses Bash's `_init_completion` helper, provided by the `bash-completion` package. Load that package, then source Orchestra's completion file:
 
 ```bash
 source .orchestra/completion/orchestra-completion.bash
 ```
 
-Add it to your `~/.bashrc` or `~/.zshrc` for persistence.
+Add the command to your `~/.bashrc` for persistence.

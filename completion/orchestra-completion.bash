@@ -69,7 +69,9 @@ _orchestra_completion() {
       ;;
     export|convert)
       if [ "$cword" -eq 2 ]; then
-        COMPREPLY=( $(compgen -W "copilot opencode" -- "$cur") )
+        local platforms="copilot opencode"
+        [ "$sub" = "export" ] && platforms="$platforms pi"
+        COMPREPLY=( $(compgen -W "$platforms" -- "$cur") )
         return 0
       fi
       ;;

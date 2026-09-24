@@ -32,7 +32,7 @@ Query:
   status                         Audit installed files against the package lockfile
 
 Platform compatibility:
-  export copilot|opencode        Compile .agents/orchestra/ to platform output
+  export copilot|opencode|pi     Compile .agents/orchestra/ to platform output
   convert copilot|opencode [name] Convert existing platform files to Orchestra definitions
 
 Publishing (for source authors):
@@ -136,7 +136,7 @@ EOF
       ;;
     export)
       echo "orchestra export — compile .agents/orchestra/ to platform output"
-      echo "Usage: orchestra export copilot|opencode"
+      echo "Usage: orchestra export copilot|opencode|pi"
       ;;
     convert)
       cat <<EOF

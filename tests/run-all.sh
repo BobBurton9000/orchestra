@@ -204,7 +204,7 @@ test_help_version() {
 
   out="$(run_in_project "$tmp" help)"
   assert_contains "$out" "install" "help mentions install"
-  assert_contains "$out" "export" "help mentions export"
+  assert_contains "$out" "export copilot|opencode|pi" "help lists Pi export"
   assert_contains "$out" "convert" "help mentions convert"
   assert_contains "$out" "generate-manifest" "help mentions generate-manifest"
   assert_contains "$out" "status" "help mentions status"
@@ -267,9 +267,28 @@ test_completion_from_nested_directory() {
     COMPREPLY=()
     _orchestra_completion
     printf '%s\n' "${COMPREPLY[@]}"
+
+    COMP_WORDS=(orchestra export p)
+    COMP_CWORD=2
+    COMPREPLY=()
+    _orchestra_completion
+    printf '%s\n' "${COMPREPLY[@]}"
+
+    COMP_WORDS=(orchestra convert p)
+    COMP_CWORD=2
+    COMPREPLY=()
+    _orchestra_completion
+    printf 'convert:%s\n' "${COMPREPLY[@]}"
   )"
 
   assert_contains "$out" "demo-agent" "completion finds packages from nested directory"
+  assert_contains "$out" "pi" "export completion offers Pi"
+  if [[ "$out" == *"convert:pi"* ]]; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: convert completion unexpectedly offers Pi")
+  else
+    PASS=$((PASS + 1))
+  fi
   assert_contains "$out" "core" "completion finds sources from nested directory"
 }
 
@@ -984,13 +1003,24 @@ test_export_opencode() {
 
   ORCHESTRA_YES=1 run_in_project "$tmp" install demo-agent >/dev/null 2>&1
   ORCHESTRA_YES=1 run_in_project "$tmp" install demo-prompt >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" install snippets >/dev/null 2>&1
   ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
 
+  mkdir -p "$tmp/.opencode/agents" "$tmp/.opencode/commands" "$tmp/.agents/skills/manual"
+  : > "$tmp/.opencode/agents/stale.md"
+  : > "$tmp/.opencode/agents/manual.md"
+  : > "$tmp/.opencode/commands/manual.md"
+  : > "$tmp/.agents/skills/manual/SKILL.md"
   run_in_project "$tmp" export opencode >/dev/null 2>&1
 
   assert_file_exists "$tmp/.opencode/agents/demo-agent.md" "export opencode: agent file (no .agent.md suffix)"
   assert_file_exists "$tmp/.opencode/commands/demo-prompt.md" "export opencode: prompt file"
   assert_file_exists "$tmp/.agents/skills/demo-skill/SKILL.md" "export opencode: skill copied to .agents/skills/"
+  assert_file_missing "$tmp/.opencode/agents/stale.md" "export opencode: removes stale generated agents"
+  assert_file_missing "$tmp/.opencode/agents/manual.md" "export opencode: removes untracked files from managed output"
+  assert_file_missing "$tmp/.opencode/commands/manual.md" "export opencode: removes untracked commands"
+  assert_file_missing "$tmp/.agents/skills/manual/SKILL.md" "export opencode: reconciles shared skills"
+  assert_file_missing "$tmp/.opencode/commands/snippets/branch-name.md" "export opencode: does not copy prompt-dir assets"
 }
 
 # ---------------------------------------------------------------------------
@@ -1005,15 +1035,129 @@ test_export_copilot() {
   printf 'orchestrator: gpt-4o\nsubagent: claude-sonnet\n' > "$tmp/.orchestra/config.yml"
 
   ORCHESTRA_YES=1 run_in_project "$tmp" install demo-agent >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-prompt >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" install snippets >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
 
+  mkdir -p "$tmp/.github/agents" "$tmp/.github/prompts" "$tmp/.agents/skills/manual"
+  : > "$tmp/.github/agents/stale.agent.md"
+  : > "$tmp/.github/agents/manual.md"
+  : > "$tmp/.github/prompts/manual.prompt.md"
+  : > "$tmp/.agents/skills/manual/SKILL.md"
   run_in_project "$tmp" export copilot >/dev/null 2>&1
 
   assert_file_exists "$tmp/.github/agents/demo-agent.agent.md" "export copilot: agent file (keeps .agent.md suffix)"
+  assert_file_exists "$tmp/.github/prompts/demo-prompt.prompt.md" "export copilot: prompt file"
+  assert_file_exists "$tmp/.agents/skills/demo-skill/SKILL.md" "export copilot: skill copied to .agents/skills/"
+  assert_file_missing "$tmp/.github/agents/stale.agent.md" "export copilot: removes stale generated agents"
+  assert_file_missing "$tmp/.github/agents/manual.md" "export copilot: removes untracked files from managed output"
+  assert_file_missing "$tmp/.github/prompts/manual.prompt.md" "export copilot: removes untracked prompts"
+  assert_file_missing "$tmp/.agents/skills/manual/SKILL.md" "export copilot: reconciles shared skills"
+  assert_file_missing "$tmp/.github/prompts/snippets/branch-name.md" "export copilot: does not copy prompt-dir assets"
 
   # Copilot strips permission block and adds user-invocable: false for subagents
   local content
   content="$(cat "$tmp/.github/agents/demo-agent.agent.md")"
   assert_contains "$content" "user-invocable: false" "export copilot: subagent gets user-invocable: false"
+}
+
+# ---------------------------------------------------------------------------
+# Test: export pi
+# ---------------------------------------------------------------------------
+test_export_pi() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  setup_cached_source "$tmp"
+  printf 'orchestrator: gpt-4o\nsubagent: claude-sonnet\n' > "$tmp/.orchestra/config.yml"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-agent >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-prompt >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" install snippets >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
+
+  cat > "$tmp/.agents/orchestra/prompts/demo-prompt.prompt.md" <<'EOF'
+---
+description: Pi prompt description
+argument-hint: "[focus]"
+agent: unsupported-agent
+handoffs: unsupported-handoff
+---
+# Demo Prompt
+
+Use the included context:
+#include /.agents/orchestra/prompts/snippets/branch-name.md
+EOF
+
+  mkdir -p "$tmp/.pi/prompts" "$tmp/.pi/agents" "$tmp/.agents/skills/manual" "$tmp/.github/agents" "$tmp/.opencode/agents"
+  : > "$tmp/.pi/prompts/manual.md"
+  : > "$tmp/.pi/prompts/stale.md"
+  : > "$tmp/.pi/agents/manual.md"
+  : > "$tmp/.agents/skills/manual/SKILL.md"
+  : > "$tmp/.github/agents/other-platform.md"
+  : > "$tmp/.opencode/agents/other-platform.md"
+
+  run_in_project "$tmp" export pi >/dev/null 2>&1
+
+  local prompt="$tmp/.pi/prompts/demo-prompt.md" content
+  assert_file_exists "$prompt" "export pi: emits native prompt template"
+  assert_file_missing "$tmp/.pi/prompts/demo-prompt.prompt.md" "export pi: strips source suffix"
+  assert_file_missing "$tmp/.pi/prompts/manual.md" "export pi: removes untracked prompt files"
+  assert_file_missing "$tmp/.pi/prompts/stale.md" "export pi: removes stale prompt files"
+  assert_file_missing "$tmp/.pi/prompts/snippets/branch-name.md" "export pi: does not copy prompt-dir assets"
+  assert_file_exists "$tmp/.pi/agents/manual.md" "export pi: leaves non-managed agent files untouched"
+  assert_file_exists "$tmp/.agents/skills/demo-skill/SKILL.md" "export pi: uses shared Agent Skills location"
+  assert_file_missing "$tmp/.agents/skills/manual/SKILL.md" "export pi: reconciles shared skills"
+  assert_file_exists "$tmp/.github/agents/other-platform.md" "export pi: leaves other platform outputs untouched"
+  assert_file_exists "$tmp/.opencode/agents/other-platform.md" "export pi: leaves OpenCode outputs untouched"
+
+  content="$(<"$prompt")"
+  assert_contains "$content" "description: Pi prompt description" "export pi: preserves prompt description"
+  assert_contains "$content" 'argument-hint: "[focus]"' "export pi: preserves Pi argument hint"
+  assert_contains "$content" 'Run `git branch --show-current`' "export pi: compiles includes into the prompt body"
+  if [[ "$content" == *"unsupported-agent"* || "$content" == *"unsupported-handoff"* ]]; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: export pi -- unsupported prompt frontmatter was retained")
+  else
+    PASS=$((PASS + 1))
+  fi
+
+  cat > "$tmp/.agents/orchestra/prompts/demo-prompt.prompt.md" <<'EOF'
+---
+description: Broken prompt
+---
+#include /.agents/orchestra/prompts/snippets/missing.md
+EOF
+  local rc=0
+  run_in_project "$tmp" export pi >/dev/null 2>&1 || rc=$?
+  assert_eq "$rc" "1" "export pi: compilation error exits non-zero"
+  assert_contains "$(<"$prompt")" "Pi prompt description" "export pi: compile failure leaves previous output intact"
+
+  rm -rf "$tmp/.agents/orchestra/prompts" "$tmp/.agents/orchestra/skills"
+  run_in_project "$tmp" export pi >/dev/null 2>&1
+  assert_dir_missing "$tmp/.pi/prompts" "export pi: removes empty managed prompt directory"
+  assert_dir_missing "$tmp/.agents/skills" "export pi: removes empty shared skill directory"
+  assert_dir_exists "$tmp/.pi" "export pi: preserves platform parent directory"
+}
+
+# ---------------------------------------------------------------------------
+# Test: missing source guard preserves existing outputs
+# ---------------------------------------------------------------------------
+test_export_missing_source_guard() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  mkdir -p "$tmp/.pi/prompts" "$tmp/.agents/skills/existing"
+  : > "$tmp/.pi/prompts/existing.md"
+  : > "$tmp/.agents/skills/existing/SKILL.md"
+
+  local rc=0
+  run_in_project "$tmp" export pi >/dev/null 2>&1 || rc=$?
+  assert_eq "$rc" "1" "export pi: missing source directory is rejected"
+  assert_file_exists "$tmp/.pi/prompts/existing.md" "export pi: missing source guard preserves prompts"
+  assert_file_exists "$tmp/.agents/skills/existing/SKILL.md" "export pi: missing source guard preserves skills"
 }
 
 # ---------------------------------------------------------------------------
@@ -1136,6 +1280,8 @@ main() {
     test_source_remove_succeeds
     test_export_opencode
     test_export_copilot
+    test_export_pi
+    test_export_missing_source_guard
     test_convert_copilot
     test_install_locked
     test_source_add_duplicate

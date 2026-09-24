@@ -1,6 +1,6 @@
 # Orchestra
 
-Orchestra is a universal format and package manager for AI coding agents, prompts, and skills. Write definitions once in Orchestra's canonical format, then export to GitHub Copilot or OpenCode — the format translates, the model stays yours. Share definitions via GitHub sources like apt packages; each developer installs what they need and picks their own models.
+Orchestra is a universal format and package manager for AI coding agents, prompts, and skills. Write definitions once in Orchestra's canonical format, then export to GitHub Copilot, OpenCode, or Pi (Pi exports prompts and skills) — the format translates, the model stays yours. Share definitions via GitHub sources like apt packages; each developer installs what they need and picks their own models.
 
 Although Orchestra works for standalone agents, it's built around an orchestration workflow where an Orchestrator agent delegates to a team of specialised subagents — and automatically becomes aware of new agents as you install them.
 
@@ -10,7 +10,7 @@ Orchestra lives in `.orchestra/` within your project. Your installed definitions
 
 ### 1. A universal format for agents and prompts
 
-Every Orchestra definition is a markdown file with YAML frontmatter using a small set of canonical keys. The same definition file exports to any supported platform — Orchestra handles the dialect differences.
+Every Orchestra definition is a markdown file with YAML frontmatter using a small set of canonical keys. Orchestra handles platform dialect differences for the resource types each target supports.
 
 ```yaml
 ---
@@ -30,19 +30,22 @@ permission:                       # optional — preserved for OpenCode, strippe
 - `primary` — visible to the user (maps to OpenCode `mode: primary`; Copilot: no `user-invocable` line)
 - `subagent` — invoked only by the orchestrator (maps to OpenCode `mode: subagent`; Copilot: `user-invocable: false`)
 
-When you run `export copilot` or `export opencode`, Orchestra compiles every definition (resolving `#include` directives, extracting sections) and transforms the frontmatter to the target platform's format:
+When you run `export copilot`, `export opencode`, or `export pi`, Orchestra compiles the applicable definitions (resolving `#include` directives and extracting sections) and transforms prompt/agent frontmatter for the target:
 
-| Canonical | OpenCode | Copilot |
-|-----------|----------|---------|
-| `mode: primary` | `mode: primary` | *(omitted — visible by default)* |
-| `mode: subagent` | `mode: subagent` | `user-invocable: false` |
-| `variant:` | Preserved | Stripped |
-| `permission:` block | Preserved | Stripped |
-| `agents:` list | *(not output)* | Preserved |
-| Filename `.agent.md` | Stripped → `name.md` | Kept as `name.agent.md` |
-| Filename `.prompt.md` | Stripped → `name.md` | Kept as `name.prompt.md` |
-| Prompt `handoffs:` | Stripped | Preserved |
-| Prompt `agent:` | Preserved | Stripped |
+| Canonical | OpenCode | Copilot | Pi |
+|-----------|----------|---------|----|
+| `mode: primary` (agent) | `mode: primary` | *(omitted — visible by default)* | Agent definitions not exported |
+| `mode: subagent` (agent) | `mode: subagent` | `user-invocable: false` | Agent definitions not exported |
+| `variant:` (agent) | Preserved | Stripped | Agent definitions not exported |
+| `permission:` block (agent) | Preserved | Stripped | Agent definitions not exported |
+| `agents:` list (agent) | *(not output)* | Preserved | Agent definitions not exported |
+| Filename `.agent.md` | Stripped → `name.md` | Kept as `name.agent.md` | Not exported |
+| Filename `.prompt.md` | Stripped → `name.md` | Kept as `name.prompt.md` | Stripped → `.pi/prompts/name.md` |
+| Prompt `handoffs:` | Stripped | Preserved | Stripped |
+| Prompt `agent:` | Preserved | Stripped | Stripped |
+| Prompt `argument-hint:` | Stripped | Preserved | Preserved |
+
+Pi exports prompts as project slash commands under `.pi/prompts/` and skills under the shared `.agents/skills/` directory. It does not export Orchestra agent definitions. Pi loads project prompts after project trust is granted.
 
 If you already have agents installed for Copilot or OpenCode, `convert` inverts the same mapping — so the round-trip is structurally sound. See [How it works — Export](#export) and [Convert](#convert-existing-agents--definitions) below for the mechanics.
 
@@ -95,7 +98,7 @@ Orchestra depends on three things:
 
 ## Quick start
 
-Install the Orchestrator and a couple of subagents, then export to both platforms:
+Install the Orchestrator and a couple of subagents, then export to both agent platforms:
 
 ```bash
 .orchestra/orchestra.sh install orchestrator
@@ -157,8 +160,8 @@ OpenCode discovers all `.opencode/agents/*.md` files; Copilot discovers all `.gi
 ### Platform compatibility
 
 ```bash
-.orchestra/orchestra.sh export copilot|opencode        # compile .agents/orchestra/ → platform output
-.orchestra/orchestra.sh convert copilot|opencode [name] # convert existing platform files → Orchestra definitions
+.orchestra/orchestra.sh export copilot|opencode|pi     # compile supported definitions → platform output
+.orchestra/orchestra.sh convert copilot|opencode [name] # convert existing platform agents → Orchestra definitions
 ```
 
 ### Publishing (for source authors)
@@ -278,18 +281,21 @@ Deletes every file recorded in the lockfile entry, then removes the lockfile ent
 ### Export
 
 ```bash
-.orchestra/orchestra.sh export copilot    # → .github/agents/ + .github/prompts/
-.orchestra/orchestra.sh export opencode   # → .opencode/agents/ + .opencode/commands/
+.orchestra/orchestra.sh export copilot    # → .github/agents/ + .github/prompts/ + .agents/skills/
+.orchestra/orchestra.sh export opencode   # → .opencode/agents/ + .opencode/commands/ + .agents/skills/
+.orchestra/orchestra.sh export pi         # → .pi/prompts/ + .agents/skills/ (no agents)
 ```
 
 What happens:
-1. Every definition in `.agents/orchestra/` is compiled (`#include` directives resolved, headings extracted)
+1. Every applicable definition in `.agents/orchestra/` is compiled (`#include` directives resolved, headings extracted)
 2. Compiled output lands in `.orchestra/.temp/`
 3. Frontmatter is transformed to the target platform's format (see the [transformation table](#1-a-universal-format-for-agents-and-prompts) above)
 4. Platform output files are written
 5. Skills are copied to `.agents/skills/`
-6. A `.orchestra/.manifest` file tracks everything that was installed
-7. `.orchestra/.temp/` is removed
+6. The selected platform output directories and shared skills directory are replaced to match the resources supported by that exporter in `.agents/orchestra/`; stale and manually added files in those managed directories are removed. Other platform outputs are untouched.
+7. A `.orchestra/.manifest` file lists the outputs from the latest export, and `.orchestra/.temp/` is removed
+
+All outputs are staged before the export changes existing files. A missing `.agents/orchestra/` directory is an error; an existing but empty directory clears the selected platform outputs and shared skills. Prompt-directory package files are not copied as standalone outputs on any platform; they are included when referenced by `#include` in an exported prompt.
 
 ### Convert (Existing Agents → Definitions)
 

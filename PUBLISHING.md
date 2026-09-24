@@ -154,4 +154,4 @@ The [`orchestra-defaults`](https://github.com/BobBurton9000/orchestra-defaults) 
 
 - **Keep package names stable.** Renaming a package in the manifest effectively creates a new package; users with the old name locked will need to `remove` and `install` the new one.
 - **Don't break installed paths.** If you move a file within your repo, update the manifest path. Users who upgrade will get the file at the new path; the old file at the old path becomes orphaned (Orchestra's `remove` uses the lockfile, not the current manifest, so it will still clean up correctly).
-- **Use `prompt-dir` for snippet collections.** If you have prompt helper files that aren't standalone prompts, bundle them as a `prompt-dir` package so they install into `.agents/orchestra/prompts/<name>/`.
+- **Use `prompt-dir` for snippet collections.** If you have prompt helper files that aren't standalone prompts, bundle them as a `prompt-dir` package so they install into `.agents/orchestra/prompts/<name>/`. They are not exported as separate platform files; reference them with `#include` in a prompt definition to inline their content at export time.

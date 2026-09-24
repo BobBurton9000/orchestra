@@ -4,6 +4,7 @@ set -euo pipefail
 
 _export_count=0
 _export_manifest=""
+_export_stage_root=""
 
 _export_record_output() {
   _export_manifest="$_export_manifest$1"$'\n'
@@ -102,6 +103,26 @@ export_prepare_opencode_prompt() {
   } > "$final"
 }
 
+export_prepare_pi_prompt() {
+  local compiled="$1"
+  local final="$2"
+
+  local description argument_hint
+  description=$(read_frontmatter_value description "$compiled")
+  argument_hint=$(read_frontmatter_value argument-hint "$compiled")
+
+  local body
+  body=$(write_body_without_frontmatter "$compiled")
+
+  {
+    printf '%s\n' '---'
+    [ -n "$description" ] && printf 'description: %s\n' "$description"
+    [ -n "$argument_hint" ] && printf 'argument-hint: %s\n' "$argument_hint"
+    printf '%s\n' '---'
+    printf '%s\n' "$body"
+  } > "$final"
+}
+
 export_process_agents() {
   local platform="$1"
   local project_root="$2"
@@ -109,6 +130,8 @@ export_process_agents() {
   local orchestra_temp="$4"
   local compile_script="$5"
   local agents_out="$6"
+
+  [ "$platform" = "pi" ] && return 0
 
   local src_dir="$defs_dir/agents"
   [ -d "$src_dir" ] || return 0
@@ -125,13 +148,13 @@ export_process_agents() {
 
     case "$platform" in
       copilot)
-        local out="$project_root/$agents_out/${name}.agent.md"
+        local out="$_export_stage_root/$agents_out/${name}.agent.md"
         mkdir -p "$(dirname "$out")"
         export_prepare_copilot_agent "$compiled" "$out"
         _export_record_output "$agents_out/${name}.agent.md"
         ;;
       opencode)
-        local out="$project_root/$agents_out/${name}.md"
+        local out="$_export_stage_root/$agents_out/${name}.md"
         mkdir -p "$(dirname "$out")"
         export_prepare_opencode_agent "$compiled" "$out"
         _export_record_output "$agents_out/${name}.md"
@@ -163,37 +186,24 @@ export_process_prompts() {
 
     case "$platform" in
       copilot)
-        local out="$project_root/$prompts_out/${name}.prompt.md"
+        local out="$_export_stage_root/$prompts_out/${name}.prompt.md"
         mkdir -p "$(dirname "$out")"
         export_prepare_copilot_prompt "$compiled" "$out"
         _export_record_output "$prompts_out/${name}.prompt.md"
         ;;
       opencode)
-        local out="$project_root/$prompts_out/${name}.md"
+        local out="$_export_stage_root/$prompts_out/${name}.md"
         mkdir -p "$(dirname "$out")"
         export_prepare_opencode_prompt "$compiled" "$out"
         _export_record_output "$prompts_out/${name}.md"
         ;;
+      pi)
+        local out="$_export_stage_root/$prompts_out/${name}.md"
+        mkdir -p "$(dirname "$out")"
+        export_prepare_pi_prompt "$compiled" "$out"
+        _export_record_output "$prompts_out/${name}.md"
+        ;;
     esac
-  done
-
-  local subdir
-  for subdir in snippets templates config; do
-    local src_sub="$src_dir/$subdir"
-    if [ -d "$src_sub" ]; then
-      local dst_sub="$project_root/$prompts_out/$subdir"
-      mkdir -p "$dst_sub"
-      for item in "$src_sub/"*; do
-        [ -e "$item" ] || continue
-        local item_name
-        item_name=$(basename "$item")
-        local compiled="$orchestra_temp/prompts/${subdir}_${item_name}"
-        _export_compile_single "$compile_script" "$project_root" "$item" "$compiled"
-        cp "$compiled" "$dst_sub/$item_name"
-        _export_record_output "$prompts_out/$subdir/$item_name"
-        _export_count=$((_export_count + 1))
-      done
-    fi
   done
 }
 
@@ -206,8 +216,7 @@ export_process_skills() {
   local src_dir="$defs_dir/skills"
   [ -d "$src_dir" ] || return 0
 
-  local skills_out="$project_root/.agents/skills"
-  mkdir -p "$skills_out"
+  local skills_out="$_export_stage_root/.agents/skills"
 
   for skill_dir in "$src_dir/"*/; do
     [ -d "$skill_dir" ] || continue
@@ -239,9 +248,27 @@ export_process_skills() {
   done
 }
 
+export_apply_staged_outputs() {
+  local project_root="$1"
+  local stage_root="$2"
+  shift 2
+
+  local relative_root
+  for relative_root in "$@"; do
+    local destination="$project_root/$relative_root"
+    local staged="$stage_root/$relative_root"
+
+    rm -rf "$destination"
+    if [ -d "$staged" ]; then
+      mkdir -p "$(dirname "$destination")"
+      mv "$staged" "$destination"
+    fi
+  done
+}
+
 export_cmd() {
   local platform="${1:-}"
-  [ -n "$platform" ] || die "Usage: orchestra export copilot|opencode"
+  [ -n "$platform" ] || die "Usage: orchestra export copilot|opencode|pi"
 
   local project_root="$ORCHESTRA_PROJECT_ROOT"
   local orchestra_dir="$project_root/$ORCHESTRA_DIR"
@@ -250,17 +277,25 @@ export_cmd() {
   local defs_dir="$project_root/$AGENTS_ORCHESTRA_DIR"
 
   local agents_out prompts_out
+  local managed_roots=()
   case "$platform" in
     copilot)
       agents_out=".github/agents"
       prompts_out=".github/prompts"
+      managed_roots=(".github/agents" ".github/prompts" ".agents/skills")
       ;;
     opencode)
       agents_out=".opencode/agents"
       prompts_out=".opencode/commands"
+      managed_roots=(".opencode/agents" ".opencode/commands" ".agents/skills")
+      ;;
+    pi)
+      agents_out=""
+      prompts_out=".pi/prompts"
+      managed_roots=(".pi/prompts" ".agents/skills")
       ;;
     *)
-      die "Unsupported platform: $platform (use copilot or opencode)"
+      die "Unsupported platform: $platform (use copilot, opencode, or pi)"
       ;;
   esac
 
@@ -269,7 +304,8 @@ export_cmd() {
   fi
 
   rm -rf "$orchestra_temp"
-  mkdir -p "$orchestra_temp/agents" "$orchestra_temp/prompts" "$orchestra_temp/skills"
+  mkdir -p "$orchestra_temp/agents" "$orchestra_temp/prompts" "$orchestra_temp/skills" "$orchestra_temp/output"
+  _export_stage_root="$orchestra_temp/output"
 
   _export_count=0
   _export_manifest=""
@@ -282,6 +318,7 @@ export_cmd() {
   export_process_agents "$platform" "$project_root" "$defs_dir" "$orchestra_temp" "$compile_script" "$agents_out"
   export_process_prompts "$platform" "$project_root" "$defs_dir" "$orchestra_temp" "$compile_script" "$prompts_out"
   export_process_skills "$project_root" "$defs_dir" "$orchestra_temp" "$compile_script"
+  export_apply_staged_outputs "$project_root" "$_export_stage_root" "${managed_roots[@]}"
 
   local manifest_file="$orchestra_dir/.manifest"
   printf '%s\n' "$_export_manifest" > "$manifest_file"

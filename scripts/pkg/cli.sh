@@ -16,6 +16,7 @@ Package management:
   upgrade [pkg]                  Upgrade installed package(s) to current HEAD
   remove <pkg>                   Remove a package (deletes files and lockfile entry)
   fork <pkg>                     Detach a package from its source for local edits
+  push <pkg>                     Push forked package edits to its GitHub source
 
 Sources:
   source add <owner/repo> [name] Add a source to sources.yaml and fetch its manifest
@@ -94,6 +95,19 @@ Usage:
 
 The installed files stay in place and remain tracked locally, but future
 upgrades leave the forked package unchanged.
+EOF
+      ;;
+    push)
+      cat <<EOF
+orchestra push — publish edits from a forked package to its GitHub source
+
+Usage:
+  orchestra push <pkg> [--dry-run] [--branch NAME] [--direct]
+
+The package must be forked first. By default, push creates a branch and pull
+request in the original source repository. --direct pushes to its default
+branch. Both modes require GitHub push permission for the source repository.
+Only existing files recorded in the package lockfile are pushed.
 EOF
       ;;
     source)
@@ -243,6 +257,7 @@ orchestra_main() {
     upgrade)            upgrade_cmd "$@" ;;
     remove)             uninstall_cmd "$@" ;;
     fork)               fork_cmd "$@" ;;
+    push)               push_cmd "$@" ;;
     source)             cmd_source "$@" ;;
     list)               list_cmd "$@" ;;
     search)             search_cmd "$@" ;;

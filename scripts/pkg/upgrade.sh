@@ -52,13 +52,23 @@ upgrade_one() {
     existing_model="$(read_frontmatter_value model "$installed_agent_file" 2>/dev/null || true)"
   fi
 
-  local installed_paths
-  installed_paths="$(install_files_for_package "$source" "$source_repo" "$pkg_type" "$pkg_path" "$current_sha" "$pkg_name" "$existing_model" 1)" || {
+  local installed_paths_output
+  installed_paths_output="$(install_files_for_package "$source" "$source_repo" "$pkg_type" "$pkg_path" "$current_sha" "$pkg_name" "$existing_model" 1)" || {
     log_info "Upgrade cancelled for $pkg_name."
     return 1
   }
 
-  lock_write_entry "$pkg_name" "$source" "$pkg_type" "$current_sha" "$installed_paths"
+  local installed_paths=()
+  local installed_path
+  while IFS= read -r installed_path; do
+    [ -n "$installed_path" ] || continue
+    installed_paths+=("$installed_path")
+  done <<< "$installed_paths_output"
+  if [ ${#installed_paths[@]} -eq 0 ]; then
+    installed_paths=("")
+  fi
+
+  lock_write_entry "$pkg_name" "$source" "$pkg_type" "$current_sha" "$source_repo" "$pkg_path" "${installed_paths[@]}"
   log_info "Upgraded $pkg_name @ ${current_sha:0:12}"
 }
 

@@ -3,10 +3,20 @@
 set -euo pipefail
 
 YQ_BIN="${YQ_BIN:-yq}"
+YQ_OUTPUT_ARGS=()
+YQ_OUTPUT_ARGS_READY=0
 
 require_yq() {
   if ! command -v "$YQ_BIN" >/dev/null 2>&1; then
     die "yq ('$YQ_BIN') not found on PATH. Install it (mikefarah/yq or kislyuk/yq) and ensure it is on your PATH."
+  fi
+  if [ "$YQ_OUTPUT_ARGS_READY" -eq 0 ]; then
+    local yq_help
+    yq_help="$("$YQ_BIN" --help 2>&1 || true)"
+    if [[ "$yq_help" == *"--yaml-output"* ]]; then
+      YQ_OUTPUT_ARGS=(-y)
+    fi
+    YQ_OUTPUT_ARGS_READY=1
   fi
 }
 
@@ -39,7 +49,7 @@ yaml_manifest_find() {
   local pkg_name="$2"
   require_yq
   [ -f "$file" ] || return 1
-  "$YQ_BIN" -r --arg n "$pkg_name" '.packages[] | select(.name == $n) | "\(.name)\t\(.type)\t\(.path)"' "$file" 2>/dev/null | head -n1
+  YQ_PACKAGE_NAME="$pkg_name" "$YQ_BIN" -r '.packages[] | select(.name == strenv(YQ_PACKAGE_NAME)) | "\(.name)\t\(.type)\t\(.path)"' "$file" 2>/dev/null | head -n1
 }
 
 yaml_manifest_count() {
@@ -62,7 +72,7 @@ yaml_sources_each() {
     IFS=$'\t' read -r -a fields <<< "$line"
     [ "${#fields[@]}" -ge 2 ] || continue
     "$callback" "${fields[@]}" "$@" || true
-  done < <("$YQ_BIN" -r '.sources[] | "\(.name)\t\(.repo)\t\(.subscribed_since // "")"' "$file" 2>/dev/null)
+  done < <("$YQ_BIN" -r '.sources[] | [(.name // ""), (.repo // ""), (.subscribed_since // "")] | join("\t")' "$file" 2>/dev/null)
 }
 
 yaml_sources_find_repo() {
@@ -71,7 +81,7 @@ yaml_sources_find_repo() {
   require_yq
   [ -f "$file" ] || return 1
   local repo
-  repo="$("$YQ_BIN" -r --arg n "$name" '.sources[] | select(.name == $n) | .repo' "$file" 2>/dev/null | head -n1)"
+  repo="$(YQ_SOURCE_NAME="$name" "$YQ_BIN" -r '.sources[] | select(.name == strenv(YQ_SOURCE_NAME)) | .repo' "$file" 2>/dev/null | head -n1)"
   [ -n "$repo" ] || return 1
   printf '%s\n' "$repo"
 }
@@ -82,7 +92,7 @@ yaml_sources_find_name() {
   require_yq
   [ -f "$file" ] || return 1
   local name
-  name="$("$YQ_BIN" -r --arg r "$repo" '.sources[] | select(.repo == $r) | .name' "$file" 2>/dev/null | head -n1)"
+  name="$(YQ_SOURCE_REPO="$repo" "$YQ_BIN" -r '.sources[] | select(.repo == strenv(YQ_SOURCE_REPO)) | .name' "$file" 2>/dev/null | head -n1)"
   [ -n "$name" ] || return 1
   printf '%s\n' "$name"
 }
@@ -93,7 +103,7 @@ yaml_sources_subscription_sha() {
   require_yq
   [ -f "$file" ] || return 1
   local sha
-  sha="$("$YQ_BIN" -r --arg n "$name" '.sources[] | select(.name == $n) | (.subscribed_since // "")' "$file" 2>/dev/null | head -n1)"
+  sha="$(YQ_SOURCE_NAME="$name" "$YQ_BIN" -r '.sources[] | select(.name == strenv(YQ_SOURCE_NAME)) | (.subscribed_since // "")' "$file" 2>/dev/null | head -n1)"
   [ -n "$sha" ] || return 1
   printf '%s\n' "$sha"
 }
@@ -104,8 +114,8 @@ yaml_sources_add() {
   local repo="$3"
   require_yq
   yaml_file_ensure "$file" "sources"
-  "$YQ_BIN" -y -i --arg n "$name" --arg r "$repo" \
-    '.sources += [{"name": $n, "repo": $r}]' "$file"
+  YQ_SOURCE_NAME="$name" YQ_SOURCE_REPO="$repo" "$YQ_BIN" "${YQ_OUTPUT_ARGS[@]}" -i \
+    '.sources += [{"name": strenv(YQ_SOURCE_NAME), "repo": strenv(YQ_SOURCE_REPO)}]' "$file"
 }
 
 yaml_sources_remove() {
@@ -113,8 +123,8 @@ yaml_sources_remove() {
   local name="$2"
   require_yq
   [ -f "$file" ] || return 0
-  "$YQ_BIN" -y -i --arg n "$name" \
-    '.sources |= map(select(.name != $n))' "$file"
+  YQ_SOURCE_NAME="$name" "$YQ_BIN" "${YQ_OUTPUT_ARGS[@]}" -i \
+    '.sources |= map(select(.name != strenv(YQ_SOURCE_NAME)))' "$file"
 }
 
 yaml_sources_set_subscription() {
@@ -125,11 +135,11 @@ yaml_sources_set_subscription() {
   [ -f "$file" ] || return 1
 
   if [ -n "$sha" ]; then
-    "$YQ_BIN" -y -i --arg n "$name" --arg h "$sha" \
-      '.sources |= map(if .name == $n then .subscribed_since = $h else . end)' "$file"
+    YQ_SOURCE_NAME="$name" YQ_SUBSCRIPTION_SHA="$sha" "$YQ_BIN" "${YQ_OUTPUT_ARGS[@]}" -i \
+      '.sources |= map((select(.name == strenv(YQ_SOURCE_NAME)) | . + {"subscribed_since": strenv(YQ_SUBSCRIPTION_SHA)}) // .)' "$file"
   else
-    "$YQ_BIN" -y -i --arg n "$name" \
-      '.sources |= map(if .name == $n then del(.subscribed_since) else . end)' "$file"
+    YQ_SOURCE_NAME="$name" "$YQ_BIN" "${YQ_OUTPUT_ARGS[@]}" -i \
+      '.sources |= map((select(.name == strenv(YQ_SOURCE_NAME)) | del(.subscribed_since)) // .)' "$file"
   fi
 }
 
@@ -138,8 +148,8 @@ yaml_manifest_has_package() {
   local pkg_name="$2"
   require_yq
   [ -f "$file" ] || return 1
-  "$YQ_BIN" -e -r --arg n "$pkg_name" \
-    '.packages[] | select(.name == $n)' "$file" >/dev/null 2>&1
+  YQ_PACKAGE_NAME="$pkg_name" "$YQ_BIN" -e -r \
+    '.packages[] | select(.name == strenv(YQ_PACKAGE_NAME))' "$file" >/dev/null 2>&1
 }
 
 yaml_lock_each() {
@@ -155,7 +165,7 @@ yaml_lock_each() {
     IFS=$'\t' read -r -a fields <<< "$line"
     [ "${#fields[@]}" -ge 5 ] || continue
     "$callback" "${fields[@]}" "$@" || true
-  done < <("$YQ_BIN" -r '.packages[] | "\(.name)\t\(.source)\t\(.type)\t\(.sha)\t\(.paths | join("|"))\t\(.forked // false)"' "$file" 2>/dev/null)
+  done < <("$YQ_BIN" -r '.packages[] | [(.name // ""), (.source // ""), (.type // ""), (.sha // ""), ((.paths // []) | join("|")), (.forked // false), (.source_repo // ""), (.source_path // "")] | join("\t")' "$file" 2>/dev/null)
 }
 
 yaml_lock_field() {
@@ -165,12 +175,14 @@ yaml_lock_field() {
   require_yq
   [ -f "$file" ] || return 1
   case "$field" in
-    name)   "$YQ_BIN" -r --arg n "$pkg" '.packages[] | select(.name == $n) | .name'  "$file" 2>/dev/null | head -n1 ;;
-    source) "$YQ_BIN" -r --arg n "$pkg" '.packages[] | select(.name == $n) | .source' "$file" 2>/dev/null | head -n1 ;;
-    type)   "$YQ_BIN" -r --arg n "$pkg" '.packages[] | select(.name == $n) | .type'   "$file" 2>/dev/null | head -n1 ;;
-    sha)    "$YQ_BIN" -r --arg n "$pkg" '.packages[] | select(.name == $n) | .sha'    "$file" 2>/dev/null | head -n1 ;;
-    paths)  "$YQ_BIN" -r --arg n "$pkg" '.packages[] | select(.name == $n) | .paths | join("|")' "$file" 2>/dev/null | head -n1 ;;
-    forked) "$YQ_BIN" -r --arg n "$pkg" '.packages[] | select(.name == $n) | (.forked // false)' "$file" 2>/dev/null | head -n1 ;;
+    name)        YQ_PACKAGE_NAME="$pkg" "$YQ_BIN" -r '.packages[] | select(.name == strenv(YQ_PACKAGE_NAME)) | .name' "$file" 2>/dev/null | head -n1 ;;
+    source)      YQ_PACKAGE_NAME="$pkg" "$YQ_BIN" -r '.packages[] | select(.name == strenv(YQ_PACKAGE_NAME)) | .source' "$file" 2>/dev/null | head -n1 ;;
+    type)        YQ_PACKAGE_NAME="$pkg" "$YQ_BIN" -r '.packages[] | select(.name == strenv(YQ_PACKAGE_NAME)) | .type' "$file" 2>/dev/null | head -n1 ;;
+    sha)         YQ_PACKAGE_NAME="$pkg" "$YQ_BIN" -r '.packages[] | select(.name == strenv(YQ_PACKAGE_NAME)) | .sha' "$file" 2>/dev/null | head -n1 ;;
+    paths)       YQ_PACKAGE_NAME="$pkg" "$YQ_BIN" -r '.packages[] | select(.name == strenv(YQ_PACKAGE_NAME)) | .paths | join("|")' "$file" 2>/dev/null | head -n1 ;;
+    forked)      YQ_PACKAGE_NAME="$pkg" "$YQ_BIN" -r '.packages[] | select(.name == strenv(YQ_PACKAGE_NAME)) | (.forked // false)' "$file" 2>/dev/null | head -n1 ;;
+    source_repo) YQ_PACKAGE_NAME="$pkg" "$YQ_BIN" -r '.packages[] | select(.name == strenv(YQ_PACKAGE_NAME)) | (.source_repo // "")' "$file" 2>/dev/null | head -n1 ;;
+    source_path) YQ_PACKAGE_NAME="$pkg" "$YQ_BIN" -r '.packages[] | select(.name == strenv(YQ_PACKAGE_NAME)) | (.source_path // "")' "$file" 2>/dev/null | head -n1 ;;
     *) return 1 ;;
   esac
 }
@@ -189,7 +201,7 @@ yaml_lock_paths_lines() {
   local pkg="$2"
   require_yq
   [ -f "$file" ] || return 1
-  "$YQ_BIN" -r --arg n "$pkg" '.packages[] | select(.name == $n) | .paths[]' "$file" 2>/dev/null
+  YQ_PACKAGE_NAME="$pkg" "$YQ_BIN" -r '.packages[] | select(.name == strenv(YQ_PACKAGE_NAME)) | .paths[]' "$file" 2>/dev/null
 }
 
 yaml_lock_write_entry() {
@@ -198,7 +210,9 @@ yaml_lock_write_entry() {
   local source="$3"
   local type="$4"
   local sha="$5"
-  shift 5
+  local source_repo="$6"
+  local source_path="$7"
+  shift 7
   local paths=("$@")
 
   require_yq
@@ -208,8 +222,8 @@ yaml_lock_write_entry() {
   tmp="$(mktemp)"
   cp "$file" "$tmp"
 
-  "$YQ_BIN" -y -i --arg n "$pkg" --arg s "$source" --arg t "$type" --arg h "$sha" \
-    '.packages |= map(select(.name != $n))' "$tmp"
+  YQ_PACKAGE_NAME="$pkg" "$YQ_BIN" "${YQ_OUTPUT_ARGS[@]}" -i \
+    '.packages |= map(select(.name != strenv(YQ_PACKAGE_NAME)))' "$tmp"
 
   local paths_json='['
   local first=1
@@ -226,9 +240,10 @@ yaml_lock_write_entry() {
   done
   paths_json+=']'
 
-  "$YQ_BIN" -y -i --arg n "$pkg" --arg s "$source" --arg t "$type" --arg h "$sha" \
-    --argjson paths "$paths_json" \
-    '.packages += [{"name": $n, "source": $s, "type": $t, "sha": $h, "paths": $paths}]' "$tmp"
+  YQ_PACKAGE_NAME="$pkg" YQ_SOURCE_NAME="$source" YQ_PACKAGE_TYPE="$type" \
+    YQ_PACKAGE_SHA="$sha" YQ_SOURCE_REPO="$source_repo" YQ_SOURCE_PATH="$source_path" \
+    YQ_PACKAGE_PATHS="$paths_json" "$YQ_BIN" "${YQ_OUTPUT_ARGS[@]}" -i \
+    '.packages += [{"name": strenv(YQ_PACKAGE_NAME), "source": strenv(YQ_SOURCE_NAME), "source_repo": strenv(YQ_SOURCE_REPO), "source_path": strenv(YQ_SOURCE_PATH), "type": strenv(YQ_PACKAGE_TYPE), "sha": strenv(YQ_PACKAGE_SHA), "paths": (strenv(YQ_PACKAGE_PATHS) | fromjson)}]' "$tmp"
 
   mv "$tmp" "$file"
 }
@@ -238,8 +253,8 @@ yaml_lock_remove_entry() {
   local pkg="$2"
   require_yq
   [ -f "$file" ] || return 0
-  "$YQ_BIN" -y -i --arg n "$pkg" \
-    '.packages |= map(select(.name != $n))' "$file"
+  YQ_PACKAGE_NAME="$pkg" "$YQ_BIN" "${YQ_OUTPUT_ARGS[@]}" -i \
+    '.packages |= map(select(.name != strenv(YQ_PACKAGE_NAME)))' "$file"
 }
 
 yaml_lock_mark_forked() {
@@ -247,6 +262,6 @@ yaml_lock_mark_forked() {
   local pkg="$2"
   require_yq
   [ -f "$file" ] || return 1
-  "$YQ_BIN" -y -i --arg n "$pkg" \
-    '.packages |= map(if .name == $n then .forked = true else . end)' "$file"
+  YQ_PACKAGE_NAME="$pkg" "$YQ_BIN" "${YQ_OUTPUT_ARGS[@]}" -i \
+    '.packages |= map((select(.name == strenv(YQ_PACKAGE_NAME)) | . + {"forked": true}) // .)' "$file"
 }

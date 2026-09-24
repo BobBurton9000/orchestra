@@ -117,6 +117,18 @@ If Orchestra is installed in a project, the equivalent command is:
    git push
    ```
 
+   If you installed one of your source packages into another project and edited
+   it there, use Orchestra to publish the tracked package files back instead of
+   copying them manually:
+   ```bash
+   orchestra fork <package>
+   "$EDITOR" .agents/orchestra/...
+   orchestra push <package>
+   ```
+   This requires push permission for the original GitHub repository. The
+   default mode creates a branch and pull request; use `--direct` only when you
+   want to update the repository's default branch immediately.
+
 5. **Tell others to add your source**:
    ```bash
    orchestra source add <your-github-username>/<your-repo>

@@ -135,6 +135,7 @@ OpenCode discovers all `.opencode/agents/*.md` files; Copilot discovers all `.gi
 .orchestra/orchestra.sh upgrade [pkg]                  # upgrade installed package(s) to current HEAD
 .orchestra/orchestra.sh remove <pkg>                   # remove a package (files + lockfile entry)
 .orchestra/orchestra.sh fork <pkg>                     # detach a package for local edits
+.orchestra/orchestra.sh push <pkg> [options]            # publish forked edits to the source repo
 ```
 
 ### Sources
@@ -222,7 +223,7 @@ local read-only check; it does not refresh source indexes or modify state.
 
 - Fetches the package at the source's current HEAD SHA via `gh api`
 - For agents: source files have no `model:` line. Orchestra injects the model from `config.yml` into the installed file's frontmatter. If `config.yml` is missing, you are prompted once and the choice is saved.
-- Records the package, source, type, SHA, and installed file paths in `pkg.lock.yaml`
+- Records the package, source, source repository/path, type, SHA, and installed file paths in `pkg.lock.yaml`
 - Asks before overwriting an existing file (set `ORCHESTRA_YES=1` to auto-confirm)
 
 ### Update + upgrade
@@ -247,10 +248,30 @@ remain recorded for provenance, while both targeted and bulk `upgrade` leave
 the fork unchanged. Edit the files under `.agents/orchestra/` directly, then
 run the existing `export` command when platform output needs refreshing.
 
-Forked packages remain managed by `status` and can still be removed. Running
-`install` for the same package explicitly reattaches it to the source.
+Forked packages remain managed by `status` and can still be removed. Running `install` for the same package explicitly reattaches it to the source.
+
+### Push
+
+Publish edits from a forked package back to its original GitHub repository:
+
+```bash
+.orchestra/orchestra.sh fork writing-gherkin
+"$EDITOR" .agents/orchestra/skills/writing-gherkin/...
+.orchestra/orchestra.sh push writing-gherkin
+```
+
+`push` requires GitHub push permission for the recorded source repository. It
+clones the repository into a temporary checkout, verifies that the source files
+have not changed since installation, strips the user-specific `model:` field
+from agents, and creates a branch and pull request. Use `--direct` to push to
+the source repository's default branch, or `--dry-run` to inspect the staged
+diff without committing or pushing. Existing package files must remain tracked;
+new or deleted files are rejected for now. Pull-request pushes leave the package
+forked until the change is merged; direct pushes update its lockfile SHA and
+reattach it to the source.
 
 ### Subscribing to a source
+
 
 Adding a source makes its packages available for explicit installation. It does not automatically install the source's existing packages or future packages.
 
@@ -419,13 +440,14 @@ Package *choice* stays personal. Your `sources.yaml`, `pkg.lock.yaml`, and `conf
 │       ├── cli.sh              # Subcommand routing + usage
 │       ├── pkg-common.sh       # Shared helpers, constants, lockfile paths
 │       ├── yaml-helpers.sh     # YAML read/write helpers (yq-backed)
-│       ├── ghutil.sh           # gh api wrappers (file/dir/sha/manifest fetch)
+│       ├── ghutil.sh           # GitHub auth, repository, and manifest helpers
 │       ├── sources.sh          # sources.yaml parsing + add/remove/list
 │       ├── index.sh            # Manifest fetch + cache via gh api
 │       ├── install.sh          # install + lockfile + model prompt logic
 │       ├── upgrade.sh          # upgrade installed packages to current HEAD
 │       ├── uninstall.sh        # remove (deletes files + lockfile entry)
 │       ├── fork.sh              # detach an installed package from its source
+│       ├── push.sh              # publish forked package edits to GitHub
 │       ├── list.sh             # list/search/info query commands
 │       ├── status.sh           # package lockfile/filesystem audit
 │       ├── manifest.sh         # generate-manifest for source authors
@@ -450,7 +472,7 @@ Personal Orchestra state (all gitignored — your choices, not your team's):
 ```
 .orchestra/
 ├── sources.yaml                # Your configured sources and subscription baselines
-├── pkg.lock.yaml               # Installed package ledger (package, source, SHA, paths, fork state)
+├── pkg.lock.yaml               # Installed package ledger (source provenance, SHA, paths, fork state)
 ├── pkg-cache/                  # Fetched manifests + HEAD SHAs
 ├── config.yml                  # Default model choices for agents
 └── .manifest                   # Last export output list

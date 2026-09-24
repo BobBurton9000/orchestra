@@ -84,6 +84,9 @@ run_in_project() {
       ORCHESTRA_YES="${ORCHESTRA_YES:-}" \
       FIXTURE_SOURCE_DIR="$FIXTURE_SOURCE_DIR" \
       FIXTURE_SHA="$FIXTURE_SHA" \
+      GH_STUB_REPO_DIR="${GH_STUB_REPO_DIR:-}" \
+      GH_STUB_PUSH_PERMISSION="${GH_STUB_PUSH_PERMISSION:-true}" \
+      GH_STUB_PR_URL="${GH_STUB_PR_URL:-}" \
       .orchestra/orchestra.sh "$@"
   )
 }
@@ -99,6 +102,9 @@ run_in_nested_project() {
       ORCHESTRA_YES="${ORCHESTRA_YES:-}" \
       FIXTURE_SOURCE_DIR="$FIXTURE_SOURCE_DIR" \
       FIXTURE_SHA="$FIXTURE_SHA" \
+      GH_STUB_REPO_DIR="${GH_STUB_REPO_DIR:-}" \
+      GH_STUB_PUSH_PERMISSION="${GH_STUB_PUSH_PERMISSION:-true}" \
+      GH_STUB_PR_URL="${GH_STUB_PR_URL:-}" \
       "$tmp/.orchestra/orchestra.sh" "$@"
   )
 }
@@ -184,6 +190,28 @@ setup_cached_source() {
   cp "$FIXTURE_SOURCE_DIR/orchestra-source.yaml" "$tmp/.orchestra/pkg-cache/core/manifest.yaml"
 }
 
+setup_push_repository() {
+  local tmp="$1"
+  local source_checkout="$tmp/push-source"
+  local remote="$tmp/push-source.git"
+
+  git init --bare -q "$remote"
+  mkdir -p "$source_checkout"
+  cp -R "$FIXTURE_SOURCE_DIR/." "$source_checkout/"
+  git -C "$source_checkout" init -q
+  git -C "$source_checkout" config user.name "Orchestra Test"
+  git -C "$source_checkout" config user.email "orchestra-test@example.com"
+  git -C "$source_checkout" add -A
+  git -C "$source_checkout" commit -qm "Initial source"
+  git -C "$source_checkout" branch -M main
+  git -C "$source_checkout" remote add origin "$remote"
+  git -C "$source_checkout" push -q -u origin main
+  git --git-dir="$remote" symbolic-ref HEAD refs/heads/main
+
+  GH_STUB_REPO_DIR="$remote"
+  FIXTURE_SHA="$(git -C "$source_checkout" rev-parse HEAD)"
+}
+
 setup_test() {
   local tmp
   tmp="$(setup_test_project)"
@@ -210,6 +238,7 @@ test_help_version() {
   assert_contains "$out" "status" "help mentions status"
   assert_contains "$out" "subscribe" "help mentions source subscriptions"
   assert_contains "$out" "fork" "help mentions fork"
+  assert_contains "$out" "push" "help mentions push"
 }
 
 # ---------------------------------------------------------------------------
@@ -268,6 +297,18 @@ test_completion_from_nested_directory() {
     _orchestra_completion
     printf '%s\n' "${COMPREPLY[@]}"
 
+    COMP_WORDS=(orchestra push "")
+    COMP_CWORD=2
+    COMPREPLY=()
+    _orchestra_completion
+    printf '%s\n' "${COMPREPLY[@]}"
+
+    COMP_WORDS=(orchestra push demo-agent "--")
+    COMP_CWORD=3
+    COMPREPLY=()
+    _orchestra_completion
+    printf '%s\n' "${COMPREPLY[@]}"
+
     COMP_WORDS=(orchestra export p)
     COMP_CWORD=2
     COMPREPLY=()
@@ -282,6 +323,7 @@ test_completion_from_nested_directory() {
   )"
 
   assert_contains "$out" "demo-agent" "completion finds packages from nested directory"
+  assert_contains "$out" "--dry-run" "completion finds push flags"
   assert_contains "$out" "pi" "export completion offers Pi"
   if [[ "$out" == *"convert:pi"* ]]; then
     FAIL=$((FAIL + 1))
@@ -711,6 +753,182 @@ test_fork_detaches_packages() {
   assert_contains "$list" "(forked)" "list identifies forked package"
   status="$(run_in_project "$tmp" status)"
   assert_contains "$status" "demo-skill (skill, core (forked)" "status identifies forked package"
+}
+
+test_push_agent_pull_request() {
+  local tmp
+  tmp="$(setup_test)"
+  local fixture_source_before="$FIXTURE_SOURCE_DIR"
+  local fixture_sha_before="$FIXTURE_SHA"
+  local repo_before="${GH_STUB_REPO_DIR:-}"
+  local permission_before="${GH_STUB_PUSH_PERMISSION:-true}"
+  local pr_before="${GH_STUB_PR_URL:-}"
+  trap 'FIXTURE_SOURCE_DIR="$fixture_source_before"; FIXTURE_SHA="$fixture_sha_before"; GH_STUB_REPO_DIR="$repo_before"; GH_STUB_PUSH_PERMISSION="$permission_before"; GH_STUB_PR_URL="$pr_before"; teardown_test_project "$tmp"' RETURN
+
+  setup_push_repository "$tmp"
+  setup_cached_source "$tmp"
+  printf 'orchestrator: gpt-4o\nsubagent: claude-sonnet\n' > "$tmp/.orchestra/config.yml"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-agent >/dev/null 2>&1
+  printf '\nLocal agent update.\n' >> "$tmp/.agents/orchestra/agents/demo-agent.agent.md"
+  ORCHESTRA_YES=1 run_in_project "$tmp" fork demo-agent >/dev/null 2>&1
+
+  local out
+  out="$(run_in_project "$tmp" push demo-agent --branch orchestra/test-agent 2>&1)"
+  assert_contains "$out" "Pull request: https://github.com/test/source/pull/1" "push reports created pull request"
+
+  local remote_agent
+  remote_agent="$(git --git-dir="$GH_STUB_REPO_DIR" show orchestra/test-agent:agents/demo-agent.agent.md)"
+  assert_contains "$remote_agent" "Local agent update." "push copies local agent edits to source branch"
+  if printf '%s\n' "$remote_agent" | grep -q '^model:'; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: push agent -- source branch still contains injected model")
+  else
+    PASS=$((PASS + 1))
+  fi
+
+  assert_eq "$(yq -r '.packages[] | select(.name=="demo-agent") | .source_repo' "$tmp/.orchestra/pkg.lock.yaml")" "test/source" "lockfile records source repository"
+  assert_eq "$(yq -r '.packages[] | select(.name=="demo-agent") | .source_path' "$tmp/.orchestra/pkg.lock.yaml")" "agents/demo-agent.agent.md" "lockfile records source path"
+  assert_eq "$(yq -r '.packages[] | select(.name=="demo-agent") | (.forked // false)' "$tmp/.orchestra/pkg.lock.yaml")" "true" "pull request leaves package forked"
+}
+
+test_push_skill_pull_request() {
+  local tmp
+  tmp="$(setup_test)"
+  local fixture_source_before="$FIXTURE_SOURCE_DIR"
+  local fixture_sha_before="$FIXTURE_SHA"
+  local repo_before="${GH_STUB_REPO_DIR:-}"
+  local permission_before="${GH_STUB_PUSH_PERMISSION:-true}"
+  local pr_before="${GH_STUB_PR_URL:-}"
+  trap 'FIXTURE_SOURCE_DIR="$fixture_source_before"; FIXTURE_SHA="$fixture_sha_before"; GH_STUB_REPO_DIR="$repo_before"; GH_STUB_PUSH_PERMISSION="$permission_before"; GH_STUB_PR_URL="$pr_before"; teardown_test_project "$tmp"' RETURN
+
+  setup_push_repository "$tmp"
+  setup_cached_source "$tmp"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
+  printf '\nLocal skill update.\n' >> "$tmp/.agents/orchestra/skills/demo-skill/helper.md"
+  ORCHESTRA_YES=1 run_in_project "$tmp" fork demo-skill >/dev/null 2>&1
+
+  run_in_project "$tmp" push demo-skill --branch orchestra/test-skill >/dev/null 2>&1
+
+  local remote_helper remote_skill
+  remote_helper="$(git --git-dir="$GH_STUB_REPO_DIR" show orchestra/test-skill:skills/demo-skill/helper.md)"
+  remote_skill="$(git --git-dir="$GH_STUB_REPO_DIR" show orchestra/test-skill:skills/demo-skill/SKILL.md)"
+  assert_contains "$remote_helper" "Local skill update." "push copies multi-file skill edits"
+  assert_contains "$remote_skill" "Demo Skill" "push preserves the skill entrypoint"
+}
+
+test_push_direct_updates_lock() {
+  local tmp
+  tmp="$(setup_test)"
+  local fixture_source_before="$FIXTURE_SOURCE_DIR"
+  local fixture_sha_before="$FIXTURE_SHA"
+  local repo_before="${GH_STUB_REPO_DIR:-}"
+  local permission_before="${GH_STUB_PUSH_PERMISSION:-true}"
+  local pr_before="${GH_STUB_PR_URL:-}"
+  trap 'FIXTURE_SOURCE_DIR="$fixture_source_before"; FIXTURE_SHA="$fixture_sha_before"; GH_STUB_REPO_DIR="$repo_before"; GH_STUB_PUSH_PERMISSION="$permission_before"; GH_STUB_PR_URL="$pr_before"; teardown_test_project "$tmp"' RETURN
+
+  setup_push_repository "$tmp"
+  setup_cached_source "$tmp"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-prompt >/dev/null 2>&1
+  printf '\nLocal direct update.\n' >> "$tmp/.agents/orchestra/prompts/demo-prompt.prompt.md"
+  ORCHESTRA_YES=1 run_in_project "$tmp" fork demo-prompt >/dev/null 2>&1
+
+  local out
+  out="$(run_in_project "$tmp" push demo-prompt --direct 2>&1)"
+  assert_contains "$out" "Pushed 'demo-prompt' directly" "direct push reports success"
+
+  local direct_sha locked_sha forked remote_prompt
+  direct_sha="$(git --git-dir="$GH_STUB_REPO_DIR" rev-parse refs/heads/main)"
+  locked_sha="$(yq -r '.packages[] | select(.name=="demo-prompt") | .sha' "$tmp/.orchestra/pkg.lock.yaml")"
+  forked="$(yq -r '.packages[] | select(.name=="demo-prompt") | (.forked // false)' "$tmp/.orchestra/pkg.lock.yaml")"
+  remote_prompt="$(git --git-dir="$GH_STUB_REPO_DIR" show main:prompts/demo-prompt.prompt.md)"
+  assert_eq "$locked_sha" "$direct_sha" "direct push updates the lockfile SHA"
+  assert_eq "$forked" "false" "direct push reattaches the package"
+  assert_contains "$remote_prompt" "Local direct update." "direct push updates the default branch"
+}
+
+test_push_requires_source_permission() {
+  local tmp
+  tmp="$(setup_test)"
+  local fixture_source_before="$FIXTURE_SOURCE_DIR"
+  local fixture_sha_before="$FIXTURE_SHA"
+  local repo_before="${GH_STUB_REPO_DIR:-}"
+  local permission_before="${GH_STUB_PUSH_PERMISSION:-true}"
+  local pr_before="${GH_STUB_PR_URL:-}"
+  trap 'FIXTURE_SOURCE_DIR="$fixture_source_before"; FIXTURE_SHA="$fixture_sha_before"; GH_STUB_REPO_DIR="$repo_before"; GH_STUB_PUSH_PERMISSION="$permission_before"; GH_STUB_PR_URL="$pr_before"; teardown_test_project "$tmp"' RETURN
+
+  setup_push_repository "$tmp"
+  setup_cached_source "$tmp"
+  GH_STUB_PUSH_PERMISSION=false
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-prompt >/dev/null 2>&1
+  printf '\nLocal permission test.\n' >> "$tmp/.agents/orchestra/prompts/demo-prompt.prompt.md"
+  ORCHESTRA_YES=1 run_in_project "$tmp" fork demo-prompt >/dev/null 2>&1
+
+  local out rc=0
+  out="$(run_in_project "$tmp" push demo-prompt 2>&1)" || rc=$?
+  assert_eq "$rc" "1" "push without source permission exits non-zero"
+  assert_contains "$out" "does not have push permission" "push explains missing source permission"
+}
+
+test_push_dry_run_does_not_publish() {
+  local tmp
+  tmp="$(setup_test)"
+  local fixture_source_before="$FIXTURE_SOURCE_DIR"
+  local fixture_sha_before="$FIXTURE_SHA"
+  local repo_before="${GH_STUB_REPO_DIR:-}"
+  local permission_before="${GH_STUB_PUSH_PERMISSION:-true}"
+  local pr_before="${GH_STUB_PR_URL:-}"
+  trap 'FIXTURE_SOURCE_DIR="$fixture_source_before"; FIXTURE_SHA="$fixture_sha_before"; GH_STUB_REPO_DIR="$repo_before"; GH_STUB_PUSH_PERMISSION="$permission_before"; GH_STUB_PR_URL="$pr_before"; teardown_test_project "$tmp"' RETURN
+
+  setup_push_repository "$tmp"
+  setup_cached_source "$tmp"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-prompt >/dev/null 2>&1
+  printf '\nLocal dry run.\n' >> "$tmp/.agents/orchestra/prompts/demo-prompt.prompt.md"
+  ORCHESTRA_YES=1 run_in_project "$tmp" fork demo-prompt >/dev/null 2>&1
+
+  local out
+  out="$(run_in_project "$tmp" push demo-prompt --dry-run --branch orchestra/dry-run 2>&1)"
+  assert_contains "$out" "Dry run for 'demo-prompt'" "dry run reports the package"
+  assert_contains "$out" "Local dry run." "dry run shows the staged edit"
+  if git --git-dir="$GH_STUB_REPO_DIR" show-ref --verify --quiet refs/heads/orchestra/dry-run; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: dry run -- remote branch was created")
+  else
+    PASS=$((PASS + 1))
+  fi
+}
+
+test_push_rejects_source_conflict() {
+  local tmp
+  tmp="$(setup_test)"
+  local fixture_source_before="$FIXTURE_SOURCE_DIR"
+  local fixture_sha_before="$FIXTURE_SHA"
+  local repo_before="${GH_STUB_REPO_DIR:-}"
+  local permission_before="${GH_STUB_PUSH_PERMISSION:-true}"
+  local pr_before="${GH_STUB_PR_URL:-}"
+  trap 'FIXTURE_SOURCE_DIR="$fixture_source_before"; FIXTURE_SHA="$fixture_sha_before"; GH_STUB_REPO_DIR="$repo_before"; GH_STUB_PUSH_PERMISSION="$permission_before"; GH_STUB_PR_URL="$pr_before"; teardown_test_project "$tmp"' RETURN
+
+  setup_push_repository "$tmp"
+  setup_cached_source "$tmp"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-prompt >/dev/null 2>&1
+  printf '\nLocal conflict test.\n' >> "$tmp/.agents/orchestra/prompts/demo-prompt.prompt.md"
+  ORCHESTRA_YES=1 run_in_project "$tmp" fork demo-prompt >/dev/null 2>&1
+
+  printf '\nRemote conflict.\n' >> "$tmp/push-source/prompts/demo-prompt.prompt.md"
+  git -C "$tmp/push-source" add prompts/demo-prompt.prompt.md
+  git -C "$tmp/push-source" commit -qm "Remote update"
+  git -C "$tmp/push-source" push -q origin main
+  FIXTURE_SHA="$(git -C "$tmp/push-source" rev-parse HEAD)"
+
+  local out rc=0
+  out="$(run_in_project "$tmp" push demo-prompt --branch orchestra/conflict 2>&1)" || rc=$?
+  assert_eq "$rc" "1" "push with a source conflict exits non-zero"
+  assert_contains "$out" "changed since package" "push explains source conflict"
 }
 
 # ---------------------------------------------------------------------------
@@ -1268,6 +1486,12 @@ main() {
     test_status_without_lockfile
     test_remove
     test_fork_detaches_packages
+    test_push_agent_pull_request
+    test_push_skill_pull_request
+    test_push_direct_updates_lock
+    test_push_requires_source_permission
+    test_push_dry_run_does_not_publish
+    test_push_rejects_source_conflict
     test_fork_remove_and_source_remove
     test_upgrade_sha_change
     test_upgrade_uptodate

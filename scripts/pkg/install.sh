@@ -14,6 +14,8 @@ lock_read_field() {
     4) field_name="sha" ;;
     5) field_name="paths" ;;
     6) field_name="forked" ;;
+    7) field_name="source_repo" ;;
+    8) field_name="source_path" ;;
     *) return 1 ;;
   esac
   local val
@@ -33,6 +35,8 @@ lock_get_type() { lock_read_field "$1" 3; }
 lock_get_sha() { lock_read_field "$1" 4; }
 lock_get_paths() { lock_read_field "$1" 5; }
 lock_get_forked() { lock_read_field "$1" 6; }
+lock_get_source_repo() { lock_read_field "$1" 7; }
+lock_get_source_path() { lock_read_field "$1" 8; }
 
 lock_is_forked() {
   local pkg="$1"
@@ -52,7 +56,9 @@ lock_write_entry() {
   local source="$2"
   local type="$3"
   local sha="$4"
-  shift 4
+  local source_repo="$5"
+  local source_path="$6"
+  shift 6
   local paths=("$@")
 
   if [ ! -f "$PKG_LOCK_FILE" ]; then
@@ -73,7 +79,7 @@ lock_write_entry() {
     paths_array=("")
   fi
 
-  yaml_lock_write_entry "$PKG_LOCK_FILE" "$pkg" "$source" "$type" "$sha" "${paths_array[@]}"
+  yaml_lock_write_entry "$PKG_LOCK_FILE" "$pkg" "$source" "$type" "$sha" "$source_repo" "$source_path" "${paths_array[@]}"
 }
 
 config_get_default_model() {
@@ -422,7 +428,7 @@ install_one_package() {
     installed_paths=("")
   fi
 
-  lock_write_entry "$pkg_name" "$source_name" "$pkg_type" "$sha" "${installed_paths[@]}"
+  lock_write_entry "$pkg_name" "$source_name" "$pkg_type" "$sha" "$source_repo" "$pkg_path" "${installed_paths[@]}"
   log_info "Locked $pkg_name @ ${sha:0:12}"
 }
 

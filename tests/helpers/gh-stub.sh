@@ -11,6 +11,25 @@
 
 set -eo pipefail
 
+if [ "${1:-}" = "repo" ] && [ "${2:-}" = "clone" ]; then
+  destination="${4:-}"
+  [ -n "${GH_STUB_REPO_DIR:-}" ] || {
+    echo "gh stub: GH_STUB_REPO_DIR is required for repo clone" >&2
+    exit 1
+  }
+  [ -n "$destination" ] || {
+    echo "gh stub: repo clone destination is required" >&2
+    exit 1
+  }
+  git clone --quiet "$GH_STUB_REPO_DIR" "$destination"
+  exit 0
+fi
+
+if [ "${1:-}" = "pr" ] && [ "${2:-}" = "create" ]; then
+  echo "${GH_STUB_PR_URL:-https://github.com/test/source/pull/1}"
+  exit 0
+fi
+
 if [ "${1:-}" = "auth" ]; then
   if [ "${2:-}" = "status" ]; then
     echo "github.com"
@@ -95,7 +114,11 @@ if [ -z "$rest" ]; then
     echo "main"
     exit 0
   fi
-  echo "{\"default_branch\":\"main\"}"
+  if [ "$jq_filter" = ".permissions.push // false" ]; then
+    echo "${GH_STUB_PUSH_PERMISSION:-true}"
+    exit 0
+  fi
+  echo "{\"default_branch\":\"main\",\"permissions\":{\"push\":${GH_STUB_PUSH_PERMISSION:-true}}}"
   exit 0
 fi
 

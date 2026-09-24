@@ -56,3 +56,23 @@ gh_fetch_manifest() {
   local ref="${2:-}"
   gh_fetch_file_raw "$owner_repo" "orchestra-source.yaml" "$ref"
 }
+
+gh_repo_push_permission() {
+  local owner_repo="$1"
+  "$GH_BIN" api "repos/${owner_repo}" --jq '.permissions.push // false' 2>/dev/null | tr -d '\r\n'
+}
+
+gh_clone_repo() {
+  local owner_repo="$1"
+  local destination="$2"
+  "$GH_BIN" repo clone "$owner_repo" "$destination"
+}
+
+gh_create_pull_request() {
+  local owner_repo="$1"
+  local head="$2"
+  local base="$3"
+  local title="$4"
+  local body="$5"
+  "$GH_BIN" pr create --repo "$owner_repo" --head "$head" --base "$base" --title "$title" --body "$body"
+}

@@ -18,7 +18,7 @@ _orchestra_completion() {
   local cur prev words cword
   _init_completion -n : || return
 
-  local cmds="install update upgrade remove fork source list search info status export convert generate-manifest help --version"
+  local cmds="install update upgrade remove fork push source list search info status export convert generate-manifest help --version"
 
   if [ "$cword" -eq 1 ]; then
     COMPREPLY=( $(compgen -W "$cmds" -- "$cur") )
@@ -75,7 +75,11 @@ _orchestra_completion() {
         return 0
       fi
       ;;
-    remove|fork|info|upgrade)
+    remove|fork|info|upgrade|push)
+      if [ "$sub" = "push" ] && [ "$cword" -eq 2 ] && [[ "$cur" == --* ]]; then
+        COMPREPLY=( $(compgen -W "--dry-run --branch --direct" -- "$cur") )
+        return 0
+      fi
       if [ "$cword" -eq 2 ]; then
         local project_root lock_file
         project_root="$(_orchestra_completion_project_root)" || return 0
@@ -84,6 +88,9 @@ _orchestra_completion() {
         local pkgs
         pkgs="$(yq -r '.packages[] | .name' "$lock_file" 2>/dev/null)"
         COMPREPLY=( $(compgen -W "$pkgs" -- "$cur") )
+      fi
+      if [ "$sub" = "push" ] && [ "$cword" -ge 3 ] && [[ "$cur" == --* ]]; then
+        COMPREPLY=( $(compgen -W "--dry-run --branch --direct" -- "$cur") )
       fi
       ;;
     help)

@@ -716,6 +716,35 @@ test_remove() {
 }
 
 # ---------------------------------------------------------------------------
+# Test: remove reconciles a lockfile entry when its file is already missing
+# ---------------------------------------------------------------------------
+test_remove_missing_file() {
+  local tmp out
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  cat > "$tmp/.orchestra/pkg.lock.yaml" <<'EOF'
+packages:
+  - name: stale-agent
+    source: core
+    type: agent
+    sha: abc123def456789012345678901234567890abcd
+    paths:
+      - agents/stale-agent.agent.md
+EOF
+
+  out="$(ORCHESTRA_YES=1 run_in_project "$tmp" remove stale-agent 2>&1)"
+  assert_contains "$out" "Removed 'stale-agent' from source 'core' (0 file(s) deleted, 1 already absent)." "remove reports an already-missing package file"
+
+  if yq -e '.packages[] | select(.name=="stale-agent")' "$tmp/.orchestra/pkg.lock.yaml" >/dev/null 2>&1; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: remove -- stale-agent remains in lockfile")
+  else
+    PASS=$((PASS + 1))
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Test: fork detaches agent, prompt, and skill packages from upgrades
 # ---------------------------------------------------------------------------
 test_fork_detaches_packages() {
@@ -1585,6 +1614,7 @@ main() {
     test_status_reports_missing_and_untracked
     test_status_without_lockfile
     test_remove
+    test_remove_missing_file
     test_fork_detaches_packages
     test_push_agent_pull_request
     test_push_skill_pull_request

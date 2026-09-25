@@ -268,7 +268,15 @@ export_apply_staged_outputs() {
 
 export_cmd() {
   local platform="${1:-}"
-  [ -n "$platform" ] || die "Usage: orchestra export copilot|opencode|pi"
+  local category="${2:-}"
+  local usage="Usage: orchestra export copilot|opencode|pi [agents|prompts|skills]"
+  [ -n "$platform" ] || die "$usage"
+  [ "$#" -le 2 ] || die "$usage"
+
+  case "$category" in
+    ""|agents|prompts|skills) ;;
+    *) die "Unsupported export type: $category (use agents, prompts, or skills)" ;;
+  esac
 
   local project_root="$ORCHESTRA_PROJECT_ROOT"
   local orchestra_dir="$project_root/$ORCHESTRA_DIR"
@@ -277,26 +285,38 @@ export_cmd() {
   local defs_dir="$project_root/$AGENTS_ORCHESTRA_DIR"
 
   local agents_out prompts_out
-  local managed_roots=()
+  local all_managed_roots=()
   case "$platform" in
     copilot)
       agents_out=".github/agents"
       prompts_out=".github/prompts"
-      managed_roots=(".github/agents" ".github/prompts" ".agents/skills")
+      all_managed_roots=(".github/agents" ".github/prompts" ".agents/skills")
       ;;
     opencode)
       agents_out=".opencode/agents"
       prompts_out=".opencode/commands"
-      managed_roots=(".opencode/agents" ".opencode/commands" ".agents/skills")
+      all_managed_roots=(".opencode/agents" ".opencode/commands" ".agents/skills")
       ;;
     pi)
       agents_out=""
       prompts_out=".pi/prompts"
-      managed_roots=(".pi/prompts" ".agents/skills")
+      all_managed_roots=(".pi/prompts" ".agents/skills")
       ;;
     *)
       die "Unsupported platform: $platform (use copilot, opencode, or pi)"
       ;;
+  esac
+
+  if [ "$platform" = "pi" ] && [ "$category" = "agents" ]; then
+    die "Pi does not support agent exports. Use copilot or opencode."
+  fi
+
+  local managed_roots=()
+  case "$category" in
+    "") managed_roots=("${all_managed_roots[@]}") ;;
+    agents) managed_roots=("$agents_out") ;;
+    prompts) managed_roots=("$prompts_out") ;;
+    skills) managed_roots=(".agents/skills") ;;
   esac
 
   if [ ! -d "$defs_dir" ]; then
@@ -310,14 +330,31 @@ export_cmd() {
   _export_count=0
   _export_manifest=""
 
-  echo "Exporting for $platform..."
+  if [ -n "$category" ]; then
+    echo "Exporting $category for $platform..."
+  else
+    echo "Exporting for $platform..."
+  fi
 
   _export_cleanup() { rm -rf "$orchestra_temp"; }
   trap _export_cleanup EXIT
 
-  export_process_agents "$platform" "$project_root" "$defs_dir" "$orchestra_temp" "$compile_script" "$agents_out"
-  export_process_prompts "$platform" "$project_root" "$defs_dir" "$orchestra_temp" "$compile_script" "$prompts_out"
-  export_process_skills "$project_root" "$defs_dir" "$orchestra_temp" "$compile_script"
+  case "$category" in
+    "")
+      export_process_agents "$platform" "$project_root" "$defs_dir" "$orchestra_temp" "$compile_script" "$agents_out"
+      export_process_prompts "$platform" "$project_root" "$defs_dir" "$orchestra_temp" "$compile_script" "$prompts_out"
+      export_process_skills "$project_root" "$defs_dir" "$orchestra_temp" "$compile_script"
+      ;;
+    agents)
+      export_process_agents "$platform" "$project_root" "$defs_dir" "$orchestra_temp" "$compile_script" "$agents_out"
+      ;;
+    prompts)
+      export_process_prompts "$platform" "$project_root" "$defs_dir" "$orchestra_temp" "$compile_script" "$prompts_out"
+      ;;
+    skills)
+      export_process_skills "$project_root" "$defs_dir" "$orchestra_temp" "$compile_script"
+      ;;
+  esac
   export_apply_staged_outputs "$project_root" "$_export_stage_root" "${managed_roots[@]}"
 
   local manifest_file="$orchestra_dir/.manifest"
@@ -329,6 +366,9 @@ export_cmd() {
   echo ""
   echo "Export complete."
   echo "  Platform: $platform"
+  if [ -n "$category" ]; then
+    echo "  Type: $category"
+  fi
   echo "  Compiled: $_export_count files"
   echo "  Manifest: $ORCHESTRA_DIR/.manifest"
 }

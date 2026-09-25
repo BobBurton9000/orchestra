@@ -30,7 +30,7 @@ permission:                       # optional — preserved for OpenCode, strippe
 - `primary` — visible to the user (maps to OpenCode `mode: primary`; Copilot: no `user-invocable` line)
 - `subagent` — invoked only by the orchestrator (maps to OpenCode `mode: subagent`; Copilot: `user-invocable: false`)
 
-When you run `export copilot`, `export opencode`, or `export pi`, Orchestra compiles the applicable definitions (resolving `#include` directives and extracting sections), transforms agent frontmatter, and emits the prompt metadata supported by each target. Copilot prompt frontmatter is copied verbatim:
+When you run `export copilot`, `export opencode`, or `export pi`, Orchestra compiles the applicable definitions (resolving `#include` directives and extracting sections), transforms agent frontmatter, and emits the prompt metadata supported by each target. Add `agents`, `prompts`, or `skills` to export only that type. Copilot prompt frontmatter is copied verbatim:
 
 | Canonical | OpenCode | Copilot | Pi |
 |-----------|----------|---------|----|
@@ -163,7 +163,7 @@ OpenCode discovers all `.opencode/agents/*.md` files; Copilot discovers all `.gi
 ### Platform compatibility
 
 ```bash
-.orchestra/orchestra.sh export copilot|opencode|pi     # compile supported definitions → platform output
+.orchestra/orchestra.sh export copilot|opencode|pi [agents|prompts|skills] # compile selected definitions
 .orchestra/orchestra.sh convert copilot|opencode [name] # convert existing platform agents → Orchestra definitions
 ```
 
@@ -305,21 +305,26 @@ Deletes every file recorded in the lockfile entry, then removes the lockfile ent
 ### Export
 
 ```bash
-.orchestra/orchestra.sh export copilot    # → .github/agents/ + .github/prompts/ + .agents/skills/
-.orchestra/orchestra.sh export opencode   # → .opencode/agents/ + .opencode/commands/ + .agents/skills/
-.orchestra/orchestra.sh export pi         # → .pi/prompts/ + .agents/skills/ (no agents)
+.orchestra/orchestra.sh export copilot                # → .github/agents/ + .github/prompts/ + .agents/skills/
+.orchestra/orchestra.sh export copilot prompts        # only prompts → .github/prompts/
+.orchestra/orchestra.sh export copilot agents         # only agents → .github/agents/
+.orchestra/orchestra.sh export opencode skills        # only skills → .agents/skills/
+.orchestra/orchestra.sh export pi                     # → .pi/prompts/ + .agents/skills/ (no agents)
+.orchestra/orchestra.sh export pi prompts             # only prompts → .pi/prompts/
 ```
 
+With no type selector, export processes every type supported by the platform. Add one selector—`agents`, `prompts`, or `skills`—to export only that type. For example, Pi supports prompts and skills, but not agents.
+
 What happens:
-1. Every applicable definition in `.agents/orchestra/` is compiled (`#include` directives resolved, headings extracted)
+1. Applicable definitions in `.agents/orchestra/` are compiled (`#include` directives resolved, headings extracted); a type selector limits this to that type
 2. Compiled output lands in `.orchestra/.temp/`
 3. Frontmatter is transformed to the target platform's format (see the [transformation table](#1-a-universal-format-for-agents-and-prompts) above)
-4. Platform output files are staged
-5. Skills are compiled and staged in `.agents/skills/`
-6. The selected platform output directories and shared skills directory are replaced to match the resources supported by that exporter in `.agents/orchestra/`; stale and manually added files in those managed directories are removed. Other platform outputs are untouched.
-7. A `.orchestra/.manifest` file lists the outputs from the latest export, and `.orchestra/.temp/` is removed
+4. Output files are staged
+5. Skills are compiled and staged in `.agents/skills/` when exporting all types or selecting `skills`
+6. The managed output directories for the export are replaced to match the selected definitions; stale and manually added files in those directories are removed. A type-filtered export leaves other types' output directories untouched, and other platform outputs are always untouched.
+7. A `.orchestra/.manifest` file lists the outputs from the latest export only, and `.orchestra/.temp/` is removed
 
-All outputs are staged before export changes existing files. A missing `.agents/orchestra/` directory is an error; an existing but empty directory clears the selected platform outputs and shared skills. The managed directories are then replaced one at a time, so the multi-directory update is not a single atomic transaction. Prompt-directory package files are not copied as standalone outputs on any platform; they are included when referenced by `#include` in an exported prompt.
+All outputs are staged before export changes existing files. A missing `.agents/orchestra/` directory is an error. An existing but empty directory clears the selected platform outputs on a full export, or only the selected type's output on a filtered export. The managed directories are then replaced one at a time, so the multi-directory update is not a single atomic transaction. Prompt-directory package files are not copied as standalone outputs on any platform; they are included when referenced by `#include` in an exported prompt.
 
 ### Convert (Existing Agents → Definitions)
 

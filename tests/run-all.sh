@@ -233,6 +233,7 @@ test_help_version() {
   out="$(run_in_project "$tmp" help)"
   assert_contains "$out" "install" "help mentions install"
   assert_contains "$out" "export copilot|opencode|pi" "help lists Pi export"
+  assert_contains "$out" "[agents|prompts|skills]" "help lists export type selectors"
   assert_contains "$out" "convert" "help mentions convert"
   assert_contains "$out" "generate-manifest" "help mentions generate-manifest"
   assert_contains "$out" "status" "help mentions status"
@@ -315,6 +316,18 @@ test_completion_from_nested_directory() {
     _orchestra_completion
     printf '%s\n' "${COMPREPLY[@]}"
 
+    COMP_WORDS=(orchestra export copilot "")
+    COMP_CWORD=3
+    COMPREPLY=()
+    _orchestra_completion
+    printf 'export-types:%s\n' "${COMPREPLY[*]}"
+
+    COMP_WORDS=(orchestra export pi "")
+    COMP_CWORD=3
+    COMPREPLY=()
+    _orchestra_completion
+    printf 'pi-export-types:%s\n' "${COMPREPLY[*]}"
+
     COMP_WORDS=(orchestra convert p)
     COMP_CWORD=2
     COMPREPLY=()
@@ -325,6 +338,8 @@ test_completion_from_nested_directory() {
   assert_contains "$out" "demo-agent" "completion finds packages from nested directory"
   assert_contains "$out" "--dry-run" "completion finds push flags"
   assert_contains "$out" "pi" "export completion offers Pi"
+  assert_contains "$out" "export-types:agents prompts skills" "export completion offers all type selectors"
+  assert_contains "$out" "pi-export-types:prompts skills" "Pi completion omits unsupported agents"
   if [[ "$out" == *"convert:pi"* ]]; then
     FAIL=$((FAIL + 1))
     FAILURES+=("FAIL: convert completion unexpectedly offers Pi")
@@ -1280,6 +1295,91 @@ test_export_copilot() {
 }
 
 # ---------------------------------------------------------------------------
+# Test: export selected definition types
+# ---------------------------------------------------------------------------
+test_export_type_filters() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  setup_cached_source "$tmp"
+  printf 'orchestrator: gpt-4o\nsubagent: claude-sonnet\n' > "$tmp/.orchestra/config.yml"
+
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-agent >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-prompt >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
+
+  mkdir -p "$tmp/.github/agents" "$tmp/.github/prompts" "$tmp/.agents/skills/manual"
+  : > "$tmp/.github/agents/manual.agent.md"
+  : > "$tmp/.github/prompts/manual.prompt.md"
+  : > "$tmp/.agents/skills/manual/SKILL.md"
+  run_in_project "$tmp" export copilot prompts >/dev/null 2>&1
+
+  assert_file_exists "$tmp/.github/prompts/demo-prompt.prompt.md" "prompts-only export emits prompts"
+  assert_file_missing "$tmp/.github/prompts/manual.prompt.md" "prompts-only export cleans selected output"
+  assert_file_exists "$tmp/.github/agents/manual.agent.md" "prompts-only export preserves agents"
+  assert_file_missing "$tmp/.github/agents/demo-agent.agent.md" "prompts-only export skips agents"
+  assert_file_exists "$tmp/.agents/skills/manual/SKILL.md" "prompts-only export preserves skills"
+  assert_file_missing "$tmp/.agents/skills/demo-skill/SKILL.md" "prompts-only export skips skills"
+
+  local manifest
+  manifest="$(<"$tmp/.orchestra/.manifest")"
+  assert_contains "$manifest" ".github/prompts/demo-prompt.prompt.md" "prompts-only manifest lists prompt output"
+  if [[ "$manifest" == *".github/agents/"* || "$manifest" == *".agents/skills/"* ]]; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: prompts-only manifest includes unselected output")
+  else
+    PASS=$((PASS + 1))
+  fi
+
+  printf 'preserve prompt output\n' > "$tmp/.github/prompts/demo-prompt.prompt.md"
+  run_in_project "$tmp" export copilot agents >/dev/null 2>&1
+  assert_file_exists "$tmp/.github/agents/demo-agent.agent.md" "agents-only export emits agents"
+  assert_file_missing "$tmp/.github/agents/manual.agent.md" "agents-only export cleans selected output"
+  assert_eq "$(<"$tmp/.github/prompts/demo-prompt.prompt.md")" "preserve prompt output" "agents-only export preserves prompts"
+  assert_file_exists "$tmp/.agents/skills/manual/SKILL.md" "agents-only export preserves skills"
+
+  manifest="$(<"$tmp/.orchestra/.manifest")"
+  assert_contains "$manifest" ".github/agents/demo-agent.agent.md" "agents-only manifest lists agent output"
+  if [[ "$manifest" == *".github/prompts/"* || "$manifest" == *".agents/skills/"* ]]; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: agents-only manifest includes unselected output")
+  else
+    PASS=$((PASS + 1))
+  fi
+
+  printf 'preserve agent output\n' > "$tmp/.github/agents/demo-agent.agent.md"
+  printf 'preserve prompt output\n' > "$tmp/.github/prompts/demo-prompt.prompt.md"
+  run_in_project "$tmp" export copilot skills >/dev/null 2>&1
+  assert_file_exists "$tmp/.agents/skills/demo-skill/SKILL.md" "skills-only export emits skills"
+  assert_file_missing "$tmp/.agents/skills/manual/SKILL.md" "skills-only export cleans selected output"
+  assert_eq "$(<"$tmp/.github/agents/demo-agent.agent.md")" "preserve agent output" "skills-only export preserves agents"
+  assert_eq "$(<"$tmp/.github/prompts/demo-prompt.prompt.md")" "preserve prompt output" "skills-only export preserves prompts"
+
+  manifest="$(<"$tmp/.orchestra/.manifest")"
+  assert_contains "$manifest" ".agents/skills/demo-skill/SKILL.md" "skills-only manifest lists skill output"
+  if [[ "$manifest" == *".github/agents/"* || "$manifest" == *".github/prompts/"* ]]; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: skills-only manifest includes unselected output")
+  else
+    PASS=$((PASS + 1))
+  fi
+
+  local rc=0 out
+  mkdir -p "$tmp/.pi/prompts"
+  printf 'keep Pi prompt\n' > "$tmp/.pi/prompts/keep.md"
+  out="$(run_in_project "$tmp" export pi agents 2>&1)" || rc=$?
+  assert_eq "$rc" "1" "Pi agent export is rejected"
+  assert_contains "$out" "Pi does not support agent exports" "Pi agent export explains unsupported type"
+  assert_file_exists "$tmp/.pi/prompts/keep.md" "rejected Pi export preserves existing outputs"
+
+  rc=0
+  out="$(run_in_project "$tmp" export github prompts 2>&1)" || rc=$?
+  assert_eq "$rc" "1" "GitHub is not accepted as a platform alias"
+  assert_contains "$out" "Unsupported platform: github" "unknown platform reports supported names"
+}
+
+# ---------------------------------------------------------------------------
 # Test: export pi
 # ---------------------------------------------------------------------------
 test_export_pi() {
@@ -1504,6 +1604,7 @@ main() {
     test_source_remove_succeeds
     test_export_opencode
     test_export_copilot
+    test_export_type_filters
     test_export_pi
     test_export_missing_source_guard
     test_convert_copilot

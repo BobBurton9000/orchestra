@@ -33,7 +33,7 @@ Query:
   status                         Audit installed files against the package lockfile
 
 Platform compatibility:
-  export copilot|opencode|pi     Compile .agents/orchestra/ to platform output
+  export copilot|opencode|pi [agents|prompts|skills]  Compile definitions to platform output
   convert copilot|opencode [name] Convert existing platform files to Orchestra definitions
 
 Publishing (for source authors):
@@ -149,8 +149,16 @@ Shows every locked package and its installed paths, then reports files under
 EOF
       ;;
     export)
-      echo "orchestra export — compile .agents/orchestra/ to platform output"
-      echo "Usage: orchestra export copilot|opencode|pi"
+      cat <<EOF
+orchestra export — compile .agents/orchestra/ to platform output
+
+Usage:
+  orchestra export copilot|opencode|pi [agents|prompts|skills]
+
+Without a type selector, exports all supported definitions. With a selector,
+exports only that type and leaves other platform outputs untouched. Pi does
+not support agent exports.
+EOF
       ;;
     convert)
       cat <<EOF

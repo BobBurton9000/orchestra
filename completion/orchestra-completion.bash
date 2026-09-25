@@ -74,6 +74,12 @@ _orchestra_completion() {
         COMPREPLY=( $(compgen -W "$platforms" -- "$cur") )
         return 0
       fi
+      if [ "$sub" = "export" ] && [ "$cword" -eq 3 ]; then
+        local categories="agents prompts skills"
+        [ "${words[2]}" = "pi" ] && categories="prompts skills"
+        COMPREPLY=( $(compgen -W "$categories" -- "$cur") )
+        return 0
+      fi
       ;;
     remove|fork|info|upgrade|push)
       if [ "$sub" = "push" ] && [ "$cword" -eq 2 ] && [[ "$cur" == --* ]]; then

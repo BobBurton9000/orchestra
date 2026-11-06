@@ -1268,6 +1268,8 @@ test_export_opencode() {
   ORCHESTRA_YES=1 run_in_project "$tmp" install snippets >/dev/null 2>&1
   ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
 
+  mkdir -p "$tmp/.agents/orchestra/skills/demo-skill/references"
+  printf 'Nested skill reference.\n' > "$tmp/.agents/orchestra/skills/demo-skill/references/guide.md"
   mkdir -p "$tmp/.opencode/agents" "$tmp/.opencode/commands" "$tmp/.agents/skills/manual"
   : > "$tmp/.opencode/agents/stale.md"
   : > "$tmp/.opencode/agents/manual.md"
@@ -1278,6 +1280,8 @@ test_export_opencode() {
   assert_file_exists "$tmp/.opencode/agents/demo-agent.md" "export opencode: agent file (no .agent.md suffix)"
   assert_file_exists "$tmp/.opencode/commands/demo-prompt.md" "export opencode: prompt file"
   assert_file_exists "$tmp/.agents/skills/demo-skill/SKILL.md" "export opencode: skill copied to .agents/skills/"
+  assert_eq "$(<"$tmp/.agents/skills/demo-skill/references/guide.md")" "Nested skill reference." "export opencode: copies nested skill files"
+  assert_contains "$(<"$tmp/.orchestra/.manifest")" ".agents/skills/demo-skill/references/guide.md" "export opencode: manifest lists nested skill files"
   assert_file_missing "$tmp/.opencode/agents/stale.md" "export opencode: removes stale generated agents"
   assert_file_missing "$tmp/.opencode/agents/manual.md" "export opencode: removes untracked files from managed output"
   assert_file_missing "$tmp/.opencode/commands/manual.md" "export opencode: removes untracked commands"

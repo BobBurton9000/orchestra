@@ -235,16 +235,15 @@ export_process_skills() {
     _export_record_output ".agents/skills/$skill_name/SKILL.md"
     _export_count=$((_export_count + 1))
 
-    local companion
-    for companion in "$skill_dir"*; do
-      [ -f "$companion" ] || continue
-      local companion_name
-      companion_name=$(basename "$companion")
-      [ "$companion_name" = "SKILL.md" ] && continue
-      cp "$companion" "$dst/$companion_name"
-      _export_record_output ".agents/skills/$skill_name/$companion_name"
+    local companion companion_relative
+    while IFS= read -r -d '' companion; do
+      companion_relative="${companion#"$skill_dir"}"
+      [ "$companion_relative" = "SKILL.md" ] && continue
+      mkdir -p "$(dirname "$dst/$companion_relative")"
+      cp "$companion" "$dst/$companion_relative"
+      _export_record_output ".agents/skills/$skill_name/$companion_relative"
       _export_count=$((_export_count + 1))
-    done
+    done < <(find "$skill_dir" -type f -print0)
   done
 }
 

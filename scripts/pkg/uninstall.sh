@@ -23,6 +23,14 @@ uninstall_remove() {
     return 0
   fi
 
+  local target_dir=""
+  case "$(lock_get_type "$pkg_name")" in
+    agent)      target_dir="$AGENTS_ORCHESTRA_DIR_ABS/agents" ;;
+    prompt)     target_dir="$AGENTS_ORCHESTRA_DIR_ABS/prompts" ;;
+    prompt-dir) target_dir="$AGENTS_ORCHESTRA_DIR_ABS/prompts/${pkg_name}" ;;
+    skill)      target_dir="$AGENTS_ORCHESTRA_DIR_ABS/skills/${pkg_name}" ;;
+  esac
+
   local deleted=0 missing=0 rel_path
   while IFS= read -r rel_path; do
     [ -n "$rel_path" ] || continue
@@ -37,18 +45,19 @@ uninstall_remove() {
     if [ -f "$abs" ]; then
       rm -f "$abs"
       deleted=$((deleted + 1))
+
+      if [ -n "$target_dir" ]; then
+        local parent_dir
+        parent_dir="$(dirname "$abs")"
+        while [[ "$parent_dir" == "$target_dir/"* ]]; do
+          rmdir "$parent_dir" 2>/dev/null || break
+          parent_dir="$(dirname "$parent_dir")"
+        done
+      fi
     else
       missing=$((missing + 1))
     fi
   done < <(yaml_lock_paths_lines "$PKG_LOCK_FILE" "$pkg_name")
-
-  local target_dir=""
-  case "$(lock_get_type "$pkg_name")" in
-    agent)      target_dir="$AGENTS_ORCHESTRA_DIR_ABS/agents" ;;
-    prompt)     target_dir="$AGENTS_ORCHESTRA_DIR_ABS/prompts" ;;
-    prompt-dir) target_dir="$AGENTS_ORCHESTRA_DIR_ABS/prompts/${pkg_name}" ;;
-    skill)      target_dir="$AGENTS_ORCHESTRA_DIR_ABS/skills/${pkg_name}" ;;
-  esac
 
   if [ -n "$target_dir" ] && [ -d "$target_dir" ]; then
     case "$(lock_get_type "$pkg_name")" in

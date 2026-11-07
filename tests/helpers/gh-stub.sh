@@ -137,6 +137,21 @@ if [[ "$rest" == contents/* ]]; then
   path="${rest#contents/}"
   path="${path#/}"
 
+  if [ "$jq_filter" = '.[] | [.type, .name] | @tsv' ]; then
+    target="$FIXTURE_SOURCE_DIR/$path"
+    if [ -d "$target" ]; then
+      for f in "$target"/*; do
+        [ -e "$f" ] || continue
+        if [ -d "$f" ]; then
+          printf 'dir\t%s\n' "$(basename "$f")"
+        elif [ -f "$f" ]; then
+          printf 'file\t%s\n' "$(basename "$f")"
+        fi
+      done
+    fi
+    exit 0
+  fi
+
   if [ "$jq_filter" = ".[].name" ]; then
     target="$FIXTURE_SOURCE_DIR/$path"
     if [ -d "$target" ]; then

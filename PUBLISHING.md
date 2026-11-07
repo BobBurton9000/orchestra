@@ -24,7 +24,7 @@ packages:
 
 - **`name`** — the name users type in `orchestra install <name>`. Must be unique within your source.
 - **`type`** — one of `agent`, `prompt`, `prompt-dir`, `skill`.
-- **`path`** — relative to the repo root. For `agent` and `prompt`, this is a single file. For `skill` and `prompt-dir`, this is a directory — every file in it is installed.
+- **`path`** — relative to the repo root. For `agent` and `prompt`, this is a single file. For `skill` and `prompt-dir`, this is a directory — every file beneath it, including nested directories, is installed with its relative path preserved.
 
 ### Package types
 
@@ -32,8 +32,8 @@ packages:
 |------|------------------|----------------|
 | `agent` | A single `*.agent.md` file → `.agents/orchestra/agents/` | A file |
 | `prompt` | A single `*.prompt.md` file → `.agents/orchestra/prompts/` | A file |
-| `prompt-dir` | All files in the directory → `.agents/orchestra/prompts/<name>/` | A directory |
-| `skill` | All files in the directory → `.agents/orchestra/skills/<name>/` | A directory (must contain `SKILL.md`) |
+| `prompt-dir` | All files recursively under the directory → `.agents/orchestra/prompts/<name>/` | A directory |
+| `skill` | All files recursively under the directory → `.agents/orchestra/skills/<name>/` | A directory (must contain `SKILL.md`) |
 
 ### Agent frontmatter: no `model:` line
 

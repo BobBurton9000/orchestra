@@ -175,21 +175,42 @@ fetch_dir_files() {
   local target_dir="$4"
   local path_prefix="$5"
   local pkg_name="$6"
-  local -n fetch_installed_ref="$7"
+  local installed_paths_name="$7"
+  local relative_dir="${8:-}"
+  local -n installed_paths_ref="$installed_paths_name"
 
-  local filenames
-  filenames="$(gh_list_dir "$source_repo" "$strip_path" "$sha")"
-  [ -n "$filenames" ] || die "No files in $strip_path from $source_repo@$sha"
+  local entries
+  entries="$(gh_list_dir "$source_repo" "$strip_path" "$sha")"
+  [ -n "$entries" ] || die "No files in $strip_path from $source_repo@$sha"
 
-  local fname
-  while IFS= read -r fname; do
+  local entry_type fname source_entry_path installed_relative_path file_raw
+  while IFS=$'\t' read -r entry_type fname; do
     [ -n "$fname" ] || continue
     [[ "$fname" == .* ]] && continue
-    local file_raw
-    file_raw="$(gh_fetch_file_raw "$source_repo" "${strip_path}/${fname}" "$sha")"
-    printf '%s\n' "$file_raw" > "$target_dir/$fname"
-    fetch_installed_ref+=("${path_prefix}/${pkg_name}/${fname}")
-  done <<< "$filenames"
+
+    source_entry_path="${strip_path}/${fname}"
+    if [ -n "$relative_dir" ]; then
+      installed_relative_path="${relative_dir}/${fname}"
+    else
+      installed_relative_path="$fname"
+    fi
+
+    case "$entry_type" in
+      file)
+        file_raw="$(gh_fetch_file_raw "$source_repo" "$source_entry_path" "$sha")"
+        printf '%s\n' "$file_raw" > "$target_dir/$fname"
+        installed_paths_ref+=("${path_prefix}/${pkg_name}/${installed_relative_path}")
+        ;;
+      dir)
+        mkdir -p "$target_dir/$fname"
+        fetch_dir_files "$source_repo" "$source_entry_path" "$sha" "$target_dir/$fname" \
+          "$path_prefix" "$pkg_name" "$installed_paths_name" "$installed_relative_path"
+        ;;
+      *)
+        die "Unsupported source entry type '$entry_type' at $source_repo@$sha:$source_entry_path"
+        ;;
+    esac
+  done <<< "$entries"
 }
 
 install_agent_file() {

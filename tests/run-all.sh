@@ -506,10 +506,14 @@ test_install_skill_multifile() {
 
   assert_file_exists "$tmp/.agents/orchestra/skills/demo-skill/SKILL.md" "skill SKILL.md installed"
   assert_file_exists "$tmp/.agents/orchestra/skills/demo-skill/helper.md" "skill helper.md installed"
+  assert_eq "$(<"$tmp/.agents/orchestra/skills/demo-skill/templates/module-guide.template.md")" \
+    "Nested skill template fixture." "nested skill asset installed"
 
   local lock_paths
   lock_paths="$(yq -r '.packages[] | select(.name=="demo-skill") | .paths | join("|")' "$tmp/.orchestra/pkg.lock.yaml")"
-  assert_eq "$lock_paths" "skills/demo-skill/SKILL.md|skills/demo-skill/helper.md" "lockfile records both skill files"
+  assert_eq "$lock_paths" \
+    "skills/demo-skill/SKILL.md|skills/demo-skill/helper.md|skills/demo-skill/templates/module-guide.template.md" \
+    "lockfile records root and nested skill files"
 }
 
 # ---------------------------------------------------------------------------
@@ -644,7 +648,8 @@ test_status_reports_managed_paths() {
   assert_contains "$out" "[TRACKED] .agents/orchestra/agents/demo-agent.agent.md" "status reports tracked agent path"
   assert_contains "$out" "[TRACKED] .agents/orchestra/skills/demo-skill/SKILL.md" "status reports tracked skill entrypoint"
   assert_contains "$out" "[TRACKED] .agents/orchestra/skills/demo-skill/helper.md" "status reports tracked skill companion"
-  assert_contains "$out" "Summary: 2 package(s), 3 managed file(s), 0 missing file(s), 0 file(s) not part of a package." "status reports clean summary"
+  assert_contains "$out" "[TRACKED] .agents/orchestra/skills/demo-skill/templates/module-guide.template.md" "status reports tracked nested skill asset"
+  assert_contains "$out" "Summary: 2 package(s), 4 managed file(s), 0 missing file(s), 0 file(s) not part of a package." "status reports clean summary"
 }
 
 # ---------------------------------------------------------------------------
@@ -705,6 +710,8 @@ test_remove() {
   ORCHESTRA_YES=1 run_in_project "$tmp" remove demo-skill >/dev/null 2>&1
   assert_file_missing "$tmp/.agents/orchestra/skills/demo-skill/SKILL.md" "remove deletes SKILL.md"
   assert_file_missing "$tmp/.agents/orchestra/skills/demo-skill/helper.md" "remove deletes helper.md"
+  assert_file_missing "$tmp/.agents/orchestra/skills/demo-skill/templates/module-guide.template.md" "remove deletes nested skill asset"
+  assert_dir_missing "$tmp/.agents/orchestra/skills/demo-skill/templates" "remove cleans up nested skill dir"
   assert_dir_missing "$tmp/.agents/orchestra/skills/demo-skill" "remove cleans up skill dir"
 
   if yq -e '.packages[] | select(.name=="demo-skill")' "$tmp/.orchestra/pkg.lock.yaml" >/dev/null 2>&1; then
@@ -1281,7 +1288,10 @@ test_export_opencode() {
   assert_file_exists "$tmp/.opencode/commands/demo-prompt.md" "export opencode: prompt file"
   assert_file_exists "$tmp/.agents/skills/demo-skill/SKILL.md" "export opencode: skill copied to .agents/skills/"
   assert_eq "$(<"$tmp/.agents/skills/demo-skill/references/guide.md")" "Nested skill reference." "export opencode: copies nested skill files"
+  assert_eq "$(<"$tmp/.agents/skills/demo-skill/templates/module-guide.template.md")" \
+    "Nested skill template fixture." "export opencode: copies installed nested assets"
   assert_contains "$(<"$tmp/.orchestra/.manifest")" ".agents/skills/demo-skill/references/guide.md" "export opencode: manifest lists nested skill files"
+  assert_contains "$(<"$tmp/.orchestra/.manifest")" ".agents/skills/demo-skill/templates/module-guide.template.md" "export opencode: manifest lists installed nested assets"
   assert_file_missing "$tmp/.opencode/agents/stale.md" "export opencode: removes stale generated agents"
   assert_file_missing "$tmp/.opencode/agents/manual.md" "export opencode: removes untracked files from managed output"
   assert_file_missing "$tmp/.opencode/commands/manual.md" "export opencode: removes untracked commands"
@@ -1459,6 +1469,10 @@ EOF
   assert_file_missing "$tmp/.pi/prompts/snippets/branch-name.md" "export pi: does not copy prompt-dir assets"
   assert_file_exists "$tmp/.pi/agents/manual.md" "export pi: leaves non-managed agent files untouched"
   assert_file_exists "$tmp/.agents/skills/demo-skill/SKILL.md" "export pi: uses shared Agent Skills location"
+  assert_eq "$(<"$tmp/.agents/skills/demo-skill/templates/module-guide.template.md")" \
+    "Nested skill template fixture." "export pi: copies nested skill assets"
+  assert_contains "$(<"$tmp/.orchestra/.manifest")" ".agents/skills/demo-skill/templates/module-guide.template.md" \
+    "export pi: manifests nested skill assets"
   assert_file_missing "$tmp/.agents/skills/manual/SKILL.md" "export pi: reconciles shared skills"
   assert_file_exists "$tmp/.github/agents/other-platform.md" "export pi: leaves other platform outputs untouched"
   assert_file_exists "$tmp/.opencode/agents/other-platform.md" "export pi: leaves OpenCode outputs untouched"

@@ -48,7 +48,7 @@ gh_list_dir() {
   local ref="${3:-}"
   local query=""
   [ -n "$ref" ] && query="?ref=${ref}"
-  "$GH_BIN" api "repos/${owner_repo}/contents/${path}${query}" --jq '.[].name' 2>/dev/null | tr -d '\r'
+  "$GH_BIN" api "repos/${owner_repo}/contents/${path}${query}" --jq '.[] | [.type, .name] | @tsv' 2>/dev/null | tr -d '\r'
 }
 
 gh_fetch_manifest() {

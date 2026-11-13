@@ -80,20 +80,13 @@ Clone Orchestra into any stable directory you choose. For example:
 
 ```bash
 git clone https://github.com/BobBurton9000/orchestra.git "$HOME/.local/share/orchestra"
+cd "$HOME/.local/share/orchestra"
+./install.sh
 ```
 
-Create an executable launcher in `~/.local/bin` that forwards to the clone. This example assumes the clone is at `~/.local/share/orchestra`; adjust that path if you chose another location:
+The installer creates or updates an executable launcher at `~/.local/bin/orchestra`, pointing to this checkout. It refuses to overwrite an unrelated existing file there. If you move the checkout, run `./install.sh` again from its new location.
 
-```bash
-mkdir -p "$HOME/.local/bin"
-cat > "$HOME/.local/bin/orchestra" <<'EOF'
-#!/usr/bin/env bash
-exec "$HOME/.local/share/orchestra/orchestra.sh" "$@"
-EOF
-chmod +x "$HOME/.local/bin/orchestra"
-```
-
-Ensure `~/.local/bin` is in the `PATH` of the environment that starts Orchestra and Pi. For example, add this to `~/.bashrc` when you launch Pi from that Bash session:
+Ensure `~/.local/bin` is in the `PATH` of the environment that starts Orchestra and Pi. The installer warns if it is missing. For example, add this to `~/.bashrc` when you launch Pi from that Bash session:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -477,6 +470,7 @@ Clone Orchestra into any stable location you choose. The program files stay toge
 <chosen-install-dir>/
 ├── orchestra-manifest.sh        # Standalone source manifest generator
 ├── orchestra.sh                # Single CLI entry point — all commands
+├── install.sh                   # Install/update the user-level CLI launcher
 ├── scripts/
 │   ├── common.sh               # Shared frontmatter/heading parsing utilities
 │   ├── compile.sh              # Recursive #include resolver + section extraction

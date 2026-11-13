@@ -163,6 +163,17 @@ upgrade_write_lock_candidate() {
   return "$rc"
 }
 
+upgrade_remove_lock_candidate() {
+  local candidate="$1"
+  local pkg_name="$2"
+  local original_lock_file="$PKG_LOCK_FILE"
+  local rc=0
+  PKG_LOCK_FILE="$candidate"
+  lock_remove_entry "$pkg_name" || rc=$?
+  PKG_LOCK_FILE="$original_lock_file"
+  return "$rc"
+}
+
 upgrade_one() {
   local pkg_name="$1"
 
@@ -204,12 +215,21 @@ upgrade_one() {
 
   log_info "Upgrading $pkg_name: ${locked_sha:0:12} -> ${current_sha:0:12}"
 
-  local found=""
+  local found="" package_removed=0 pkg_path=""
   found="$(index_find_package "$pkg_name" "$source" || true)"
-  [ -n "$found" ] || die "Package '$pkg_name' not found in source '$source' anymore. Source manifest may have changed."
-
-  local _src _repo _type pkg_path
-  IFS=$'\t' read -r _src _repo _type pkg_path <<< "$found"
+  if [ -z "$found" ]; then
+    local source_manifest
+    source_manifest="$(index_cache_dir_for "$source")/manifest.yaml"
+    if ! yaml_manifest_is_valid "$source_manifest"; then
+      log_err "Cannot determine whether '$pkg_name' was removed: cached manifest for source '$source' is invalid."
+      return 1
+    fi
+    package_removed=1
+    log_info "Package '$pkg_name' is no longer listed in source '$source'; resolving its installed files."
+  else
+    local _src _repo _type
+    IFS=$'\t' read -r _src _repo _type pkg_path <<< "$found"
+  fi
 
   local existing_model=""
   local installed_agent_file="$AGENTS_ORCHESTRA_DIR_ABS/agents/${pkg_name}.agent.md"
@@ -240,31 +260,33 @@ upgrade_one() {
     return 1
   }
 
-  local installed_paths_output
-  if ! installed_paths_output="$(install_files_for_package "$source" "$source_repo" "$pkg_type" "$pkg_path" "$current_sha" "$pkg_name" "$existing_model" 1 "$stage_root")"; then
-    log_err "Could not stage the updated files for '$pkg_name'; the installed package was not changed."
-    rm -rf "$transaction_dir"
-    return 1
-  fi
-
-  local installed_paths=() installed_path
+  local installed_paths_output="" installed_path
+  local installed_paths=()
   declare -A new_paths_map=()
-  while IFS= read -r installed_path; do
-    [ -n "$installed_path" ] || continue
-    if ! upgrade_path_is_safe "$installed_path"; then
-      log_err "The source produced an unsafe installed path for '$pkg_name': '$installed_path'."
+  if [ "$package_removed" -eq 0 ]; then
+    if ! installed_paths_output="$(install_files_for_package "$source" "$source_repo" "$pkg_type" "$pkg_path" "$current_sha" "$pkg_name" "$existing_model" 1 "$stage_root")"; then
+      log_err "Could not stage the updated files for '$pkg_name'; the installed package was not changed."
       rm -rf "$transaction_dir"
       return 1
     fi
-    if [ -z "${new_paths_map[$installed_path]+set}" ]; then
-      installed_paths+=("$installed_path")
-      new_paths_map["$installed_path"]=1
+
+    while IFS= read -r installed_path; do
+      [ -n "$installed_path" ] || continue
+      if ! upgrade_path_is_safe "$installed_path"; then
+        log_err "The source produced an unsafe installed path for '$pkg_name': '$installed_path'."
+        rm -rf "$transaction_dir"
+        return 1
+      fi
+      if [ -z "${new_paths_map[$installed_path]+set}" ]; then
+        installed_paths+=("$installed_path")
+        new_paths_map["$installed_path"]=1
+      fi
+    done <<< "$installed_paths_output"
+    if [ ${#installed_paths[@]} -eq 0 ]; then
+      log_err "The updated package '$pkg_name' contains no installable files."
+      rm -rf "$transaction_dir"
+      return 1
     fi
-  done <<< "$installed_paths_output"
-  if [ ${#installed_paths[@]} -eq 0 ]; then
-    log_err "The updated package '$pkg_name' contains no installable files."
-    rm -rf "$transaction_dir"
-    return 1
   fi
 
   local stale_paths=() target
@@ -341,7 +363,14 @@ upgrade_one() {
     rm -rf "$transaction_dir"
     return 1
   fi
-  if ! upgrade_write_lock_candidate "$lock_candidate" "$pkg_name" "$source" "$pkg_type" "$current_sha" "$source_repo" "$pkg_path" "${installed_paths[@]}"; then
+  if [ "$package_removed" -eq 1 ]; then
+    if ! upgrade_remove_lock_candidate "$lock_candidate" "$pkg_name"; then
+      log_err "Could not prepare a lockfile update for '$pkg_name'."
+      rm -f "$lock_candidate"
+      rm -rf "$transaction_dir"
+      return 1
+    fi
+  elif ! upgrade_write_lock_candidate "$lock_candidate" "$pkg_name" "$source" "$pkg_type" "$current_sha" "$source_repo" "$pkg_path" "${installed_paths[@]}"; then
     log_err "Could not prepare a lockfile update for '$pkg_name'."
     rm -f "$lock_candidate"
     rm -rf "$transaction_dir"
@@ -437,6 +466,13 @@ upgrade_one() {
   if ! rm -rf "$transaction_dir"; then
     log_warn "Upgrade succeeded, but temporary rollback data could not be removed: $transaction_dir"
   fi
+  if [ "$package_removed" -eq 1 ]; then
+    local removed_file_count="${#remove_paths[@]}"
+    local kept_file_count
+    kept_file_count=$((${#stale_paths[@]} - removed_file_count))
+    log_info "Resolved '$pkg_name' after its removal from '$source' (lock entry removed; $removed_file_count file(s) removed, $kept_file_count kept)."
+    return 3
+  fi
   log_info "Upgraded $pkg_name @ ${current_sha:0:12}"
 }
 
@@ -522,8 +558,10 @@ upgrade_cmd() {
   if [ -n "$pkg" ]; then
     local rc=0
     upgrade_one "$pkg" || rc=$?
-    [ "$rc" -eq 2 ] && return 0
-    return "$rc"
+    case "$rc" in
+      2|3) return 0 ;;
+      *) return "$rc" ;;
+    esac
   fi
 
   sources_ensure_file
@@ -535,13 +573,14 @@ upgrade_cmd() {
     yaml_lock_each "$PKG_LOCK_FILE" _upgrade_collect
   fi
 
-  local upgraded=0 unchanged=0 skipped=0
+  local upgraded=0 removed=0 unchanged=0 skipped=0
   for p in "${pkgs[@]}"; do
     local rc=0
     upgrade_one "$p" >/dev/null || rc=$?
     case "$rc" in
       0)  upgraded=$((upgraded + 1)) ;;
       2)  unchanged=$((unchanged + 1)) ;;
+      3)  removed=$((removed + 1)) ;;
       *)  skipped=$((skipped + 1)) ;;
     esac
   done
@@ -560,7 +599,7 @@ upgrade_cmd() {
   fi
 
   echo ""
-  log_info "Upgrade complete: $upgraded upgraded, $unchanged up to date, $skipped skipped."
+  log_info "Upgrade complete: $upgraded upgraded, $removed removed from sources, $unchanged up to date, $skipped skipped."
   if [ "$subscription_added" -gt 0 ] || [ "$subscription_skipped" -gt 0 ]; then
     log_info "Subscription sync complete: $subscription_added new package(s) added, $subscription_skipped skipped."
   fi

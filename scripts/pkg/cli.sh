@@ -99,6 +99,8 @@ When an updated package drops installed files, Orchestra asks per file whether
 to remove it, keep it as an untracked local file, or cancel that package upgrade.
 Enter keeps the file. ORCHESTRA_YES=1 removes stale files automatically; without
 a TTY or that variable, the package upgrade is aborted (skipped in bulk mode).
+If the source removes a package entirely, all of its existing locked files use
+the same choices; after resolution, the package is removed from the lockfile.
 EOF
       ;;
     remove)

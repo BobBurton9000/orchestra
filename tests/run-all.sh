@@ -430,6 +430,7 @@ test_help_version() {
   upgrade_help="$(run_in_project "$tmp" help upgrade)"
   assert_contains "$upgrade_help" "ORCHESTRA_YES=1" "upgrade help documents stale-file automation"
   assert_contains "$upgrade_help" "Enter keeps the file" "upgrade help documents the default stale-file choice"
+  assert_contains "$upgrade_help" "removes a package entirely" "upgrade help documents source-removed packages"
   assert_contains "$out" "export copilot|opencode|pi" "help lists Pi export"
   assert_contains "$out" "[agents|prompts|skills]" "help lists export type selectors"
   assert_contains "$out" "convert" "help mentions convert"
@@ -1324,6 +1325,156 @@ test_upgrade_removes_stale_skill_paths() {
 }
 
 # ---------------------------------------------------------------------------
+# Test: a package removed from its source is resolved and counted in bulk mode
+# ---------------------------------------------------------------------------
+test_upgrade_resolves_package_removed_from_source() {
+  local tmp
+  tmp="$(setup_test)"
+  local fixture_source_before="$FIXTURE_SOURCE_DIR"
+  local fixture_sha_before="$FIXTURE_SHA"
+  trap 'FIXTURE_SOURCE_DIR="$fixture_source_before"; FIXTURE_SHA="$fixture_sha_before"; teardown_test_project "$tmp"' RETURN
+
+  setup_cached_source "$tmp"
+  printf 'orchestrator: gpt-4o\nsubagent: claude-sonnet\n' > "$tmp/.orchestra/config.yml"
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-agent >/dev/null 2>&1
+
+  local removed_source="$tmp/source-without-skill"
+  cp -R "$FIXTURE_SOURCE_V2_DIR" "$removed_source"
+  yq -i '.packages |= map(select(.name != "demo-skill"))' "$removed_source/orchestra-source.yaml"
+  rm -rf "$removed_source/skills/demo-skill"
+
+  local new_sha="pkgremoved123pkgremoved123pkgremoved123pkgrem"
+  FIXTURE_SOURCE_DIR="$removed_source"
+  FIXTURE_SHA="$new_sha"
+  ORCHESTRA_YES=1 run_in_project "$tmp" update >/dev/null 2>&1
+
+  local out status
+  ORCHESTRA_YES=1 out="$(run_in_project "$tmp" upgrade 2>&1)"
+  status="$(run_in_project "$tmp" status 2>&1)"
+  assert_contains "$out" "Resolved 'demo-skill'" "bulk upgrade resolves a package removed from its source"
+  assert_contains "$out" "1 removed from sources" "bulk summary counts the removed source package"
+  assert_file_missing "$tmp/.agents/orchestra/skills/demo-skill/SKILL.md" "removed source package files are removed when auto-accepted"
+  assert_dir_missing "$tmp/.agents/orchestra/skills/demo-skill" "empty package directory is removed"
+  assert_file_exists "$tmp/.agents/orchestra/agents/demo-agent.agent.md" "bulk upgrade continues to other packages"
+  assert_eq "$(yq -r '.packages[] | select(.name=="demo-agent") | .sha' "$tmp/.orchestra/pkg.lock.yaml")" "$new_sha" "bulk upgrade advances remaining package lock"
+  if yq -e '.packages[] | select(.name=="demo-skill")' "$tmp/.orchestra/pkg.lock.yaml" >/dev/null 2>&1; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: removed source package remained in the lockfile")
+  else
+    PASS=$((PASS + 1))
+  fi
+  if [[ "$status" == *"[UNTRACKED]"* ]]; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: removed package left untracked files after auto-removal")
+  else
+    PASS=$((PASS + 1))
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Test: kept files from a removed source package become untracked
+# ---------------------------------------------------------------------------
+test_upgrade_keeps_files_from_removed_package() {
+  local tmp
+  tmp="$(setup_test)"
+  local fixture_source_before="$FIXTURE_SOURCE_DIR"
+  local fixture_sha_before="$FIXTURE_SHA"
+  trap 'FIXTURE_SOURCE_DIR="$fixture_source_before"; FIXTURE_SHA="$fixture_sha_before"; teardown_test_project "$tmp"' RETURN
+
+  if ! command -v script >/dev/null 2>&1; then
+    echo "(skipped: script utility unavailable)"
+    return 0
+  fi
+
+  setup_cached_source "$tmp"
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
+
+  local removed_source="$tmp/source-without-skill"
+  cp -R "$FIXTURE_SOURCE_V2_DIR" "$removed_source"
+  yq -i '.packages |= map(select(.name != "demo-skill"))' "$removed_source/orchestra-source.yaml"
+  rm -rf "$removed_source/skills/demo-skill"
+
+  FIXTURE_SOURCE_DIR="$removed_source"
+  FIXTURE_SHA="keepremoved123keepremoved123keepremoved123"
+  run_in_project "$tmp" update >/dev/null 2>&1
+
+  local out rc=0 status
+  out="$(run_interactive_in_project "$tmp" $'\n\n\n' upgrade demo-skill 2>&1)" || rc=$?
+  status="$(run_in_project "$tmp" status 2>&1)"
+  assert_eq "$rc" "0" "keeping files from a removed package completes targeted resolution"
+  assert_file_exists "$tmp/.agents/orchestra/skills/demo-skill/SKILL.md" "kept removed-package skill file remains on disk"
+  assert_file_exists "$tmp/.agents/orchestra/skills/demo-skill/helper.md" "kept removed-package companion file remains on disk"
+  assert_file_exists "$tmp/.agents/orchestra/skills/demo-skill/templates/module-guide.template.md" "kept removed-package template remains on disk"
+  assert_contains "$status" "[UNTRACKED] .agents/orchestra/skills/demo-skill/SKILL.md" "kept removed-package file is untracked"
+  assert_contains "$out" "lock entry removed" "removed source package is detached from the lockfile"
+  if yq -e '.packages[] | select(.name=="demo-skill")' "$tmp/.orchestra/pkg.lock.yaml" >/dev/null 2>&1; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: kept source-removed package remained in the lockfile")
+  else
+    PASS=$((PASS + 1))
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Test: missing files do not prompt when their whole source package is removed
+# ---------------------------------------------------------------------------
+test_upgrade_drops_removed_package_with_no_local_files() {
+  local tmp
+  tmp="$(setup_test)"
+  local fixture_source_before="$FIXTURE_SOURCE_DIR"
+  local fixture_sha_before="$FIXTURE_SHA"
+  trap 'FIXTURE_SOURCE_DIR="$fixture_source_before"; FIXTURE_SHA="$fixture_sha_before"; teardown_test_project "$tmp"' RETURN
+
+  setup_cached_source "$tmp"
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
+  rm -rf "$tmp/.agents/orchestra/skills/demo-skill"
+
+  local removed_source="$tmp/source-without-skill"
+  cp -R "$FIXTURE_SOURCE_V2_DIR" "$removed_source"
+  yq -i '.packages |= map(select(.name != "demo-skill"))' "$removed_source/orchestra-source.yaml"
+  rm -rf "$removed_source/skills/demo-skill"
+  FIXTURE_SOURCE_DIR="$removed_source"
+  FIXTURE_SHA="noassets123noassets123noassets123noassets1"
+  run_in_project "$tmp" update >/dev/null 2>&1
+
+  local out rc=0
+  out="$(run_in_project "$tmp" upgrade demo-skill </dev/null 2>&1)" || rc=$?
+  assert_eq "$rc" "0" "a source-removed package with no local files resolves without a TTY"
+  assert_contains "$out" "lock entry removed" "empty source-removed package is dropped from the lockfile"
+  if yq -e '.packages[] | select(.name=="demo-skill")' "$tmp/.orchestra/pkg.lock.yaml" >/dev/null 2>&1; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: source-removed package with no local files remained in lockfile")
+  else
+    PASS=$((PASS + 1))
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Test: an invalid cached manifest cannot trigger package-wide removal
+# ---------------------------------------------------------------------------
+test_upgrade_invalid_manifest_does_not_remove_package() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  setup_cached_source "$tmp"
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
+
+  local old_sha new_sha out rc=0
+  old_sha="$(yq -r '.packages[] | select(.name=="demo-skill") | .sha' "$tmp/.orchestra/pkg.lock.yaml")"
+  new_sha="invalid123invalid123invalid123invalid1234"
+  echo "$new_sha" > "$tmp/.orchestra/pkg-cache/core/head.sha"
+  printf 'packages: not-an-array\n' > "$tmp/.orchestra/pkg-cache/core/manifest.yaml"
+
+  out="$(ORCHESTRA_YES=1 run_in_project "$tmp" upgrade demo-skill 2>&1)" || rc=$?
+  assert_eq "$rc" "1" "invalid cached manifest fails safely"
+  assert_file_exists "$tmp/.agents/orchestra/skills/demo-skill/SKILL.md" "invalid manifest leaves installed package files untouched"
+  assert_eq "$(yq -r '.packages[] | select(.name=="demo-skill") | .sha' "$tmp/.orchestra/pkg.lock.yaml")" "$old_sha" "invalid manifest leaves package lock unchanged"
+  assert_contains "$out" "cached manifest" "invalid manifest error explains why package resolution stopped"
+}
+
+# ---------------------------------------------------------------------------
 # Test: interactive keep preserves a stale file as untracked
 # ---------------------------------------------------------------------------
 test_upgrade_keeps_stale_skill_path() {
@@ -2066,6 +2217,10 @@ main() {
     test_upgrade_uptodate
     test_upgrade_preserves_model
     test_upgrade_removes_stale_skill_paths
+    test_upgrade_resolves_package_removed_from_source
+    test_upgrade_keeps_files_from_removed_package
+    test_upgrade_drops_removed_package_with_no_local_files
+    test_upgrade_invalid_manifest_does_not_remove_package
     test_upgrade_keeps_stale_skill_path
     test_upgrade_cancel_discards_stale_path_choices
     test_upgrade_stale_path_without_tty_aborts

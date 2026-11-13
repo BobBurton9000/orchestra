@@ -77,6 +77,17 @@ yaml_manifest_count() {
   "$YQ_BIN" -r '.packages | length' "$file" 2>/dev/null || printf '0'
 }
 
+yaml_manifest_is_valid() {
+  local file="$1"
+  require_yq
+  [ -f "$file" ] && [ -s "$file" ] || return 1
+  if [ "$YQ_DIALECT" = "kislyuk" ]; then
+    "$YQ_BIN" -e '(.packages | type) == "array"' "$file" >/dev/null 2>&1
+  else
+    "$YQ_BIN" -e '.packages | tag == "!!seq"' "$file" >/dev/null 2>&1
+  fi
+}
+
 yaml_sources_each() {
   local file="$1"
   local callback="$2"

@@ -322,6 +322,7 @@ export_cmd() {
     die "No definitions found at $AGENTS_ORCHESTRA_DIR. Run 'orchestra install <pkg>' or 'orchestra install --all <source>' first."
   fi
 
+  ensure_orchestra_dir
   rm -rf "$orchestra_temp"
   mkdir -p "$orchestra_temp/agents" "$orchestra_temp/prompts" "$orchestra_temp/skills" "$orchestra_temp/output"
   _export_stage_root="$orchestra_temp/output"

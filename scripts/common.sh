@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-ORCHESTRA_DIR="${ORCHESTRA_DIR:-.orchestra}"
+ORCHESTRA_DIR="${ORCHESTRA_DIR:-.agents/orchestra/.state}"
 AGENTS_ORCHESTRA_DIR="${AGENTS_ORCHESTRA_DIR:-.agents/orchestra}"
 
 log_info() {
@@ -180,19 +180,36 @@ validate_heading_exists() {
 }
 
 detect_project_root() {
-  local dir="$PWD"
-  dir="$(cd "$dir" 2>/dev/null && pwd)" || return 1
+  local start_dir="$PWD"
+  start_dir="$(cd "$start_dir" 2>/dev/null && pwd)" || return 1
 
+  local dir="$start_dir"
   while :; do
-    if [ -d "$dir/$ORCHESTRA_DIR" ]; then
-      echo "$dir"
+    if [ -d "$dir/$ORCHESTRA_DIR" ] || [ -d "$dir/$AGENTS_ORCHESTRA_DIR" ]; then
+      printf '%s\n' "$dir"
       return 0
     fi
     [ "$dir" = "/" ] && break
     dir="$(dirname "$dir")"
   done
 
-  return 1
+  dir="$start_dir"
+  while :; do
+    if [ -d "$dir/.orchestra" ]; then
+      printf '%s\n' "$dir"
+      return 0
+    fi
+    [ "$dir" = "/" ] && break
+    dir="$(dirname "$dir")"
+  done
+
+  local git_root
+  git_root="$(git -C "$start_dir" rev-parse --show-toplevel 2>/dev/null || true)"
+  if [ -n "$git_root" ]; then
+    printf '%s\n' "$git_root"
+  else
+    printf '%s\n' "$start_dir"
+  fi
 }
 
 parse_include_line_as_vars() {

@@ -3,7 +3,6 @@
 set -euo pipefail
 
 list_installed() {
-  ensure_orchestra_dir
   [ -f "$PKG_LOCK_FILE" ] || {
     echo "No packages installed."
     return 0
@@ -25,8 +24,10 @@ list_installed() {
 }
 
 list_available_all_sources() {
-  ensure_pkg_dirs
-  sources_ensure_file
+  if [ ! -f "$PKG_SOURCES_FILE" ]; then
+    echo "No package index yet. Run 'orchestra update' to initialize project state and fetch packages."
+    return 0
+  fi
 
   local any=0
   _list_available_inner() {
@@ -71,8 +72,10 @@ search_cmd() {
   local term="${1:-}"
   [ -n "$term" ] || die "Usage: orchestra search <term>"
 
-  ensure_pkg_dirs
-  sources_ensure_file
+  if [ ! -f "$PKG_SOURCES_FILE" ]; then
+    echo "No package index yet. Run 'orchestra update' to initialize project state and fetch packages."
+    return 0
+  fi
 
   local found=0
   _search_inner() {
@@ -100,8 +103,6 @@ search_cmd() {
 info_cmd() {
   local pkg="${1:-}"
   [ -n "$pkg" ] || die "Usage: orchestra info <pkg>"
-
-  ensure_orchestra_dir
 
   if lock_is_installed "$pkg"; then
     local source type sha paths forked
@@ -139,11 +140,8 @@ info_cmd() {
       fi
     fi
   else
-    ensure_pkg_dirs
-    sources_ensure_file
-
     local found=""
-    found="$(index_find_package "$pkg" || true)"
+    found="$(index_find_package "$pkg" "" 0 || true)"
     if [ -n "$found" ]; then
       local source_name source_repo pkg_type pkg_path
       IFS=$'\t' read -r source_name source_repo pkg_type pkg_path <<< "$found"

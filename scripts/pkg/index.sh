@@ -87,8 +87,9 @@ index_get_branch() {
 index_find_package() {
   local pkg_name="$1"
   local source_name="${2:-}"
+  local create_sources="${3:-1}"
 
-  sources_ensure_file
+  sources_ensure_file "$create_sources" || return 1
 
   while IFS= read -r line; do
     local sname srepo

@@ -13,6 +13,12 @@ EOF
 }
 
 sources_ensure_file() {
+  local create_if_missing="${1:-1}"
+  if [ "$create_if_missing" = "0" ]; then
+    [ -f "$PKG_SOURCES_FILE" ]
+    return
+  fi
+
   ensure_orchestra_dir
   if [ ! -f "$PKG_SOURCES_FILE" ]; then
     sources_default_content > "$PKG_SOURCES_FILE"
@@ -135,9 +141,12 @@ sources_remove() {
 }
 
 sources_cmd_list() {
-  sources_ensure_file
   echo "Configured sources ($PKG_SOURCES_FILE):"
   echo ""
+  if [ ! -f "$PKG_SOURCES_FILE" ]; then
+    echo "  core                 BobBurton9000/orchestra-defaults (default; run 'orchestra update' to initialize project state)"
+    return 0
+  fi
   _sources_cmd_list_print() {
     local subscription_sha="${3:-}"
     if [ -n "$subscription_sha" ]; then

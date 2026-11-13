@@ -1,24 +1,39 @@
 _orchestra_completion_project_root() {
-  local dir="${ORCHESTRA_PROJECT_ROOT:-$PWD}"
-  local state_dir="${ORCHESTRA_DIR:-.orchestra}"
+  local start_dir="${ORCHESTRA_PROJECT_ROOT:-$PWD}"
+  local dir state_dir="${ORCHESTRA_DIR:-.agents/orchestra/.state}"
 
-  dir="$(cd "$dir" 2>/dev/null && pwd)" || return 1
+  start_dir="$(cd "$start_dir" 2>/dev/null && pwd)" || return 1
+  dir="$start_dir"
 
   while :; do
-    if [ -d "$dir/$state_dir" ]; then
+    if [ -d "$dir/$state_dir" ] || [ -d "$dir/.agents/orchestra" ]; then
       printf '%s\n' "$dir"
       return 0
     fi
-    [ "$dir" = "/" ] && return 1
+    [ "$dir" = "/" ] && break
     dir="$(dirname "$dir")"
   done
+
+  dir="$start_dir"
+  while :; do
+    if [ -d "$dir/.orchestra" ]; then
+      printf '%s\n' "$dir"
+      return 0
+    fi
+    [ "$dir" = "/" ] && break
+    dir="$(dirname "$dir")"
+  done
+
+  local git_root
+  git_root="$(git -C "$start_dir" rev-parse --show-toplevel 2>/dev/null || true)"
+  printf '%s\n' "${git_root:-$start_dir}"
 }
 
 _orchestra_completion() {
   local cur prev words cword
   _init_completion -n : || return
 
-  local cmds="install update upgrade remove fork push source list search info status export convert generate-manifest help --version"
+  local cmds="install update upgrade remove fork push source list search info status export convert generate-manifest migrate help --version"
 
   if [ "$cword" -eq 1 ]; then
     COMPREPLY=( $(compgen -W "$cmds" -- "$cur") )
@@ -27,6 +42,12 @@ _orchestra_completion() {
 
   local sub="${words[1]}"
   case "$sub" in
+    migrate)
+      if [ "$cword" -eq 2 ]; then
+        COMPREPLY=( $(compgen -W "v2" -- "$cur") )
+        return 0
+      fi
+      ;;
     install)
       if [ "$cword" -eq 2 ] && [[ "$cur" == --* ]]; then
         COMPREPLY=( $(compgen -W "--all --locked" -- "$cur") )
@@ -35,7 +56,7 @@ _orchestra_completion() {
       if [ "$cword" -eq 2 ]; then
         local project_root lock_file
         project_root="$(_orchestra_completion_project_root)" || return 0
-        lock_file="$project_root/${ORCHESTRA_DIR:-.orchestra}/pkg.lock.yaml"
+        lock_file="$project_root/${ORCHESTRA_DIR:-.agents/orchestra/.state}/pkg.lock.yaml"
         if [ -f "$lock_file" ]; then
           local pkgs
           pkgs="$(yq -r '.packages[] | .name' "$lock_file" 2>/dev/null)"
@@ -52,7 +73,7 @@ _orchestra_completion() {
       if [ "$cword" -eq 3 ] && [[ "${words[2]}" == subscribe || "${words[2]}" == unsubscribe || "${words[2]}" == remove ]]; then
         local project_root sources_file
         project_root="$(_orchestra_completion_project_root)" || return 0
-        sources_file="$project_root/${ORCHESTRA_DIR:-.orchestra}/sources.yaml"
+        sources_file="$project_root/${ORCHESTRA_DIR:-.agents/orchestra/.state}/sources.yaml"
         if [ -f "$sources_file" ]; then
           local srcs
           srcs="$(yq -r '.sources[] | .name' "$sources_file" 2>/dev/null)"
@@ -89,7 +110,7 @@ _orchestra_completion() {
       if [ "$cword" -eq 2 ]; then
         local project_root lock_file
         project_root="$(_orchestra_completion_project_root)" || return 0
-        lock_file="$project_root/${ORCHESTRA_DIR:-.orchestra}/pkg.lock.yaml"
+        lock_file="$project_root/${ORCHESTRA_DIR:-.agents/orchestra/.state}/pkg.lock.yaml"
         [ -f "$lock_file" ] || return 0
         local pkgs
         pkgs="$(yq -r '.packages[] | .name' "$lock_file" 2>/dev/null)"

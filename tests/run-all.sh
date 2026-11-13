@@ -29,12 +29,12 @@ fi
 setup_test_project() {
   local tmp
   tmp="$(mktemp -d)"
-  mkdir -p "$tmp/.orchestra"
-  cp "$REPO_ROOT/orchestra.sh" "$tmp/.orchestra/orchestra.sh"
-  cp "$REPO_ROOT/orchestra-manifest.sh" "$tmp/.orchestra/orchestra-manifest.sh"
-  chmod +x "$tmp/.orchestra/orchestra-manifest.sh"
-  cp -r "$REPO_ROOT/scripts" "$tmp/.orchestra/scripts"
-  cp -r "$REPO_ROOT/completion" "$tmp/.orchestra/completion" 2>/dev/null || mkdir -p "$tmp/.orchestra/completion"
+  mkdir -p "$tmp/.orchestra" "$tmp/orchestra-tool"
+  cp "$REPO_ROOT/orchestra.sh" "$tmp/orchestra-tool/orchestra.sh"
+  cp "$REPO_ROOT/orchestra-manifest.sh" "$tmp/orchestra-tool/orchestra-manifest.sh"
+  chmod +x "$tmp/orchestra-tool/orchestra-manifest.sh"
+  cp -r "$REPO_ROOT/scripts" "$tmp/orchestra-tool/scripts"
+  cp -r "$REPO_ROOT/completion" "$tmp/orchestra-tool/completion" 2>/dev/null || mkdir -p "$tmp/orchestra-tool/completion"
   # Set up the gh stub on PATH
   mkdir -p "$tmp/bin"
   cp "$GH_STUB" "$tmp/bin/gh"
@@ -47,31 +47,23 @@ teardown_test_project() {
   rm -rf "$tmp"
 }
 
-test_gitignore_for_project_state() {
+test_gitignore_policy_is_user_controlled() {
   local tmp
-  tmp="$(mktemp -d)"
-  mkdir -p "$tmp/.orchestra"
-  cp "$REPO_ROOT/.gitignore" "$tmp/.orchestra/.gitignore"
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  rm -rf "$tmp/.orchestra"
   git -C "$tmp" init -q
+  printf '# user ignore policy\n' > "$tmp/.gitignore"
 
-  local path
-  for path in \
-    .orchestra/sources.yaml \
-    .orchestra/pkg.lock.yaml \
-    .orchestra/pkg-cache/head.sha \
-    .orchestra/config.yml \
-    .orchestra/.temp/file; do
-    mkdir -p "$(dirname "$tmp/$path")"
-    : > "$tmp/$path"
-    if ! git -C "$tmp" check-ignore -q "$path"; then
-      FAIL=$((FAIL + 1))
-      FAILURES+=("FAIL: $path is not ignored")
-      continue
-    fi
+  run_with_default_state "$tmp" "$tmp" update >/dev/null 2>&1
+  assert_eq "$(<"$tmp/.gitignore")" "# user ignore policy" "bootstrap leaves project .gitignore unchanged"
+  if git -C "$tmp" check-ignore -q .agents/orchestra/.state/sources.yaml; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: project state was unexpectedly ignored")
+  else
     PASS=$((PASS + 1))
-  done
-
-  teardown_test_project "$tmp"
+  fi
 }
 
 run_in_project() {
@@ -87,7 +79,8 @@ run_in_project() {
       GH_STUB_REPO_DIR="${GH_STUB_REPO_DIR:-}" \
       GH_STUB_PUSH_PERMISSION="${GH_STUB_PUSH_PERMISSION:-true}" \
       GH_STUB_PR_URL="${GH_STUB_PR_URL:-}" \
-      .orchestra/orchestra.sh "$@"
+      ORCHESTRA_DIR=.orchestra \
+      "$tmp/orchestra-tool/orchestra.sh" "$@"
   )
 }
 
@@ -105,7 +98,26 @@ run_in_nested_project() {
       GH_STUB_REPO_DIR="${GH_STUB_REPO_DIR:-}" \
       GH_STUB_PUSH_PERMISSION="${GH_STUB_PUSH_PERMISSION:-true}" \
       GH_STUB_PR_URL="${GH_STUB_PR_URL:-}" \
-      "$tmp/.orchestra/orchestra.sh" "$@"
+      ORCHESTRA_DIR=.orchestra \
+      "$tmp/orchestra-tool/orchestra.sh" "$@"
+  )
+}
+
+run_with_default_state() {
+  local tmp="$1"
+  local working_dir="$2"
+  shift 2
+  (
+    unset ORCHESTRA_PROJECT_ROOT ORCHESTRA_DIR
+    cd "$working_dir"
+    PATH="$tmp/bin:$PATH" \
+      ORCHESTRA_YES="${ORCHESTRA_YES:-}" \
+      FIXTURE_SOURCE_DIR="$FIXTURE_SOURCE_DIR" \
+      FIXTURE_SHA="$FIXTURE_SHA" \
+      GH_STUB_REPO_DIR="${GH_STUB_REPO_DIR:-}" \
+      GH_STUB_PUSH_PERMISSION="${GH_STUB_PUSH_PERMISSION:-true}" \
+      GH_STUB_PR_URL="${GH_STUB_PR_URL:-}" \
+      "$tmp/orchestra-tool/orchestra.sh" "$@"
   )
 }
 
@@ -218,6 +230,145 @@ setup_test() {
   echo "$tmp"
 }
 
+make_legacy_orchestra_checkout() {
+  local tmp="$1"
+  mkdir -p "$tmp/.orchestra/scripts/pkg"
+  cp "$REPO_ROOT/orchestra.sh" "$tmp/.orchestra/orchestra.sh"
+  cp "$REPO_ROOT/scripts/common.sh" "$tmp/.orchestra/scripts/common.sh"
+  cp "$REPO_ROOT/scripts/pkg/cli.sh" "$tmp/.orchestra/scripts/pkg/cli.sh"
+}
+
+# ---------------------------------------------------------------------------
+# Test: first project command uses the Git root and new state location
+# ---------------------------------------------------------------------------
+test_default_state_bootstrap_from_git_root() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  rm -rf "$tmp/.orchestra"
+  git -C "$tmp" init -q
+  mkdir -p "$tmp/nested/work"
+
+  local out
+  out="$(run_with_default_state "$tmp" "$tmp/nested/work" update 2>&1)"
+  assert_contains "$out" "Updated 1 source(s)" "update initializes state from a nested directory"
+  assert_file_exists "$tmp/.agents/orchestra/.state/sources.yaml" "default state stores sources under .agents/orchestra/.state"
+  assert_file_exists "$tmp/.agents/orchestra/.state/pkg-cache/core/head.sha" "default state caches source metadata"
+  ORCHESTRA_YES=1 run_with_default_state "$tmp" "$tmp/nested/work" install demo-prompt >/dev/null 2>&1
+  assert_file_exists "$tmp/.agents/orchestra/prompts/demo-prompt.prompt.md" "global CLI installs definitions under .agents/orchestra"
+  assert_file_exists "$tmp/.agents/orchestra/.state/pkg.lock.yaml" "global CLI records lockfile in new state directory"
+  assert_dir_missing "$tmp/nested/work/.agents/orchestra/.state" "Git root is used instead of nested working directory"
+}
+
+# ---------------------------------------------------------------------------
+# Test: read-only commands do not create project state
+# ---------------------------------------------------------------------------
+test_read_only_commands_do_not_initialize_state() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  rm -rf "$tmp/.orchestra"
+  run_with_default_state "$tmp" "$tmp" status >/dev/null 2>&1
+  run_with_default_state "$tmp" "$tmp" list >/dev/null 2>&1
+  run_with_default_state "$tmp" "$tmp" source list >/dev/null 2>&1
+  assert_dir_missing "$tmp/.agents/orchestra/.state" "read-only commands do not create state"
+}
+
+# ---------------------------------------------------------------------------
+# Test: status excludes manager state from untracked definition files
+# ---------------------------------------------------------------------------
+test_status_excludes_new_manager_state() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  rm -rf "$tmp/.orchestra"
+  mkdir -p "$tmp/.agents/orchestra/.state" "$tmp/.agents/orchestra/agents"
+  printf 'local model settings\n' > "$tmp/.agents/orchestra/.state/config.yml"
+  printf '%s\n' '---' 'name: local-agent' '---' > "$tmp/.agents/orchestra/agents/local-agent.agent.md"
+
+  local out
+  out="$(run_with_default_state "$tmp" "$tmp" status 2>&1)"
+  assert_contains "$out" "[UNTRACKED] .agents/orchestra/agents/local-agent.agent.md" "status still reports untracked definitions"
+  if [[ "$out" == *".state/config.yml"* ]]; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: status reported manager state as an untracked definition")
+  else
+    PASS=$((PASS + 1))
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Test: explicit v2 migration copies state and removes a recognized old checkout
+# ---------------------------------------------------------------------------
+test_migrate_v2_copies_state_and_removes_old_checkout() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  make_legacy_orchestra_checkout "$tmp"
+  printf 'sources:\n  - name: core\n    repo: BobBurton9000/orchestra-defaults\n' > "$tmp/.orchestra/sources.yaml"
+  printf 'config from old layout\n' > "$tmp/.orchestra/config.yml"
+  mkdir -p "$tmp/.orchestra/pkg-cache/core"
+  printf 'abc123\n' > "$tmp/.orchestra/pkg-cache/core/head.sha"
+
+  local out
+  out="$(ORCHESTRA_YES=1 run_with_default_state "$tmp" "$tmp" migrate v2 2>&1)"
+  assert_contains "$out" "Legacy state migration complete" "migration reports completion"
+  assert_file_exists "$tmp/.agents/orchestra/.state/sources.yaml" "migration copies source configuration"
+  assert_eq "$(<"$tmp/.agents/orchestra/.state/config.yml")" "config from old layout" "migration copies model config"
+  assert_file_exists "$tmp/.agents/orchestra/.state/pkg-cache/core/head.sha" "migration copies source cache"
+  assert_dir_missing "$tmp/.orchestra" "migration removes recognized old checkout after confirmation"
+}
+
+# ---------------------------------------------------------------------------
+# Test: v2 migration never overwrites conflicts and retains old checkout
+# ---------------------------------------------------------------------------
+test_migrate_v2_preserves_conflicts_and_can_retry() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  make_legacy_orchestra_checkout "$tmp"
+  printf 'old source settings\n' > "$tmp/.orchestra/sources.yaml"
+  printf 'lock from old layout\n' > "$tmp/.orchestra/pkg.lock.yaml"
+  mkdir -p "$tmp/.agents/orchestra/.state"
+  printf 'new source settings\n' > "$tmp/.agents/orchestra/.state/sources.yaml"
+
+  local out rc=0
+  out="$(ORCHESTRA_YES=1 run_with_default_state "$tmp" "$tmp" migrate v2 2>&1)" || rc=$?
+  assert_eq "$rc" "1" "migration returns failure when differing files conflict"
+  assert_contains "$out" "Migration conflict" "migration reports differing file"
+  assert_eq "$(<"$tmp/.agents/orchestra/.state/sources.yaml")" "new source settings" "migration never overwrites destination"
+  assert_file_exists "$tmp/.agents/orchestra/.state/pkg.lock.yaml" "migration still copies non-conflicting files"
+  assert_dir_exists "$tmp/.orchestra" "conflicts retain legacy checkout"
+
+  cp "$tmp/.orchestra/sources.yaml" "$tmp/.agents/orchestra/.state/sources.yaml"
+  out="$(ORCHESTRA_YES=1 run_with_default_state "$tmp" "$tmp" migrate v2 2>&1)"
+  assert_contains "$out" "Removed the old Orchestra checkout" "rerun completes migration after conflict resolution"
+  assert_dir_missing "$tmp/.orchestra" "resolved migration removes old checkout"
+}
+
+# ---------------------------------------------------------------------------
+# Test: migration preserves an unrecognized .orchestra directory
+# ---------------------------------------------------------------------------
+test_migrate_v2_keeps_unrecognized_orchestra_directory() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  printf 'some user data\n' > "$tmp/.orchestra/custom.txt"
+  printf 'legacy settings\n' > "$tmp/.orchestra/config.yml"
+
+  local out
+  out="$(ORCHESTRA_YES=1 run_with_default_state "$tmp" "$tmp" migrate v2 2>&1)"
+  assert_contains "$out" "not a recognized Orchestra checkout" "migration explains why directory was retained"
+  assert_file_exists "$tmp/.orchestra/custom.txt" "migration preserves unrecognized user data"
+  assert_file_exists "$tmp/.agents/orchestra/.state/config.yml" "migration still copies known state files"
+}
+
 # ---------------------------------------------------------------------------
 # Test: help and version
 # ---------------------------------------------------------------------------
@@ -265,9 +416,9 @@ test_completion_from_nested_directory() {
   tmp="$(setup_test)"
   trap "teardown_test_project $tmp" RETURN
 
-  setup_cached_source "$tmp"
-  printf '%s\n' 'packages:' '  - name: demo-agent' > "$tmp/.orchestra/pkg.lock.yaml"
-  mkdir -p "$tmp/nested/work"
+  mkdir -p "$tmp/.agents/orchestra/.state" "$tmp/nested/work"
+  printf '%s\n' 'packages:' '  - name: demo-agent' > "$tmp/.agents/orchestra/.state/pkg.lock.yaml"
+  printf '%s\n' 'sources:' '  - name: core' '    repo: test/source' > "$tmp/.agents/orchestra/.state/sources.yaml"
 
   local out
   out="$(
@@ -279,7 +430,7 @@ test_completion_from_nested_directory() {
       words=("${COMP_WORDS[@]}")
       cword="$COMP_CWORD"
     }
-    source "$tmp/.orchestra/completion/orchestra-completion.bash"
+    source "$tmp/orchestra-tool/completion/orchestra-completion.bash"
 
     COMP_WORDS=(orchestra install "")
     COMP_CWORD=2
@@ -350,7 +501,7 @@ test_completion_from_nested_directory() {
 }
 
 # ---------------------------------------------------------------------------
-# Test: source list auto-creates default sources.yaml
+# Test: source list shows defaults without creating project state
 # ---------------------------------------------------------------------------
 test_source_list_default() {
   local tmp
@@ -361,7 +512,7 @@ test_source_list_default() {
   out="$(run_in_project "$tmp" source list 2>&1)"
   assert_contains "$out" "core" "default source list mentions core"
   assert_contains "$out" "BobBurton9000/orchestra-defaults" "default source list mentions defaults repo"
-  assert_file_exists "$tmp/.orchestra/sources.yaml" "sources.yaml auto-created"
+  assert_file_missing "$tmp/.orchestra/sources.yaml" "read-only source list does not create project state"
 }
 
 # ---------------------------------------------------------------------------
@@ -1110,7 +1261,7 @@ test_upgrade_bulk_overwrites_without_prompt() {
   out="$(timeout 10 bash -c 'cd "'"$tmp"'" && PATH="'"$tmp"'/bin:$PATH" \
       FIXTURE_SOURCE_DIR="'"$FIXTURE_SOURCE_DIR"'" \
       FIXTURE_SHA="'"$FIXTURE_SHA"'" \
-      .orchestra/orchestra.sh upgrade < <(sleep 30) 2>&1')" || rc=$?
+      ORCHESTRA_DIR=.orchestra "'"$tmp"'/orchestra-tool/orchestra.sh" upgrade < <(sleep 30) 2>&1')" || rc=$?
   rc="${rc:-0}"
   assert_eq "$rc" "0" "bulk upgrade over installed packages exits 0 (no hang, no prompt)"
   assert_contains "$out" "Upgrade complete" "bulk upgrade reports completion"
@@ -1611,7 +1762,13 @@ main() {
   echo ""
 
   local tests=(
-    test_gitignore_for_project_state
+    test_gitignore_policy_is_user_controlled
+    test_default_state_bootstrap_from_git_root
+    test_read_only_commands_do_not_initialize_state
+    test_status_excludes_new_manager_state
+    test_migrate_v2_copies_state_and_removes_old_checkout
+    test_migrate_v2_preserves_conflicts_and_can_retry
+    test_migrate_v2_keeps_unrecognized_orchestra_directory
     test_help_version
     test_nested_project_directory
     test_completion_from_nested_directory

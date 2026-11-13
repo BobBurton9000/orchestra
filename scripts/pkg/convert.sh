@@ -128,6 +128,7 @@ convert_cmd() {
     die "No agents directory found at ${src_dir#$project_root/}"
   fi
 
+  ensure_orchestra_dir
   local _convert_dest_dir="$AGENTS_ORCHESTRA_DIR_ABS/agents"
   mkdir -p "$_convert_dest_dir"
 

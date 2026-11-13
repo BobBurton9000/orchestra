@@ -13,8 +13,6 @@ status_absolute_path() {
 }
 
 status_cmd() {
-  ensure_orchestra_dir
-
   local package_count=0
   local managed_count=0
   local missing_count=0
@@ -107,7 +105,7 @@ status_cmd() {
         printf '  [UNTRACKED] %s\n' "$(status_display_path "$path")"
         untracked_count=$((untracked_count + 1))
       fi
-    done < <(find "$AGENTS_ORCHESTRA_DIR_ABS" \( -type f -o -type l \) -print0)
+    done < <(find "$AGENTS_ORCHESTRA_DIR_ABS" -path "$ORCHESTRA_PROJECT_ROOT/$ORCHESTRA_DIR" -prune -o \( -type f -o -type l \) -print0)
   fi
   if [ "$untracked_count" -eq 0 ]; then
     echo "  None."

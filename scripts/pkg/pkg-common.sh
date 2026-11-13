@@ -13,8 +13,7 @@ TAB=$'\t'
 PIPE='|'
 
 ensure_orchestra_dir() {
-  [ -d "$ORCHESTRA_PROJECT_ROOT/$ORCHESTRA_DIR" ] ||
-    die "No $ORCHESTRA_PROJECT_ROOT/$ORCHESTRA_DIR/ directory. Run this from a project with Orchestra installed."
+  mkdir -p "$ORCHESTRA_PROJECT_ROOT/$ORCHESTRA_DIR"
 }
 
 ensure_pkg_dirs() {

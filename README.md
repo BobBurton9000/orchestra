@@ -4,7 +4,7 @@ Orchestra is a universal format and package manager for AI coding agents, prompt
 
 Although Orchestra works for standalone agents, it's built around an orchestration workflow where an Orchestrator agent delegates to a team of specialised subagents — and automatically becomes aware of new agents as you install them.
 
-Orchestra lives in `.orchestra/` within your project. Your installed definitions live in `.agents/orchestra/`. You own them.
+The Orchestra program can be cloned wherever you choose. Each project keeps installed definitions in `.agents/orchestra/` and manager state in `.agents/orchestra/.state/`. You control whether those project files are committed or ignored.
 
 ## What Orchestra does
 
@@ -57,7 +57,7 @@ Orchestra is inspired by `apt`. Sources are GitHub repositories with an `orchest
 The sharing model is simple: **authors publish markdown definitions without a model; each developer picks their own.** Source files never contain a `model:` line. When you install an agent, Orchestra reads `config.yml` for your default model choices and injects the model into the installed file's frontmatter. One developer runs `architect` on Claude; another runs it on GPT — same source definition, different models, no edits to the shared file. Upgrades preserve your model choice — the upgraded file inherits the model from your previously installed file, not from `config.yml`.
 
 ```yaml
-# .orchestra/config.yml
+# .agents/orchestra/.state/config.yml
 orchestrator: ollama-cloud/qwen3.5:397b
 subagent: ollama-cloud/glm-5.1
 ```
@@ -76,18 +76,32 @@ The workflow loop: **delegate → implement → review → iterate.** The Orches
 
 ## Setup
 
-```bash
-git clone https://github.com/BobBurton9000/orchestra.git .orchestra
-```
-
-No install script. Orchestra is a single entry point. If this project is a Git repository, either add Orchestra as a submodule or ignore `.orchestra/` in the project's root `.gitignore`; a clone inside `.orchestra/` is itself a Git repository.
+Clone Orchestra into any stable directory you choose. For example:
 
 ```bash
-.orchestra/orchestra.sh install orchestrator           # install a single agent
-.orchestra/orchestra.sh install --all core             # install everything from the core source
+git clone https://github.com/BobBurton9000/orchestra.git "$HOME/.local/share/orchestra"
 ```
 
-A default `sources.yaml` is created on first run, pointing at the [`orchestra-defaults`](https://github.com/BobBurton9000/orchestra-defaults) source. Its package catalog changes over time; see the source manifest for current contents.
+Add a Bash function to `~/.bashrc`, using the path where you cloned the repository:
+
+```bash
+orchestra() {
+  "$HOME/.local/share/orchestra/orchestra.sh" "$@"
+}
+```
+
+Reload your shell configuration (or start a new shell). The function forwards every argument, so commands such as `orchestra update` and `orchestra install my-skill` work from your project directory.
+
+The first state-managing command initializes project state under `.agents/orchestra/.state/`. `orchestra update` creates a default `sources.yaml` pointing at the [`orchestra-defaults`](https://github.com/BobBurton9000/orchestra-defaults) source and refreshes its catalog. You can then install packages:
+
+```bash
+cd /path/to/your/project
+orchestra update && orchestra install orchestrator
+```
+
+Orchestra does not change your project's `.gitignore`. Add `.agents/orchestra/.state/` or `.agents/orchestra/` there if your team wants the state or definitions ignored; leave the relevant paths unignored and commit them if your team wants to share them.
+
+To migrate an existing project, run `orchestra migrate v2` from that project using the new Orchestra command. It copies legacy state from `.orchestra/` without overwriting files. Conflicts must be resolved before cleanup; once migration completes, the command asks before deleting a recognized old Orchestra checkout in `.orchestra/`.
 
 ## Requirements
 
@@ -103,12 +117,13 @@ Orchestra depends on three things:
 Install the Orchestrator and a couple of subagents, then export to both agent platforms:
 
 ```bash
-.orchestra/orchestra.sh install orchestrator
-.orchestra/orchestra.sh install architect
-.orchestra/orchestra.sh install debugger
+orchestra update
+orchestra install orchestrator
+orchestra install architect
+orchestra install debugger
 
-.orchestra/orchestra.sh export opencode
-.orchestra/orchestra.sh export copilot
+orchestra export opencode
+orchestra export copilot
 ```
 
 The same three definitions produce different output trees:
@@ -130,47 +145,55 @@ OpenCode discovers all `.opencode/agents/*.md` files; Copilot discovers all `.gi
 ### Package management
 
 ```bash
-.orchestra/orchestra.sh install <pkg>[@<source>]       # install a single package
-.orchestra/orchestra.sh install <pkg> --locked         # fetch at lockfile SHA (package metadata from cache)
-.orchestra/orchestra.sh install --all <source>         # install every package from one source
-.orchestra/orchestra.sh update                          # refresh all source manifests + HEAD SHAs
-.orchestra/orchestra.sh upgrade [pkg]                  # upgrade to cached source HEADs (run update to refresh)
-.orchestra/orchestra.sh remove <pkg>                   # remove a package (files + lockfile entry)
-.orchestra/orchestra.sh fork <pkg>                     # detach a package for local edits
-.orchestra/orchestra.sh push <pkg> [options]            # publish forked edits to the source repo
+orchestra install <pkg>[@<source>]       # install a single package
+orchestra install <pkg> --locked         # fetch at lockfile SHA (package metadata from cache)
+orchestra install --all <source>         # install every package from one source
+orchestra update                          # refresh all source manifests + HEAD SHAs
+orchestra upgrade [pkg]                  # upgrade to cached source HEADs (run update to refresh)
+orchestra remove <pkg>                   # remove a package (files + lockfile entry)
+orchestra fork <pkg>                     # detach a package for local edits
+orchestra push <pkg> [options]            # publish forked edits to the source repo
 ```
 
 ### Sources
 
 ```bash
-.orchestra/orchestra.sh source add <owner/repo> [name] # add a source + fetch its manifest
-.orchestra/orchestra.sh source subscribe <name>       # install future packages from a source on upgrade
-.orchestra/orchestra.sh source unsubscribe <name>     # stop installing future packages
-.orchestra/orchestra.sh source list                    # show configured sources
-.orchestra/orchestra.sh source remove <name>           # remove a source (refuses while non-forked packages use it)
+orchestra source add <owner/repo> [name] # add a source + fetch its manifest
+orchestra source subscribe <name>       # install future packages from a source on upgrade
+orchestra source unsubscribe <name>     # stop installing future packages
+orchestra source list                    # show configured sources
+orchestra source remove <name>           # remove a source (refuses while non-forked packages use it)
 ```
+
+### Migrate existing projects
+
+```bash
+orchestra migrate v2
+```
+
+Run this from a project that still has the old `.orchestra/` checkout, using the new Orchestra command installed elsewhere. It copies known project state into `.agents/orchestra/.state/` without overwriting. Identical destination files are treated as already migrated; differing files are reported and left untouched. Resolve conflicts and rerun the command. After a conflict-free migration, Orchestra asks before deleting a recognized old checkout (`ORCHESTRA_YES=1` auto-confirms). It leaves an unrecognized `.orchestra/` directory in place.
 
 ### Query
 
 ```bash
-.orchestra/orchestra.sh list                           # installed packages
-.orchestra/orchestra.sh list --available               # all packages across all sources
-.orchestra/orchestra.sh search <term>                  # search by name/type/path
-.orchestra/orchestra.sh info <pkg>                     # details for a package (installed or available)
-.orchestra/orchestra.sh status                         # audit package paths and orphaned files
+orchestra list                           # installed packages
+orchestra list --available               # all packages across all sources
+orchestra search <term>                  # search by name/type/path
+orchestra info <pkg>                     # details for a package (installed or available)
+orchestra status                         # audit package paths and orphaned files
 ```
 
 ### Platform compatibility
 
 ```bash
-.orchestra/orchestra.sh export copilot|opencode|pi [agents|prompts|skills] # compile selected definitions
-.orchestra/orchestra.sh convert copilot|opencode [name] # convert existing platform agents → Orchestra definitions
+orchestra export copilot|opencode|pi [agents|prompts|skills] # compile selected definitions
+orchestra convert copilot|opencode [name] # convert existing platform agents → Orchestra definitions
 ```
 
 ### Publishing (for source authors)
 
 ```bash
-.orchestra/orchestra.sh generate-manifest [dir]        # scan a directory, emit orchestra-source.yaml
+orchestra generate-manifest [dir]        # scan a directory, emit orchestra-source.yaml
 ```
 
 Source repositories do not need to contain Orchestra to maintain their
@@ -193,9 +216,9 @@ The committed tool updates itself from `master` with
 ### Help
 
 ```bash
-.orchestra/orchestra.sh                                 # usage
-.orchestra/orchestra.sh help [command]                  # per-command help
-.orchestra/orchestra.sh --version
+orchestra                                 # usage
+orchestra help [command]                  # per-command help
+orchestra --version
 ```
 
 ## How it works
@@ -206,7 +229,7 @@ Use `status` to audit the local definition directory against the package
 lockfile:
 
 ```bash
-.orchestra/orchestra.sh status
+orchestra status
 ```
 
 The report shows each locked package, its source, type, SHA, and installed
@@ -217,10 +240,10 @@ local read-only check; it does not refresh source indexes or modify state.
 ### Install
 
 ```bash
-.orchestra/orchestra.sh install orchestrator           # agents/orchestrator.agent.md
-.orchestra/orchestra.sh install writing-gherkin        # skills/writing-gherkin/SKILL.md
-.orchestra/orchestra.sh install commit                 # prompts/commit.prompt.md
-.orchestra/orchestra.sh install triage-agent@extras    # from a specific source
+orchestra install orchestrator           # agents/orchestrator.agent.md
+orchestra install writing-gherkin        # skills/writing-gherkin/SKILL.md
+orchestra install commit                 # prompts/commit.prompt.md
+orchestra install triage-agent@extras    # from a specific source
 ```
 
 - Fetches the package at the source HEAD SHA recorded in the local cache via `gh api`. Run `update` first if you need to refresh that cache.
@@ -231,9 +254,9 @@ local read-only check; it does not refresh source indexes or modify state.
 ### Update + upgrade
 
 ```bash
-.orchestra/orchestra.sh update        # refresh all source manifests + HEAD SHAs
-.orchestra/orchestra.sh upgrade       # upgrade all installed packages to cached HEADs
-.orchestra/orchestra.sh upgrade orchestrator   # upgrade one package to its source's cached HEAD
+orchestra update        # refresh all source manifests + HEAD SHAs
+orchestra upgrade       # upgrade all installed packages to cached HEADs
+orchestra upgrade orchestrator   # upgrade one package to its source's cached HEAD
 ```
 
 Bulk `upgrade` refreshes subscribed sources, but other sources use their cached HEAD until you run `update`. Targeted `upgrade <pkg>` also uses the cached HEAD (refreshing only if no cache exists). Upgrades preserve your model choice — the upgraded file inherits the model from your previously installed file, not from `config.yml`. If you change your mind about a model, re-install the package fresh (`remove` then `install`).
@@ -241,7 +264,7 @@ Bulk `upgrade` refreshes subscribed sources, but other sources use their cached 
 ### Fork
 
 ```bash
-.orchestra/orchestra.sh fork orchestrator
+orchestra fork orchestrator
 ```
 
 Forking keeps the installed files and their lockfile entry, but marks the
@@ -257,9 +280,9 @@ Forked packages remain managed by `status` and can still be removed. Running `in
 Publish edits from a forked package back to its original GitHub repository:
 
 ```bash
-.orchestra/orchestra.sh fork writing-gherkin
+orchestra fork writing-gherkin
 "$EDITOR" .agents/orchestra/skills/writing-gherkin/...
-.orchestra/orchestra.sh push writing-gherkin
+orchestra push writing-gherkin
 ```
 
 `push` requires GitHub push permission for the recorded source repository. It
@@ -281,9 +304,9 @@ Adding a source makes its packages available for explicit installation. It does 
 To receive assets added to a source in future bulk upgrades:
 
 ```bash
-.orchestra/orchestra.sh source add alice/orchestra-extras extras
-.orchestra/orchestra.sh source subscribe extras
-.orchestra/orchestra.sh upgrade
+orchestra source add alice/orchestra-extras extras
+orchestra source subscribe extras
+orchestra upgrade
 ```
 
 `source subscribe` records the source manifest at that point as a baseline. A later `upgrade` refreshes subscribed sources and installs only package names added after that baseline. Existing packages are left under normal lockfile control, and `upgrade <pkg>` remains a targeted upgrade without subscription discovery. Use `install --all <source>` when you also want the source's current packages.
@@ -291,13 +314,13 @@ To receive assets added to a source in future bulk upgrades:
 Unsubscribing stops future automatic installs but does not remove packages already installed:
 
 ```bash
-.orchestra/orchestra.sh source unsubscribe extras
+orchestra source unsubscribe extras
 ```
 
 ### Remove
 
 ```bash
-.orchestra/orchestra.sh remove writing-gherkin
+orchestra remove writing-gherkin
 ```
 
 Deletes every file recorded in the lockfile entry, then removes the lockfile entry. `remove` is the same as `purge` — there is no separate "keep config" step.
@@ -305,24 +328,24 @@ Deletes every file recorded in the lockfile entry, then removes the lockfile ent
 ### Export
 
 ```bash
-.orchestra/orchestra.sh export copilot                # → .github/agents/ + .github/prompts/ + .agents/skills/
-.orchestra/orchestra.sh export copilot prompts        # only prompts → .github/prompts/
-.orchestra/orchestra.sh export copilot agents         # only agents → .github/agents/
-.orchestra/orchestra.sh export opencode skills        # only skills → .agents/skills/
-.orchestra/orchestra.sh export pi                     # → .pi/prompts/ + .agents/skills/ (no agents)
-.orchestra/orchestra.sh export pi prompts             # only prompts → .pi/prompts/
+orchestra export copilot                # → .github/agents/ + .github/prompts/ + .agents/skills/
+orchestra export copilot prompts        # only prompts → .github/prompts/
+orchestra export copilot agents         # only agents → .github/agents/
+orchestra export opencode skills        # only skills → .agents/skills/
+orchestra export pi                     # → .pi/prompts/ + .agents/skills/ (no agents)
+orchestra export pi prompts             # only prompts → .pi/prompts/
 ```
 
 With no type selector, export processes every type supported by the platform. Add one selector—`agents`, `prompts`, or `skills`—to export only that type. For example, Pi supports prompts and skills, but not agents.
 
 What happens:
 1. Applicable definitions in `.agents/orchestra/` are compiled (`#include` directives resolved, headings extracted); a type selector limits this to that type
-2. Compiled output lands in `.orchestra/.temp/`
+2. Compiled output lands in `.agents/orchestra/.state/.temp/`
 3. Frontmatter is transformed to the target platform's format (see the [transformation table](#1-a-universal-format-for-agents-and-prompts) above)
 4. Output files are staged
 5. Skills are compiled and staged in `.agents/skills/` when exporting all types or selecting `skills`
 6. The managed output directories for the export are replaced to match the selected definitions; stale and manually added files in those directories are removed. A type-filtered export leaves other types' output directories untouched, and other platform outputs are always untouched.
-7. A `.orchestra/.manifest` file lists the outputs from the latest export only, and `.orchestra/.temp/` is removed
+7. A `.agents/orchestra/.state/.manifest` file lists the outputs from the latest export only, and `.agents/orchestra/.state/.temp/` is removed
 
 All outputs are staged before export changes existing files. A missing `.agents/orchestra/` directory is an error. An existing but empty directory clears the selected platform outputs on a full export, or only the selected type's output on a filtered export. The managed directories are then replaced one at a time, so the multi-directory update is not a single atomic transaction. Prompt-directory package files are not copied as standalone outputs on any platform; they are included when referenced by `#include` in an exported prompt.
 
@@ -331,10 +354,10 @@ All outputs are staged before export changes existing files. A missing `.agents/
 If you already have agents installed for Copilot or OpenCode, convert them back into Orchestra definitions:
 
 ```bash
-.orchestra/orchestra.sh convert copilot              # all .github/agents/*.agent.md
-.orchestra/orchestra.sh convert copilot architect    # single agent
-.orchestra/orchestra.sh convert opencode             # all .opencode/agents/*.md
-.orchestra/orchestra.sh convert opencode architect   # single agent
+orchestra convert copilot              # all .github/agents/*.agent.md
+orchestra convert copilot architect    # single agent
+orchestra convert opencode             # all .opencode/agents/*.md
+orchestra convert opencode architect   # single agent
 ```
 
 Conversion handles supported agent metadata, but drops `model:` and does not preserve arbitrary platform-specific fields. Output lands in `.agents/orchestra/agents/`; it asks before overwriting.
@@ -372,12 +395,12 @@ Agent and prompt bodies can include external markdown files. The included conten
 #include /docs/architecture.md:##Security Model
 ```
 
-- Paths are relative to the project root (where `.orchestra/` lives). A leading `~` expands to the home directory.
+- Paths are relative to the project root (the directory containing `.agents/orchestra/`). A leading `~` expands to the home directory.
 - `:#Section Name` injects everything under that heading until the next same-or-higher-level heading
 - `:##Sub Section` injects everything under that sub-heading
 - Includes can nest — included files can include other files
 - Every include is validated at export time; missing files or headings cause a hard error
-- Exports compile into `.orchestra/.temp/` and stage outputs before replacing managed platform directories. A compile failure leaves existing outputs untouched; replacing multiple output directories is sequential, not one atomic transaction.
+- Exports compile into `.agents/orchestra/.state/.temp/` and stage outputs before replacing managed platform directories. A compile failure leaves existing outputs untouched; replacing multiple output directories is sequential, not one atomic transaction.
 - `.temp/` is always cleaned up, success or failure
 
 ## The Orchestration Workflow
@@ -433,12 +456,14 @@ The orchestration workflow is not mandatory. You can install a single agent (e.g
 
 Orchestra is built for sharing. Anyone can publish a source — it's just a GitHub repo with an `orchestra-source.yaml` at the root. See [`PUBLISHING.md`](PUBLISHING.md) for the format and a step-by-step guide.
 
-Package *choice* stays personal. Your `sources.yaml`, `pkg.lock.yaml`, and `config.yml` are gitignored — they represent your selections, not your team's. Teammates configure their own sources and install what they need.
+Package choice can be personal or shared, depending on your team. Orchestra does not modify `.gitignore`: ignore `.agents/orchestra/.state/` (or the whole `.agents/orchestra/` directory) for per-developer state, or leave it unignored to commit and sync shared choices.
 
 ## Repository Layout
 
+Clone Orchestra into any stable location you choose. The program files stay together there:
+
 ```
-.orchestra/
+<chosen-install-dir>/
 ├── orchestra-manifest.sh        # Standalone source manifest generator
 ├── orchestra.sh                # Single CLI entry point — all commands
 ├── scripts/
@@ -459,6 +484,7 @@ Package *choice* stays personal. Your `sources.yaml`, `pkg.lock.yaml`, and `conf
 │       ├── list.sh             # list/search/info query commands
 │       ├── status.sh           # package lockfile/filesystem audit
 │       ├── manifest.sh         # generate-manifest for source authors
+│       ├── migrate.sh          # project-state migration from legacy layouts
 │       ├── export.sh           # export subcommand (compile → platform output)
 │       └── convert.sh          # convert subcommand (platform → Orchestra defs)
 ├── completion/
@@ -466,36 +492,29 @@ Package *choice* stays personal. Your `sources.yaml`, `pkg.lock.yaml`, and `conf
 └── tests/                      # Test suite
 ```
 
-Your installed definitions (after install):
+Project definitions and manager state remain separate from the program installation:
 
 ```
 .agents/orchestra/
-├── agents/                     # Agent definitions you own
-├── prompts/                    # Prompt definitions you own
-└── skills/                     # Skill definitions you own
+├── agents/                     # Agent definitions
+├── prompts/                    # Prompt definitions
+├── skills/                     # Skill definitions
+└── .state/
+    ├── sources.yaml            # Configured sources and subscription baselines
+    ├── pkg.lock.yaml           # Installed package ledger (source provenance, SHA, paths, fork state)
+    ├── pkg-cache/              # Fetched manifests + HEAD SHAs
+    ├── config.yml              # Default model choices for agents
+    └── .manifest               # Last export output list
 ```
 
-Personal Orchestra state (all gitignored — your choices, not your team's):
-
-```
-.orchestra/
-├── sources.yaml                # Your configured sources and subscription baselines
-├── pkg.lock.yaml               # Installed package ledger (source provenance, SHA, paths, fork state)
-├── pkg-cache/                  # Fetched manifests + HEAD SHAs
-├── config.yml                  # Default model choices for agents
-└── .manifest                   # Last export output list
-```
-
-These files are generated locally and should not be committed. The `.gitignore`
-shipped with Orchestra contains rules relative to the `.orchestra/` directory,
-where Orchestra is normally cloned.
+Orchestra does not decide whether project data is committed. Ignore `.agents/orchestra/.state/` or the whole `.agents/orchestra/` directory for per-developer state; leave the relevant paths unignored and commit them if your team wants to sync shared choices.
 
 ## Tab completion
 
-The completion script uses Bash's `_init_completion` helper, provided by the `bash-completion` package. Load that package, then source Orchestra's completion file:
+The completion script uses Bash's `_init_completion` helper, provided by the `bash-completion` package. After loading that package, source the completion file from your chosen Orchestra installation. For example, add this to `~/.bashrc`:
 
 ```bash
-source .orchestra/completion/orchestra-completion.bash
+source "$HOME/.local/share/orchestra/completion/orchestra-completion.bash"
 ```
 
-Add the command to your `~/.bashrc` for persistence.
+Replace the example path with your chosen install location.

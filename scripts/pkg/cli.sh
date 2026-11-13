@@ -25,6 +25,9 @@ Sources:
   source list                    Show configured sources
   source remove <name>           Remove a source (refuses if packages still installed)
 
+Project migration:
+  migrate v2                     Move state from legacy .orchestra/ into .agents/orchestra/.state/
+
 Query:
   list                           Show installed packages
   list --available               Show all packages across all sources
@@ -65,13 +68,24 @@ Examples:
   orchestra install triage-agent@extras
   orchestra install --all core
 
-For agents, the model is read from .orchestra/config.yml silently if present,
-otherwise you are prompted and the choice is saved for next time.
+For agents, the model is read from .agents/orchestra/.state/config.yml silently
+if present; otherwise you are prompted and the choice is saved for next time.
 EOF
       ;;
     update)
       echo "orchestra update — refresh all source manifests and HEAD SHAs"
       echo "Usage: orchestra update"
+      ;;
+    migrate)
+      cat <<EOF
+orchestra migrate — migrate project state from a previous Orchestra layout
+
+Usage: orchestra migrate v2
+
+Copies legacy state from .orchestra/ to .agents/orchestra/.state/ without
+replacing existing files. After a conflict-free migration, it can remove the
+old .orchestra/ checkout after confirmation.
+EOF
       ;;
     upgrade)
       cat <<EOF
@@ -274,6 +288,7 @@ orchestra_main() {
     export)             export_cmd "$@" ;;
     convert)            convert_cmd "$@" ;;
     generate-manifest)  manifest_generate "$@" ;;
+    migrate)            migrate_cmd "$@" ;;
     help|"")            [ -n "$cmd" ] && [ "$cmd" = "help" ] && help_for "${1:-}" || usage ;;
     --version)          echo "orchestra 1.0.0" ;;
     *)                  die "Unknown command: $cmd. Run 'orchestra help'." ;;

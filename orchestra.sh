@@ -31,6 +31,7 @@ source "$PKG_DIR/upgrade.sh"
 source "$PKG_DIR/list.sh"
 source "$PKG_DIR/status.sh"
 source "$PKG_DIR/manifest.sh"
+source "$PKG_DIR/migrate.sh"
 
 if [ -f "$PKG_DIR/export.sh" ]; then
   source "$PKG_DIR/export.sh"

@@ -81,7 +81,7 @@ Use `--check` in CI to reject a stale manifest without changing it:
 If Orchestra is installed in a project, the equivalent command is:
 
 ```bash
-.orchestra/orchestra.sh generate-manifest --force /path/to/your/source/repo
+orchestra generate-manifest --force /path/to/your/source/repo
 ```
 
 ## Publishing workflow

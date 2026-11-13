@@ -50,7 +50,10 @@ list_available_all_sources() {
   }
   yaml_sources_each "$PKG_SOURCES_FILE" _list_available_source
 
-  [ "$any" -eq 0 ] && echo "No packages available. Add a source and run 'orchestra update'."
+  if [ "$any" -eq 0 ]; then
+    echo "No packages available. Add a source and run 'orchestra update'."
+  fi
+  return 0
 }
 
 list_cmd() {

@@ -776,6 +776,26 @@ test_list_installed() {
 }
 
 # ---------------------------------------------------------------------------
+# Test: listing available packages succeeds when inventory is printed
+# ---------------------------------------------------------------------------
+test_list_available_exit_status() {
+  local tmp
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  setup_cached_source "$tmp"
+
+  local out rc=0
+  if out="$(run_in_project "$tmp" list --available 2>&1)"; then
+    rc=0
+  else
+    rc=$?
+  fi
+  assert_eq "$rc" "0" "list --available exits successfully after printing inventory"
+  assert_contains "$out" "demo-agent" "list --available prints package inventory"
+}
+
+# ---------------------------------------------------------------------------
 # Test: search
 # ---------------------------------------------------------------------------
 test_search() {
@@ -2197,6 +2217,7 @@ main() {
     test_install_prompt_dir
     test_install_all
     test_list_installed
+    test_list_available_exit_status
     test_search
     test_info_installed
     test_info_available

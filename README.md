@@ -82,15 +82,24 @@ Clone Orchestra into any stable directory you choose. For example:
 git clone https://github.com/BobBurton9000/orchestra.git "$HOME/.local/share/orchestra"
 ```
 
-Add a Bash function to `~/.bashrc`, using the path where you cloned the repository:
+Create an executable launcher in `~/.local/bin` that forwards to the clone. This example assumes the clone is at `~/.local/share/orchestra`; adjust that path if you chose another location:
 
 ```bash
-orchestra() {
-  "$HOME/.local/share/orchestra/orchestra.sh" "$@"
-}
+mkdir -p "$HOME/.local/bin"
+cat > "$HOME/.local/bin/orchestra" <<'EOF'
+#!/usr/bin/env bash
+exec "$HOME/.local/share/orchestra/orchestra.sh" "$@"
+EOF
+chmod +x "$HOME/.local/bin/orchestra"
 ```
 
-Reload your shell configuration (or start a new shell). The function forwards every argument, so commands such as `orchestra update` and `orchestra install my-skill` work from your project directory.
+Ensure `~/.local/bin` is in the `PATH` of the environment that starts Orchestra and Pi. For example, add this to `~/.bashrc` when you launch Pi from that Bash session:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Start a new Pi process after changing `PATH`, then check that `command -v orchestra` finds the launcher. Pi's command tool runs commands in a separate, usually non-interactive shell: that shell inherits Pi's `PATH`, but does not normally read `~/.bashrc`. A Bash function defined there is not an executable and is not normally available to the tool, so do not rely on a function as the only installation method. If Pi is launched outside an interactive Bash session, add `~/.local/bin` to the environment used to launch Pi instead.
 
 The first state-managing command initializes project state under `.agents/orchestra/.state/`. `orchestra update` creates a default `sources.yaml` pointing at the [`orchestra-defaults`](https://github.com/BobBurton9000/orchestra-defaults) source and refreshes its catalog. You can then install packages:
 

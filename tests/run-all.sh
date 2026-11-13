@@ -231,11 +231,11 @@ setup_test() {
 }
 
 make_legacy_orchestra_checkout() {
-  local tmp="$1"
-  mkdir -p "$tmp/.orchestra/scripts/pkg"
-  cp "$REPO_ROOT/orchestra.sh" "$tmp/.orchestra/orchestra.sh"
-  cp "$REPO_ROOT/scripts/common.sh" "$tmp/.orchestra/scripts/common.sh"
-  cp "$REPO_ROOT/scripts/pkg/cli.sh" "$tmp/.orchestra/scripts/pkg/cli.sh"
+  local directory="${2:-$1/.orchestra}"
+  mkdir -p "$directory/scripts/pkg"
+  cp "$REPO_ROOT/orchestra.sh" "$directory/orchestra.sh"
+  cp "$REPO_ROOT/scripts/common.sh" "$directory/scripts/common.sh"
+  cp "$REPO_ROOT/scripts/pkg/cli.sh" "$directory/scripts/pkg/cli.sh"
 }
 
 # ---------------------------------------------------------------------------
@@ -367,6 +367,33 @@ test_migrate_v2_keeps_unrecognized_orchestra_directory() {
   assert_contains "$out" "not a recognized Orchestra checkout" "migration explains why directory was retained"
   assert_file_exists "$tmp/.orchestra/custom.txt" "migration preserves unrecognized user data"
   assert_file_exists "$tmp/.agents/orchestra/.state/config.yml" "migration still copies known state files"
+}
+
+# ---------------------------------------------------------------------------
+# Test: migration removes a legacy symlink, not its external checkout target
+# ---------------------------------------------------------------------------
+test_migrate_v2_removes_legacy_symlink_only() {
+  local tmp old_checkout
+  tmp="$(setup_test)"
+  trap "teardown_test_project $tmp" RETURN
+
+  old_checkout="$tmp/old-orchestra-checkout"
+  make_legacy_orchestra_checkout "$tmp" "$old_checkout"
+  printf 'legacy settings\n' > "$old_checkout/config.yml"
+  rmdir "$tmp/.orchestra"
+  ln -s "$old_checkout" "$tmp/.orchestra"
+
+  local out
+  out="$(ORCHESTRA_YES=1 run_with_default_state "$tmp" "$tmp" migrate v2 2>&1)"
+  assert_contains "$out" "Removed the old Orchestra checkout" "migration removes recognized legacy symlink"
+  if [ -e "$tmp/.orchestra" ] || [ -L "$tmp/.orchestra" ]; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: legacy .orchestra symlink was not removed")
+  else
+    PASS=$((PASS + 1))
+  fi
+  assert_file_exists "$old_checkout/orchestra.sh" "migration leaves external checkout target intact"
+  assert_file_exists "$tmp/.agents/orchestra/.state/config.yml" "migration copies state through the legacy symlink"
 }
 
 # ---------------------------------------------------------------------------
@@ -1769,6 +1796,7 @@ main() {
     test_migrate_v2_copies_state_and_removes_old_checkout
     test_migrate_v2_preserves_conflicts_and_can_retry
     test_migrate_v2_keeps_unrecognized_orchestra_directory
+    test_migrate_v2_removes_legacy_symlink_only
     test_help_version
     test_nested_project_directory
     test_completion_from_nested_directory

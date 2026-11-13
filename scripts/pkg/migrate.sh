@@ -90,11 +90,6 @@ migrate_v2() {
     return 0
   fi
 
-  if [ -L "$legacy_dir" ]; then
-    log_warn "State was migrated, but $legacy_dir is a symlink and was left in place."
-    return 0
-  fi
-
   if ! ask_yes_no "Remove the old Orchestra checkout at $legacy_dir?"; then
     log_info "Kept the old checkout at $legacy_dir."
     return 0

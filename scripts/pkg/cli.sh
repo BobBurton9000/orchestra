@@ -94,6 +94,11 @@ orchestra upgrade — upgrade installed package(s) to current HEAD
 Usage:
   orchestra upgrade            Upgrade all installed packages
   orchestra upgrade <pkg>      Upgrade a single package
+
+When an updated package drops installed files, Orchestra asks per file whether
+to remove it, keep it as an untracked local file, or cancel that package upgrade.
+Enter keeps the file. ORCHESTRA_YES=1 removes stale files automatically; without
+a TTY or that variable, the package upgrade is aborted (skipped in bulk mode).
 EOF
       ;;
     remove)

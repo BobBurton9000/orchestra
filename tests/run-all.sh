@@ -84,6 +84,22 @@ run_in_project() {
   )
 }
 
+run_interactive_in_project() {
+  local tmp="$1"
+  local input="$2"
+  shift 2
+  command -v script >/dev/null 2>&1 || return 77
+
+  local command arg quoted_arg
+  printf -v command 'cd %q && env PATH=%q ORCHESTRA_YES= FIXTURE_SOURCE_DIR=%q FIXTURE_SHA=%q ORCHESTRA_DIR=.orchestra %q' \
+    "$tmp" "$tmp/bin:$PATH" "$FIXTURE_SOURCE_DIR" "$FIXTURE_SHA" "$tmp/orchestra-tool/orchestra.sh"
+  for arg in "$@"; do
+    printf -v quoted_arg '%q' "$arg"
+    command+=" $quoted_arg"
+  done
+  printf '%s' "$input" | script -q -e -c "$command" /dev/null
+}
+
 run_in_nested_project() {
   local tmp="$1"
   shift
@@ -410,6 +426,10 @@ test_help_version() {
 
   out="$(run_in_project "$tmp" help)"
   assert_contains "$out" "install" "help mentions install"
+  local upgrade_help
+  upgrade_help="$(run_in_project "$tmp" help upgrade)"
+  assert_contains "$upgrade_help" "ORCHESTRA_YES=1" "upgrade help documents stale-file automation"
+  assert_contains "$upgrade_help" "Enter keeps the file" "upgrade help documents the default stale-file choice"
   assert_contains "$out" "export copilot|opencode|pi" "help lists Pi export"
   assert_contains "$out" "[agents|prompts|skills]" "help lists export type selectors"
   assert_contains "$out" "convert" "help mentions convert"
@@ -1259,6 +1279,222 @@ test_upgrade_preserves_model() {
 }
 
 # ---------------------------------------------------------------------------
+# Test: upgrade removes stale paths from a multi-file package
+# ---------------------------------------------------------------------------
+test_upgrade_removes_stale_skill_paths() {
+  local tmp
+  tmp="$(setup_test)"
+  local fixture_source_before="$FIXTURE_SOURCE_DIR"
+  local fixture_sha_before="$FIXTURE_SHA"
+  trap 'FIXTURE_SOURCE_DIR="$fixture_source_before"; FIXTURE_SHA="$fixture_sha_before"; teardown_test_project "$tmp"' RETURN
+
+  setup_cached_source "$tmp"
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
+
+  local new_sha="remove123remove123remove123remove123remove12"
+  FIXTURE_SOURCE_DIR="$FIXTURE_SOURCE_V2_DIR"
+  FIXTURE_SHA="$new_sha"
+  echo "$new_sha" > "$tmp/.orchestra/pkg-cache/core/head.sha"
+
+  local out
+  ORCHESTRA_YES=1 out="$(run_in_project "$tmp" upgrade 2>&1)"
+
+  local locked_sha paths status
+  locked_sha="$(yq -r '.packages[] | select(.name=="demo-skill") | .sha' "$tmp/.orchestra/pkg.lock.yaml")"
+  paths="$(yq -r '.packages[] | select(.name=="demo-skill") | .paths[]' "$tmp/.orchestra/pkg.lock.yaml")"
+  status="$(run_in_project "$tmp" status 2>&1)"
+  assert_eq "$locked_sha" "$new_sha" "stale-file upgrade advances the package lock SHA"
+  assert_contains "$out" "Upgrade complete" "bulk stale-file upgrade reports completion"
+  assert_file_missing "$tmp/.agents/orchestra/skills/demo-skill/templates/module-guide.template.md" "upgrade removes source-deleted skill file"
+  assert_dir_missing "$tmp/.agents/orchestra/skills/demo-skill/templates" "upgrade removes empty directories below the skill root"
+  assert_contains "$paths" "skills/demo-skill/SKILL.md" "new lock entry retains current skill files"
+  assert_contains "$paths" "skills/demo-skill/helper.md" "new lock entry retains current companion files"
+  if [[ "$paths" == *"module-guide.template.md"* ]]; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: stale path was retained in the upgraded lock entry")
+  else
+    PASS=$((PASS + 1))
+  fi
+  if [[ "$status" == *"[UNTRACKED]"* ]]; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: removed stale file is still reported as untracked")
+  else
+    PASS=$((PASS + 1))
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Test: interactive keep preserves a stale file as untracked
+# ---------------------------------------------------------------------------
+test_upgrade_keeps_stale_skill_path() {
+  local tmp
+  tmp="$(setup_test)"
+  local fixture_source_before="$FIXTURE_SOURCE_DIR"
+  local fixture_sha_before="$FIXTURE_SHA"
+  trap 'FIXTURE_SOURCE_DIR="$fixture_source_before"; FIXTURE_SHA="$fixture_sha_before"; teardown_test_project "$tmp"' RETURN
+
+  if ! command -v script >/dev/null 2>&1; then
+    echo "(skipped: script utility unavailable)"
+    return 0
+  fi
+
+  setup_cached_source "$tmp"
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
+
+  local new_sha="keep123keep123keep123keep123keep123keep123"
+  FIXTURE_SOURCE_DIR="$FIXTURE_SOURCE_V2_DIR"
+  FIXTURE_SHA="$new_sha"
+  echo "$new_sha" > "$tmp/.orchestra/pkg-cache/core/head.sha"
+
+  local stale_file="$tmp/.agents/orchestra/skills/demo-skill/templates/module-guide.template.md"
+  local after out rc=0 status paths
+  printf 'Local customization.\n' >> "$stale_file"
+  cp "$stale_file" "$tmp/stale-before"
+  out="$(run_interactive_in_project "$tmp" $'\n' upgrade demo-skill 2>&1)" || rc=$?
+  after="$(<"$stale_file")"
+  status="$(run_in_project "$tmp" status 2>&1)"
+  paths="$(yq -r '.packages[] | select(.name=="demo-skill") | .paths[]' "$tmp/.orchestra/pkg.lock.yaml")"
+
+  assert_eq "$rc" "0" "choosing keep completes the upgrade"
+  assert_eq "$after" "$(<"$tmp/stale-before")" "choosing keep leaves stale file contents untouched"
+  assert_contains "$status" "[UNTRACKED] .agents/orchestra/skills/demo-skill/templates/module-guide.template.md" "kept stale file appears as untracked"
+  if [[ "$paths" == *"module-guide.template.md"* ]]; then
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: kept stale file remained in the package lock entry")
+  else
+    PASS=$((PASS + 1))
+  fi
+  assert_contains "$out" "Upgraded demo-skill" "interactive keep reports package upgrade success"
+}
+
+# ---------------------------------------------------------------------------
+# Test: cancel after an earlier remove choice leaves package and lock unchanged
+# ---------------------------------------------------------------------------
+test_upgrade_cancel_discards_stale_path_choices() {
+  local tmp
+  tmp="$(setup_test)"
+  local fixture_source_before="$FIXTURE_SOURCE_DIR"
+  local fixture_sha_before="$FIXTURE_SHA"
+  trap 'FIXTURE_SOURCE_DIR="$fixture_source_before"; FIXTURE_SHA="$fixture_sha_before"; teardown_test_project "$tmp"' RETURN
+
+  if ! command -v script >/dev/null 2>&1; then
+    echo "(skipped: script utility unavailable)"
+    return 0
+  fi
+
+  setup_cached_source "$tmp"
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
+
+  local source_v3="$tmp/source-v3"
+  cp -R "$FIXTURE_SOURCE_V2_DIR" "$source_v3"
+  rm -f "$source_v3/skills/demo-skill/helper.md"
+  printf 'A changed upstream version.\n' >> "$source_v3/skills/demo-skill/SKILL.md"
+
+  local new_sha="cancel123cancel123cancel123cancel123cancel12"
+  FIXTURE_SOURCE_DIR="$source_v3"
+  FIXTURE_SHA="$new_sha"
+  echo "$new_sha" > "$tmp/.orchestra/pkg-cache/core/head.sha"
+
+  local root="$tmp/.agents/orchestra/skills/demo-skill"
+  local old_sha old_skill old_lock_paths out rc=0
+  old_sha="$(yq -r '.packages[] | select(.name=="demo-skill") | .sha' "$tmp/.orchestra/pkg.lock.yaml")"
+  cp "$root/SKILL.md" "$tmp/skill-before"
+  cp "$tmp/.orchestra/pkg.lock.yaml" "$tmp/lock-before"
+  out="$(run_interactive_in_project "$tmp" $'r\nc\n' upgrade demo-skill 2>&1)" || rc=$?
+
+  old_skill="$(cmp -s "$root/SKILL.md" "$tmp/skill-before" && echo unchanged || echo changed)"
+  old_lock_paths="$(cmp -s "$tmp/.orchestra/pkg.lock.yaml" "$tmp/lock-before" && echo unchanged || echo changed)"
+  assert_eq "$rc" "1" "cancel returns a nonzero status for the targeted upgrade"
+  assert_eq "$old_skill" "unchanged" "cancel leaves refreshed package files unchanged"
+  assert_eq "$old_lock_paths" "unchanged" "cancel leaves the package lock entry unchanged"
+  assert_file_exists "$root/helper.md" "cancel discards the earlier remove choice"
+  assert_file_exists "$root/templates/module-guide.template.md" "cancel retains all stale files"
+  assert_contains "$out" "Upgrade cancelled" "cancel reports the package upgrade was canceled"
+  assert_eq "$(yq -r '.packages[] | select(.name=="demo-skill") | .sha' "$tmp/.orchestra/pkg.lock.yaml")" "$old_sha" "cancel retains the original locked SHA"
+}
+
+# ---------------------------------------------------------------------------
+# Test: noninteractive stale-path upgrade aborts without changing package state
+# ---------------------------------------------------------------------------
+test_upgrade_stale_path_without_tty_aborts() {
+  local tmp
+  tmp="$(setup_test)"
+  local fixture_source_before="$FIXTURE_SOURCE_DIR"
+  local fixture_sha_before="$FIXTURE_SHA"
+  trap 'FIXTURE_SOURCE_DIR="$fixture_source_before"; FIXTURE_SHA="$fixture_sha_before"; teardown_test_project "$tmp"' RETURN
+
+  setup_cached_source "$tmp"
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
+
+  local old_sha new_sha stale_file out rc=0
+  old_sha="$(yq -r '.packages[] | select(.name=="demo-skill") | .sha' "$tmp/.orchestra/pkg.lock.yaml")"
+  new_sha="notty123notty123notty123notty123notty123"
+  FIXTURE_SOURCE_DIR="$FIXTURE_SOURCE_V2_DIR"
+  FIXTURE_SHA="$new_sha"
+  echo "$new_sha" > "$tmp/.orchestra/pkg-cache/core/head.sha"
+  stale_file="$tmp/.agents/orchestra/skills/demo-skill/templates/module-guide.template.md"
+
+  out="$(ORCHESTRA_YES= run_in_project "$tmp" upgrade demo-skill </dev/null 2>&1)" || rc=$?
+  assert_eq "$rc" "1" "noninteractive targeted upgrade fails when a stale path needs a decision"
+  assert_file_exists "$stale_file" "noninteractive upgrade leaves stale file unchanged"
+  assert_eq "$(yq -r '.packages[] | select(.name=="demo-skill") | .sha' "$tmp/.orchestra/pkg.lock.yaml")" "$old_sha" "noninteractive upgrade leaves lock unchanged"
+  assert_contains "$out" "without a TTY" "noninteractive upgrade explains how to resolve stale files"
+}
+
+# ---------------------------------------------------------------------------
+# Test: a stale-file removal error rolls back the package and retains its lock
+# ---------------------------------------------------------------------------
+test_upgrade_stale_removal_failure_rolls_back() {
+  local tmp
+  tmp="$(setup_test)"
+  local fixture_source_before="$FIXTURE_SOURCE_DIR"
+  local fixture_sha_before="$FIXTURE_SHA"
+  trap 'FIXTURE_SOURCE_DIR="$fixture_source_before"; FIXTURE_SHA="$fixture_sha_before"; teardown_test_project "$tmp"' RETURN
+
+  setup_cached_source "$tmp"
+  ORCHESTRA_YES=1 run_in_project "$tmp" install demo-skill >/dev/null 2>&1
+
+  local source_v2="$tmp/source-v2"
+  cp -R "$FIXTURE_SOURCE_V2_DIR" "$source_v2"
+  printf 'Changed source contents for rollback testing.\n' >> "$source_v2/skills/demo-skill/SKILL.md"
+  FIXTURE_SOURCE_DIR="$source_v2"
+  FIXTURE_SHA="rollback123rollback123rollback123rollback123"
+  echo "$FIXTURE_SHA" > "$tmp/.orchestra/pkg-cache/core/head.sha"
+
+  local stale_file="$tmp/.agents/orchestra/skills/demo-skill/templates/module-guide.template.md"
+  local old_sha="$FIXTURE_SHA"
+  old_sha="$(yq -r '.packages[] | select(.name=="demo-skill") | .sha' "$tmp/.orchestra/pkg.lock.yaml")"
+  cp "$tmp/.agents/orchestra/skills/demo-skill/SKILL.md" "$tmp/skill-before"
+  cat > "$tmp/bin/rm" <<'EOF'
+#!/bin/bash
+if [ -n "${UPGRADE_FAIL_RM_PATH:-}" ] && [ ! -e "${UPGRADE_FAIL_RM_MARKER:-}" ]; then
+  for arg in "$@"; do
+    if [ "$arg" = "$UPGRADE_FAIL_RM_PATH" ]; then
+      : > "$UPGRADE_FAIL_RM_MARKER"
+      exit 1
+    fi
+  done
+fi
+exec /bin/rm "$@"
+EOF
+  chmod +x "$tmp/bin/rm"
+
+  local marker="$tmp/rm-failed-once" out rc=0
+  out="$(UPGRADE_FAIL_RM_PATH="$stale_file" UPGRADE_FAIL_RM_MARKER="$marker" ORCHESTRA_YES=1 run_in_project "$tmp" upgrade demo-skill 2>&1)" || rc=$?
+
+  assert_eq "$rc" "1" "failed stale-file removal reports upgrade failure"
+  assert_file_exists "$stale_file" "failed stale-file removal restores stale file"
+  if cmp -s "$tmp/skill-before" "$tmp/.agents/orchestra/skills/demo-skill/SKILL.md"; then
+    PASS=$((PASS + 1))
+  else
+    FAIL=$((FAIL + 1))
+    FAILURES+=("FAIL: failed stale-file removal did not roll back refreshed package files")
+  fi
+  assert_eq "$(yq -r '.packages[] | select(.name=="demo-skill") | .sha' "$tmp/.orchestra/pkg.lock.yaml")" "$old_sha" "failed stale-file removal retains old lock SHA"
+  assert_contains "$out" "Could not remove stale package file" "failed stale-file removal reports its cause"
+}
+
+# ---------------------------------------------------------------------------
 # Test: bulk upgrade over already-installed packages must not hang on
 # overwrite prompts when stdin is not a TTY (regression: silent indefinite hang).
 # ---------------------------------------------------------------------------
@@ -1829,6 +2065,11 @@ main() {
     test_upgrade_sha_change
     test_upgrade_uptodate
     test_upgrade_preserves_model
+    test_upgrade_removes_stale_skill_paths
+    test_upgrade_keeps_stale_skill_path
+    test_upgrade_cancel_discards_stale_path_choices
+    test_upgrade_stale_path_without_tty_aborts
+    test_upgrade_stale_removal_failure_rolls_back
     test_upgrade_bulk_overwrites_without_prompt
     test_source_subscribe_future_packages
     test_source_unsubscribe_stops_future_packages

@@ -315,12 +315,13 @@ install_files_for_package() {
   local pkg_name="$6"
   local existing_model="${7:-}"
   local overwrite="${8:-0}"
+  local target_root="${9:-$AGENTS_ORCHESTRA_DIR_ABS}"
 
   local ns
   ns="$(canonical_type_for_install "$pkg_type")"
   [ -n "$ns" ] || die "Unknown package type: $pkg_type"
 
-  local target_base="$AGENTS_ORCHESTRA_DIR_ABS/$ns"
+  local target_base="$target_root/$ns"
   local installed_paths=()
 
   case "$pkg_type" in
